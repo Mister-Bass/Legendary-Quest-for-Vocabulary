@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explore the Hollow Archive, an original vocabulary adventure. Restore five chambers with 45 digital citizenship terms.">
+  <meta name="theme-color" content="#182b29">
+  <title>Lexicon · The Hollow Archive</title>
+</head>
+<body>
+  <main>
+    <header><a class="brand" href="./"><span class="brand-mark">✧</span> LEXICON</a><span class="edition">AN ADVENTURE IN UNDERSTANDING</span><a class="studio" href="https://github.com/Mister-Bass/Legendary-Quest-for-Vocabulary">AI GAME STUDIO ↗</a></header>
+    <section class="intro"><div><p class="eyebrow">THE HOLLOW ARCHIVE</p><h1>Knowledge is your<br><em>greatest power.</em></h1></div><p>Step into a world of forgotten words. <br>Read the clues. Restore the light.</p></section>
+    <div class="adventure-layout">
+      <section class="arena" aria-label="Vocabulary adventure">
+        <div class="hud"><span class="life-label">VITALITY <strong id="hearts" aria-label="5 of 5 hearts">♥♥♥♥♥</strong></span><span>INSIGHT <strong id="score">0</strong></span><span class="level-badge">LEVEL 01</span></div>
+        <div class="stage">
+          <div id="game" role="img" aria-label="Top-down archive chamber with a traveler, Keeper, three rune seals, inkshades, and an eastern gate"></div>
+          <section id="overlay" class="overlay" aria-labelledby="screen-title"><div class="panel"><span class="sigil">✧</span><p class="eyebrow" id="screen-label">A NEW CHAPTER AWAITS</p><h2 id="screen-title">Every word is a key.</h2><p id="screen-copy">Carry your lantern into a forgotten archive.</p><button id="play" class="primary">Begin adventure ↗</button><p class="small">Enter to begin · No time limit · Progress lasts this session</p></div></section>
+        </div>
+        <div class="scene-caption"><span class="scene-icon">◇</span><div><p id="chapter-number" class="eyebrow">CHAMBER 1 / 5</p><h2 id="chapter-title">The Footprint Garden</h2><p id="chapter-subtitle">Every step leaves a trace.</p></div><span class="caption-direction">EAST →</span></div>
+        <div class="feedback"><span>✦</span><p id="feedback" role="status" aria-live="polite">Your adventure is waiting.</p></div>
+        <nav class="touch" aria-label="Touch controls"><div><button data-action="up" aria-label="Move up">↑</button><button data-action="left" aria-label="Move left">←</button><button data-action="down" aria-label="Move down">↓</button><button data-action="right" aria-label="Move right">→</button></div><button data-action="interact">Interact</button><button data-action="ward">Lantern ward</button></nav>
+      </section>
+      <aside class="sidebar">
+        <section class="quest-card"><p class="eyebrow">YOUR QUEST</p><h2>Restore the archive.</h2><p id="objective">Restore the three rune seals to unlock the eastern gate.</p><ul id="seal-list" class="seals"></ul><div class="inventory"><div><strong id="key-count">0 / 3</strong><span>RUNE KEYS</span></div><div><strong id="word-count">0 / 45</strong><span>WORDS LEARNED</span></div></div><button id="journal-toggle" class="outline">Open word journal <kbd>M</kbd></button></section>
+        <section class="map-card"><p class="eyebrow">LEVEL 1 / DIGITAL CITIZENSHIP</p><ol id="map-list"></ol><p class="map-note">Five chambers. One connected world.</p></section>
+        <section class="keeper-note"><span>✳</span><p>“A careful reader sees<br>what a hurried hero misses.”<small>— THE KEEPER</small></p></section>
+      </aside>
+    </div>
+    <section class="controls" aria-label="Game controls"><div><span><kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> Move</span><span><kbd>E</kbd> / <kbd>Space</kbd> Interact</span><span><kbd>J</kbd> Lantern ward</span><span><kbd>1–4</kbd> Answer</span></div><button id="restart" class="text-button">Restart adventure ↻</button></section>
+    <footer><span>LEVEL 01 · DIGITAL CITIZENSHIP &amp; ONLINE REPUTATION</span><span>45 WORDS TO LIGHT THE WAY.</span></footer>
+  </main>
+  <dialog id="puzzle" aria-labelledby="puzzle-title"><button id="close-puzzle" class="dialog-close" aria-label="Close trial">✕</button><p class="eyebrow" id="puzzle-label">RUNE TRIAL</p><h2 id="puzzle-title">The Root Seal</h2><p id="puzzle-progress" class="small"></p><p id="puzzle-prompt" class="puzzle-prompt"></p><div id="answers"></div><p id="puzzle-feedback" role="status" aria-live="polite"></p></dialog>
+  <dialog id="journal" aria-labelledby="journal-title"><button id="close-journal" class="dialog-close" aria-label="Close journal">✕</button><p class="eyebrow">THE TRAVELER’S FIELD NOTES</p><h2 id="journal-title">Word journal</h2><p id="journal-count"></p><div id="journal-entries"></div></dialog>
+  <script type="module" src="/src/adventure.js"></script>
+</body></html>
