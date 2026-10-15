@@ -68,6 +68,14 @@ async function contact(page,target,done){
   if(Math.abs(minor)>18){
     await moveAxis(page,horizontal?'py':'px',(horizontal?target.y:target.x)*40+20);
   }
+  // Correct any key-release latency with bounded taps before the contact run.
+  for(let i=0;i<6;i++){
+    if(await done())return;
+    const aligned=await state(page),error=(horizontal?target.y:target.x)*40+20-Number(aligned[horizontal?'py':'px']);
+    if(Math.abs(error)<=12)break;
+    const key=horizontal?(error>0?'ArrowDown':'ArrowUp'):(error>0?'ArrowRight':'ArrowLeft');
+    await page.keyboard.press(key,{delay:Math.min(120,Math.max(25,(Math.abs(error)-8)/170*1000))});await settle(page);
+  }
   if(await done())return;
   at=await state(page);dx=target.x*40+20-Number(at.px);dy=target.y*40+20-Number(at.py);
   const key=Math.abs(dx)>Math.abs(dy)?dx>0?'ArrowRight':'ArrowLeft':dy>0?'ArrowDown':'ArrowUp';
@@ -150,7 +158,8 @@ test('mistakes lose hearts and checkpoint retry preserves solved vocabulary',asy
   await start(page);await page.keyboard.press('e');await expect(page.getByRole('heading',{name:'Words open what swords cannot.'})).toBeVisible();await page.keyboard.press('Escape');
   await finishTrial(page,0);const learned=(await state(page)).learned;
   await openTrial(page,1);const id=Number((await state(page)).quizId),right=id%3===2?vocabulary[id].definition:vocabulary[id].term;
-  for(let i=0;i<5;i++)await page.locator('#answers button').filter({hasNot:page.getByText(right,{exact:true})}).first().click();
+  const remaining=Number((await page.locator('#hearts').getAttribute('aria-label')).split(' ')[0]);
+  for(let i=0;i<remaining;i++)await page.locator('#answers button').filter({hasNot:page.getByText(right,{exact:true})}).first().click();
   await expect(game(page)).toHaveAttribute('data-mode','lost');
   await page.getByRole('button',{name:'Return to chamber'}).click();
   await expect(game(page)).toHaveAttribute('data-learned',learned);await expect(game(page)).toHaveAttribute('data-keys','1');
@@ -166,6 +175,7 @@ test('slime bolts pause during reading, damage the player, and sword defeats sli
   await page.keyboard.press('Escape');
   await expect.poll(()=>page.locator('#hearts').getAttribute('aria-label'),{timeout:10000}).not.toBe(hearts);
   await expect(page.locator('#feedback')).toContainText('slime bolt');
+  const target=JSON.parse((await state(page)).enemies)[0];await moveAxis(page,'py',target.y);
   await page.keyboard.down('d');
   await page.waitForFunction(()=>{const s=document.getElementById('game').dataset,e=JSON.parse(s.enemies)[0];return Math.hypot(e.x-Number(s.px),e.y-Number(s.py))<65;});
   await page.keyboard.up('d');await settle(page);const e=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,e.x,e.y);
