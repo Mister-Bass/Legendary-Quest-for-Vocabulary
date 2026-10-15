@@ -155,16 +155,17 @@ test('mistakes lose hearts and checkpoint retry preserves solved vocabulary',asy
 
 test('ghost bolts pause with dialogs, shield blocks them, unblocked shots hurt, and sword defeats ghosts',async({page})=>{
   await start(page);
+  await page.keyboard.down('k'); // Protect the approach; the test is about blocking, not taking a setup hit.
   await walkTo(page,{x:10,y:21},{exact:true,avoidEnemies:false});
-  await hold(page,'ArrowRight',80);await settle(page);await page.keyboard.down('k');
+  let ghost=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,ghost.x,ghost.y,'right');await page.keyboard.up('k');
   await expect(game(page)).toHaveAttribute('data-shield','true');
   await expect.poll(async()=>JSON.parse((await state(page)).projectiles).length,{timeout:12000}).toBeGreaterThan(0);
   await page.keyboard.press('m');const paused=await state(page);await page.waitForTimeout(700);
   expect((await state(page)).enemies).toBe(paused.enemies);expect((await state(page)).projectiles).toBe(paused.projectiles);
-  await page.keyboard.press('Escape');await page.keyboard.up('k');await page.keyboard.down('k');
-  await expect.poll(async()=>Number((await state(page)).projectileBlocks),{timeout:10000}).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');ghost=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,ghost.x,ghost.y,'right');
+  await expect.poll(async()=>Number((await state(page)).projectileBlocks),{timeout:10000}).toBeGreaterThan(Number(paused.projectileBlocks));
   await expect(page.locator('#hearts')).toHaveAttribute('aria-label','5 of 5 hearts');
-  await page.keyboard.up('k');
+  ghost=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,ghost.x,ghost.y,'right');
   await expect(page.locator('#hearts')).toHaveAttribute('aria-label','4 of 5 hearts',{timeout:6000});
   await expect(page.locator('#feedback')).toContainText('ghost bolt');
   await page.keyboard.down('d');

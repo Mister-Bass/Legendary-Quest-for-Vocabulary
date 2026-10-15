@@ -74,7 +74,7 @@ export class ActionWorld {
     const contacts=[...this.room.seals.map((p,i)=>({...p,id:`crystal:${i}`,index:i})),{...this.room.guide,id:'guide'},{...this.room.exit,id:'gate'}];
     for(const p of contacts){
       const at=center(p);if(length(this.hero,at)>48)this.contacts.delete(p.id);
-      if(!this.contacts.has(p.id)&&length(next,at)<31&&length(next,at)<length(this.hero,at)-.01){
+      if(!this.contacts.has(p.id)&&Math.abs(next.x-at.x)<25&&Math.abs(next.y-at.y)<25&&length(next,at)<length(this.hero,at)-.01){
         this.contacts.add(p.id);
         if(p.id.startsWith('crystal')){if(this.scene.state.sealed.has(`${this.scene.state.chapter}:${p.index}`))continue;this.scene.openTrial(p.index);}
         else this.scene.interact();

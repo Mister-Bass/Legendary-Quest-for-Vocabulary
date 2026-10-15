@@ -121,8 +121,10 @@ class Adventure extends Phaser.Scene {
       else this.reset();
       $('play').blur();
     } else if(action==='close') {
+      const reading=['puzzle','guide','journal'].includes(s.mode);
       if(s.mode==='puzzle'||s.mode==='guide'){$('puzzle').close();s.mode='playing';}
       if(s.mode==='journal'){$('journal').close();s.mode=this.journalReturn;}
+      if(reading&&s.mode==='playing')this.action.invulnerableUntil=Math.max(this.action.invulnerableUntil,this.action.clock+1.2);
     } else if(action==='journal'&&['playing','journal'].includes(s.mode)) {
       if(s.mode==='journal')this.act('close');
       else {this.journalReturn=s.mode;s.mode='journal';this.renderJournal();$('journal').showModal();}
@@ -199,7 +201,7 @@ class Adventure extends Phaser.Scene {
     if(this.currentId()===undefined) {
       this.state.sealed.add(`${this.state.chapter}:${this.activeTrial}`);
       this.stationSprites[this.activeTrial].play('key');this.drawGate();
-      this.state.mode='playing';$('puzzle').close();
+      this.state.mode='playing';$('puzzle').close();this.action.invulnerableUntil=Math.max(this.action.invulnerableUntil,this.action.clock+1.2);
       this.feedback(`${objects[this.activeTrial]} restored! Rune key ${this.roomKeys()} of 3 earned. ${this.question.explanation}`);
     } else this.renderPuzzle();
     this.render();
