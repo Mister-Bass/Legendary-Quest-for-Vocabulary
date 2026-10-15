@@ -14,7 +14,8 @@ export function makeRoom(index, total) {
   const water = new Set();
   for (let y = 0; y < WORLD.rows; y++) for (let x = 0; x < WORLD.columns; x++) {
     if (x === 0 || y === 0 || x === WORLD.columns - 1 || y === WORLD.rows - 1) walls.add(`${x},${y}`);
-    if ((x === 15 && y >= 3 && y <= 10 && y !== 7) || (y === 18 && x >= 19 && x <= 25 && x !== 22)) walls.add(`${x},${y}`);
+    // Broad passages leave room to steer a continuously moving character.
+    if ((x === 15 && y >= 3 && y <= 10 && (y < 6 || y > 8)) || (y === 18 && x >= 19 && x <= 25 && (x < 21 || x > 23))) walls.add(`${x},${y}`);
     if ((x >= 24 && x <= 30 && y >= 3 && y <= 7) || (x >= 7 && x <= 12 && y >= 15 && y <= 18)) water.add(`${x},${y}`);
   }
   return {
