@@ -53,10 +53,15 @@ test('contains every supplied term exactly once across Level 1',async()=>{
 });
 test('loads original title, canvas, and game without errors',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const art=new Set();page.on('response',r=>{if(r.url().includes('/assets/topdown/')&&r.url().endsWith('.png')&&r.ok())art.add(r.url().split('/').pop());});
   page.on('response',r=>{if(r.status()>=400)errors.push(r.url());});
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
   await expect(page.locator('canvas')).toBeVisible();expect(errors).toEqual([]);
+  expect([...art].sort()).toEqual(['overworld.png','phantom.png','crystal.png','key.png','water.png',...['idle','run'].flatMap(action=>['down','up','left','right'].map(direction=>`hero-${action}-${direction}.png`))].sort());
+  await expect(page.getByRole('link',{name:'TOP-DOWN Adventure Pack by o_lobster'})).toBeVisible();
+  const credits=await page.request.get('/assets/topdown/CREDITS.txt');
+  expect(credits.ok()).toBeTruthy();expect(await credits.text()).toContain('CC BY 4.0');
 });
 test('WASD and arrows move while walls and water block passage',async({page})=>{
   await start(page);await page.keyboard.press('a');await page.keyboard.press('ArrowLeft');

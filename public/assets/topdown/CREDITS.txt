@@ -1,0 +1,29 @@
+TOP-DOWN Adventure Pack v1.0
+Artist: o_lobster
+Source: https://o-lobster.itch.io/adventure-pack
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+The creator's asset page lists CC BY 4.0 (verified October 14, 2026).
+These files came from the owner's supplied Top_Down_Adventure_Pack_v.1.0.zip.
+The selected PNGs are unchanged, renamed for loading. In-game adaptations:
+frames selected from sheets, nearest-neighbor scaling, terrain tinting, and
+arrangement into the vocabulary game's own maps. No endorsement is implied.
+
+Original paths -> local names:
+Overworld_Tileset.png -> overworld.png
+Char_Sprites/char_{idle,run}_{down,up,left,right}_anim_strip_6.png
+  -> hero-{idle,run}-{down,up,left,right}.png
+Enemies_Sprites/Phantom_Sprites/phantom_idle_anim_right_strip_4.png -> phantom.png
+Props_Items_(animated)/crystal_item_anim_strip_6.png -> crystal.png
+Props_Items_(animated)/key_item_anim_strip_6.png -> key.png
+Tiles_(animated)/Overworld/water_tile_anim_strip_8.png -> water.png
+
+Original pack README credit:
+Credits go to:
+o_lobster
+https://o-lobster.itch.io/
+
+The Keeper, rune bases, gate bars, lantern effect, interface, and game maps
+are original project artwork/layout. The supplied vocabulary is separate
+from this artwork license. Keep this notice with redistributed pack assets.

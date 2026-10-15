@@ -4,7 +4,7 @@ An original top-down vocabulary adventure built with Vite, JavaScript, and Phase
 
 ## Level 1: Digital citizenship and online reputation
 
-Level 1 uses all 45 terms and their supplied definitions from Module_03_Vocabulary.pdf, provided by the teacher for Principles of Information Technology / CompTIA Digital Literacy v3.0, Module 3. Applied situations and all game artwork are original. The source PDF is not bundled or uploaded to the repository.
+Level 1 uses all 45 terms and their supplied definitions from Module_03_Vocabulary.pdf, provided by the teacher for Principles of Information Technology / CompTIA Digital Literacy v3.0, Module 3. Applied situations and game maps are original. The source PDF is not bundled or uploaded to the repository.
 
 The five chambers are:
 
@@ -54,12 +54,19 @@ The assistant should extract and check your list, implement the game, run the ch
 - src/vocabulary.js: all 45 source terms and definitions, in the PDF’s order.
 - src/lesson.js: chamber groupings, applied situations, and question construction.
 - src/world.js: passable terrain, monuments, gates, and chamber palettes.
-- src/art.js: original procedural pixel artwork and scenery.
+- src/art.js: local sprite loading, animations, scenery, and original Keeper artwork.
+- public/assets/topdown/: selected TOP-DOWN Adventure Pack PNGs and attribution notice.
 - src/adventure.js: Phaser scene, movement, trials, hearts, gates, journal, and game states.
 - src/adventure.css and index.html: responsive shell and accessible native controls/dialogs.
 - tests/adventure.spec.js: browser tests using actual keyboard and button input. Read-only DOM state supports assertions; there are no test-only game mutation shortcuts.
 
-All 45 terms are assigned to exactly one chamber. Game art is generated locally in Phaser without external downloads. No original Zelda characters, maps, music, names, or artwork are included.
+All 45 terms are assigned to exactly one chamber. Artwork loads from this site's own assets; gameplay does not depend on Drive or third-party image hosts. No original Zelda characters, maps, music, names, or artwork are included.
+
+## Artwork credits
+
+TOP-DOWN Adventure Pack v1.0 by [o_lobster](https://o-lobster.itch.io/adventure-pack), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) as listed on the creator's asset page. Selected unmodified PNGs were supplied by the owner through Google Drive and renamed for loading. The game selects frames, scales pixels, tints terrain, and arranges them into original chamber maps. No endorsement is implied. The Keeper, rune bases, gate bars, lantern effect, and interface remain original project artwork.
+
+Animated four-direction idle/run characters, phantoms, water, crystals, and earned keys come from this pack. Crystals mark the numbered rune trials; completed trials display gold keys. Attribution and the original pack credit are retained in public/assets/topdown/CREDITS.txt, on the game page, and in both playable and source ZIP folders. Keep this notice with reused assets. Other packs in the supplied Drive folder are not included.
 
 ## Build and checks
 

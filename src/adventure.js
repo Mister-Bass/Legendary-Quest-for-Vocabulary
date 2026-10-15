@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { chapters, chapterTrials, vocabulary, makeQuestion } from './lesson.js';
 import { WORLD, makeRoom, isWalkable, distance } from './world.js';
-import { createArt, paintWorld } from './art.js';
+import { preloadArt, createArt, paintWorld } from './art.js';
 import './adventure.css';
 
 const $ = id => document.getElementById(id);
@@ -10,6 +10,7 @@ const tilePosition = ({x,y}) => ({x:x*40+20,y:y*40+20});
 
 class Adventure extends Phaser.Scene {
   constructor() { super('Adventure'); }
+  preload() { preloadArt(this); }
   create() {
     createArt(this);
     this.state = { mode:'title', chapter:0, x:2, y:10, hearts:5, score:0, learned:new Set(), sealed:new Set() };
@@ -43,7 +44,7 @@ class Adventure extends Phaser.Scene {
     this.stationSprites=this.room.seals.map((point,index)=>{
       const {x,y}=tilePosition(point);
       const lit=this.state.sealed.has(`${this.state.chapter}:${index}`);
-      const sprite=this.add.image(x,y-2,lit?'seal-lit':'seal').setDisplaySize(40,44);
+      const sprite=this.add.sprite(x,y-2,lit?'key':'crystal').setDisplaySize(40,40).play(lit?'key':'crystal');
       this.add.text(x,y+25,['I','II','III'][index],{fontFamily:'Georgia',fontSize:14,color:'#e8d7a6'}).setOrigin(.5);
       return sprite;
     });
@@ -52,11 +53,12 @@ class Adventure extends Phaser.Scene {
     this.add.text(guide.x,guide.y-33,'KEEPER',{fontFamily:'Arial',fontSize:8,color:'#e9d49b',letterSpacing:1}).setOrigin(.5);
     this.shades=this.room.shades.map(point=>{
       const at=tilePosition(point);
-      return {...point,active:true,sprite:this.add.image(at.x,at.y,'shade').setDisplaySize(34,36)};
+      return {...point,active:true,sprite:this.add.sprite(at.x,at.y,'phantom').setDisplaySize(40,40).play('phantom')};
     });
     this.shades.forEach(shade=>this.tweens.add({targets:shade.sprite,y:shade.sprite.y-4,duration:1100,yoyo:true,repeat:-1,ease:'Sine.easeInOut'}));
     const hero=tilePosition(this.state);
-    this.hero=this.add.image(hero.x,hero.y-3,'traveler').setDisplaySize(34,38).setDepth(20);
+    this.facing='down';
+    this.hero=this.add.sprite(hero.x,hero.y-3,'hero-idle-down').setDisplaySize(40,40).setDepth(20).play('hero-idle-down');
     this.gateBars=this.add.graphics();
     this.wardRing=this.add.circle(hero.x,hero.y,36,0xe8d49d,.35).setStrokeStyle(3,0xf6dc96).setVisible(false).setDepth(30);
     const added=this.children.list.filter(item=>!before.has(item));
@@ -107,8 +109,9 @@ class Adventure extends Phaser.Scene {
     s.x=next.x;s.y=next.y;
     this.tweens.killTweensOf(this.hero);
     const at=tilePosition(s);
-    this.tweens.add({targets:this.hero,x:at.x,y:at.y-3,duration:85,ease:'Sine.easeOut'});
-    if(dx)this.hero.setFlipX(dx<0);
+    this.facing=dx<0?'left':dx>0?'right':dy<0?'up':'down';
+    this.hero.play(`hero-run-${this.facing}`,true);
+    this.tweens.add({targets:this.hero,x:at.x,y:at.y-3,duration:120,ease:'Sine.easeOut',onComplete:()=>this.hero.play(`hero-idle-${this.facing}`,true)});
     const hit=this.shades.find(shade=>shade.active&&distance(shade,s)===0);
     if(hit){hit.active=false;hit.sprite.setVisible(false);this.hurt('An inkshade stole one heart. Press J near a shade to dispel it before you step on it.');}
     else this.feedback(this.nearbyHint());
@@ -182,7 +185,7 @@ class Adventure extends Phaser.Scene {
     this.trialFeedback=`Correct! ${this.question.explanation} +25 insight.`;
     if(this.currentId()===undefined) {
       this.state.sealed.add(`${this.state.chapter}:${this.activeTrial}`);
-      this.stationSprites[this.activeTrial].setTexture('seal-lit');this.drawGate();
+      this.stationSprites[this.activeTrial].play('key');this.drawGate();
       this.state.mode='playing';$('puzzle').close();
       this.feedback(`${objects[this.activeTrial]} restored! Rune key ${this.roomKeys()} of 3 earned. ${this.question.explanation}`);
     } else this.renderPuzzle();
