@@ -78,7 +78,7 @@ class Adventure extends Phaser.Scene {
   reset() {
     $('puzzle').close();$('journal').close();
     this.state={mode:'playing',chapter:0,x:2,y:10,hearts:5,score:0,learned:new Set(),sealed:new Set()};
-    this.loadRoom();this.feedback('Find the three rune seals. Stand beside one and press E to begin a trial.');
+    this.loadRoom();this.feedback('Walk into a glowing crystal to begin its vocabulary trial.');
     $('play').blur();$('restart').blur();
   }
   act(action) {
@@ -104,7 +104,9 @@ class Adventure extends Phaser.Scene {
   }
   move(dx,dy) {
     const s=this.state,next={x:s.x+dx,y:s.y+dy};
-    const solid=[this.room.guide,...this.room.seals,this.room.exit].some(point=>distance(point,next)===0);
+    const crystal=this.room.seals.findIndex(point=>distance(point,next)===0);
+    if(crystal>=0){this.openTrial(crystal);return;}
+    const solid=[this.room.guide,this.room.exit].some(point=>distance(point,next)===0);
     if(!isWalkable(this.room,next.x,next.y)||solid){this.feedback('Stone, water, and ancient roots block the way. Find another path.');return;}
     s.x=next.x;s.y=next.y;
     this.tweens.killTweensOf(this.hero);
@@ -119,7 +121,7 @@ class Adventure extends Phaser.Scene {
   nearbyHint() {
     if(distance(this.state,this.room.exit)<=1)return this.roomKeys()===3?'The gate is open. Press E to continue.':'The gate needs all three rune keys from this chamber.';
     const index=this.room.seals.findIndex(p=>distance(this.state,p)<=1);
-    if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Press E to read it.`;
+    if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Walk into its crystal to begin, or press E.`;
     if(distance(this.state,this.room.guide)<=1)return 'The Keeper has advice. Press E to speak.';
     return 'Explore the chamber. Restore three seals to open the eastern gate.';
   }
@@ -132,16 +134,18 @@ class Adventure extends Phaser.Scene {
       this.loadRoom();this.feedback('A new chamber opens. One heart restored. Find its three seals.');return;
     }
     const index=this.room.seals.findIndex(point=>distance(s,point)<=1);
-    if(index>=0) {
-      if(s.sealed.has(`${s.chapter}:${index}`)){this.feedback('This seal is already restored. Continue to another seal or the gate.');return;}
-      this.activeTrial=index;this.trialFeedback='';s.mode='puzzle';this.renderPuzzle();$('puzzle').showModal();return;
-    }
+    if(index>=0){this.openTrial(index);return;}
     if(distance(s,this.room.guide)<=1) {
       s.mode='guide';$('puzzle-label').textContent='THE KEEPER';$('puzzle-title').textContent='Words open what swords cannot.';
-      $('puzzle-prompt').textContent='Restore all three numbered seals by solving their vocabulary trials. Read carefully: some inscriptions ask for a term, some for its meaning. Use 1–4 or the answer buttons. Wrong answers cost a heart and reveal a hint. J dispels nearby inkshades. The eastern gate opens after all three keys are earned.';
+      $('puzzle-prompt').textContent='Walk into each numbered crystal to open its vocabulary trial automatically. You can also press E beside one. Read carefully: some inscriptions ask for a term, some for its meaning. Use 1–4 or the answer buttons. Wrong answers cost a heart and reveal a hint. J dispels nearby inkshades. The eastern gate opens after all three keys are earned; press E beside the gate to continue.';
       $('answers').replaceChildren();$('puzzle-feedback').textContent='Your journal (M) keeps every word you learn.';$('puzzle-progress').textContent=chapters[s.chapter].name;$('puzzle').showModal();return;
     }
-    this.feedback('Move beside a numbered seal, the Keeper, or the eastern gate to interact.');
+    this.feedback('Walk into a crystal to begin a trial. Press E beside the Keeper or eastern gate to interact.');
+  }
+  openTrial(index) {
+    const s=this.state;
+    if(s.sealed.has(`${s.chapter}:${index}`)){this.feedback('This seal is already restored. Continue to another seal or the gate.');return;}
+    this.activeTrial=index;this.trialFeedback='';s.mode='puzzle';this.renderPuzzle();$('puzzle').showModal();
   }
   ward() {
     const center=tilePosition(this.state);this.wardRing.setPosition(center.x,center.y).setVisible(true).setAlpha(.8);

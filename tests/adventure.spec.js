@@ -29,9 +29,16 @@ async function walkTo(page,target,{allowShade=false,exact=false}={}) {
   }
   throw new Error(`No path to ${JSON.stringify(target)}`);
 }
+async function touchCrystal(page,index,touch=false) {
+  const s=await state(page),target=makeRoom(Number(s.chapter),5).seals[index];
+  await walkTo(page,target);
+  const at=await state(page),dx=target.x-Number(at.x),dy=target.y-Number(at.y);
+  const direction=dx<0?'left':dx>0?'right':dy<0?'up':'down';
+  if(touch)await page.getByRole('button',{name:`Move ${direction}`,exact:true}).click();
+  else await page.keyboard.press({left:'ArrowLeft',right:'ArrowRight',up:'ArrowUp',down:'ArrowDown'}[direction]);
+}
 async function openTrial(page,index) {
-  const s=await state(page);await walkTo(page,makeRoom(Number(s.chapter),5).seals[index]);
-  await page.keyboard.press('e');await expect(game(page)).toHaveAttribute('data-mode','puzzle');
+  await touchCrystal(page,index);await expect(game(page)).toHaveAttribute('data-mode','puzzle');
 }
 async function correct(page) {
   const id=Number((await state(page)).quizId);
@@ -75,6 +82,22 @@ test('WASD and arrows move while walls and water block passage',async({page})=>{
   // The pool at (12,5) cannot be entered from its southern bank.
   await walkTo(page,{x:12,y:6},{exact:true});
   await page.keyboard.press('ArrowUp'); await expect(game(page)).toHaveAttribute('data-y','6');
+});
+
+test('crystal contact opens and resumes trials; restored crystals do not reopen or score twice',async({page})=>{
+  await start(page);await openTrial(page,0);
+  const before=await state(page);
+  await page.keyboard.press('ArrowDown');await expect(game(page)).toHaveAttribute('data-y',before.y);
+  await correct(page);await expect(page.locator('#score')).toHaveText('25');
+  const next=(await state(page)).quizId;
+  await page.keyboard.press('Escape');await expect(game(page)).toHaveAttribute('data-mode','playing');
+  await openTrial(page,0);await expect(game(page)).toHaveAttribute('data-quiz-id',next);
+  while((await state(page)).mode==='puzzle')await correct(page);
+  const score=await page.locator('#score').textContent();
+  await touchCrystal(page,0);await expect(game(page)).toHaveAttribute('data-mode','playing');
+  await expect(page.locator('#score')).toHaveText(score);await expect(page.locator('#feedback')).toContainText('already restored');
+  await page.keyboard.press('r');await openTrial(page,0);
+  await expect(game(page)).toHaveAttribute('data-quiz-id',before.quizId);await expect(page.locator('#score')).toHaveText('0');
 });
 test('guide, modal keyboard lock, incorrect answers, loss, and checkpoint recovery',async({page})=>{
   await start(page);await page.keyboard.press('e');
@@ -143,4 +166,6 @@ test('mobile layout fits and touch controls move, interact, and close a dialog',
   await expect(page.locator('#puzzle')).toBeVisible();
   await page.getByRole('button',{name:'Close trial',exact:true}).click();
   await expect(game(page)).toHaveAttribute('data-mode','playing');
+  await touchCrystal(page,0,true);await expect(game(page)).toHaveAttribute('data-mode','puzzle');
+  await correct(page);await expect(page.locator('#score')).toHaveText('25');
 });

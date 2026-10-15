@@ -27,7 +27,8 @@ At zero hearts, Return to chamber restores five hearts and preserves learned wor
 | Action | Keyboard | Touch / mouse |
 | --- | --- | --- |
 | Move | Arrow keys or WASD | Direction buttons under the game |
-| Interact with adjacent seal, Keeper, or gate | E or Space | Interact button |
+| Open a crystal's vocabulary trial | Walk into the crystal with arrows or WASD | Move toward the crystal with direction buttons |
+| Interact with adjacent crystal, Keeper, or gate | E or Space | Interact button |
 | Dispel inkshades within two grid cells | J or Z | Lantern ward button |
 | Answer a vocabulary question | 1–4 | Answer buttons |
 | Open word journal | M | Open word journal button |
@@ -35,7 +36,7 @@ At zero hearts, Return to chamber restores five hearts and preserves learned wor
 | Start / return after losing | Enter | Begin / Return button |
 | Reset the whole adventure | R | Restart adventure button |
 
-Stone walls, trees, water, and monuments block movement. Stand next to a monument to interact with it. The Keeper beside the starting position explains the rules. The journal stores the definitions of words answered correctly. Puzzle dialogs trap focus and support normal keyboard navigation. The canvas world is visual; this is not a fully nonvisual game.
+Walk into an unsolved crystal to open its trial automatically. The traveler stays beside it while the dialog is open. Closing a trial preserves answered words; touch it again to resume. Completed crystals display keys and cannot award duplicate points. E/Space and the Interact button also work beside crystals. The Keeper and gates still use those interaction controls. Stone walls, trees, water, and monuments block movement. The Keeper beside the starting position explains the rules. The journal stores the definitions of words answered correctly. Puzzle dialogs trap focus and support normal keyboard navigation. The canvas world is visual; this is not a fully nonvisual game.
 
 ## Request changes using plain English
 
