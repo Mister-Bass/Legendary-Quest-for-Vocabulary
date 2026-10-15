@@ -12,14 +12,14 @@ async function start(page){
 }
 async function hold(page,key,ms){await page.keyboard.down(key);await page.waitForTimeout(ms);await page.keyboard.up(key);}
 async function settle(page){await expect.poll(async()=>Number((await state(page)).speed),{timeout:6000}).toBeLessThan(1);}
-async function moveAxis(page,axis,target){
+async function moveAxis(page,axis,target,nearGoal=null){
   const s=await state(page),from=Number(s[axis]),sign=Math.sign(target-from);
   if(Math.abs(target-from)<6)return;
   const key=axis==='px'?(sign>0?'ArrowRight':'ArrowLeft'):(sign>0?'ArrowDown':'ArrowUp');
   await page.keyboard.down(key);
-  try {await page.waitForFunction(({axis,target,sign})=>{
-    const el=document.getElementById('game');return el.dataset.mode!=='playing'||(Number(el.dataset[axis])-target)*sign>=-7;
-  },{axis,target,sign},{timeout:Math.abs(target-from)/100*1000+10000});}
+  try {await page.waitForFunction(({axis,target,sign,nearGoal})=>{
+    const el=document.getElementById('game');return el.dataset.mode!=='playing'||(Number(el.dataset[axis])-target)*sign>=-7||(nearGoal&&Math.hypot(Number(el.dataset.px)-nearGoal.x,Number(el.dataset.py)-nearGoal.y)<60);
+  },{axis,target,sign,nearGoal},{timeout:Math.abs(target-from)/100*1000+10000});}
   finally {await page.keyboard.up(key);}
   await settle(page);
   // Contact can open a trial during the final segment, especially at lower frame rates.
@@ -45,10 +45,11 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
   // Hold keys along straight segments instead of simulating frame-sized key taps.
   let previous=origin;
   for(let i=0;i<path.length;){
-    if((await state(page)).mode!=='playing')return;
+    const at=await state(page);
+    if(at.mode!=='playing'||(!exact&&Math.hypot(Number(at.px)-(target.x*40+20),Number(at.py)-(target.y*40+20))<60))return;
     const dx=path[i].x-previous.x,dy=path[i].y-previous.y;let end=i;
     while(end+1<path.length&&path[end+1].x-path[end].x===dx&&path[end+1].y-path[end].y===dy)end++;
-    await moveAxis(page,dx?'px':'py',(dx?path[end].x:path[end].y)*40+20);
+    await moveAxis(page,dx?'px':'py',(dx?path[end].x:path[end].y)*40+20,exact?null:{x:target.x*40+20,y:target.y*40+20});
     previous=path[end];i=end+1;
   }
 }
