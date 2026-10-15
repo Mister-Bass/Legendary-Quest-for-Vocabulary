@@ -20,11 +20,11 @@ class Adventure extends Phaser.Scene {
     this.keyHandler = event => {
       const key=event.key.length===1?event.key.toLowerCase():event.key;
       if (event.target instanceof HTMLButtonElement && ['Enter',' '].includes(key)) return;
-      const action={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',e:'interact',' ':'attack',k:'shield',Shift:'shield',r:'restart',Enter:'start',Escape:'close',m:'journal'}[key];
+      const action={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',e:'interact',' ':'attack',r:'restart',Enter:'start',Escape:'close',m:'journal'}[key];
       if(this.state.mode==='puzzle'&&['1','2','3','4'].includes(key)) {event.preventDefault();this.answer(Number(key)-1);return;}
       if(action) {
         event.preventDefault();
-        if(['up','down','left','right','attack','shield'].includes(action)) {if(this.state.mode==='playing'&&!event.repeat){if(action==='attack'){this.action.touchShield=false;this.action.mouseAim=null;}this.action.press(action,event.code);}}
+        if(['up','down','left','right','attack'].includes(action)) {if(this.state.mode==='playing'&&!event.repeat){if(action==='attack'){this.action.mouseAim=null;}this.action.press(action,event.code);}}
         else if(!event.repeat)this.act(action);
       }
     };
@@ -36,13 +36,12 @@ class Adventure extends Phaser.Scene {
     const canvas=this.game.canvas;
     const point=event=>{const r=canvas.getBoundingClientRect();return this.cameras.main.getWorldPoint((event.clientX-r.left)*WORLD.viewportWidth/r.width,(event.clientY-r.top)*WORLD.viewportHeight/r.height);};
     this.mouseDown=event=>{
-      if(this.state.mode!=='playing'||![0,2].includes(event.button))return;
+      if(this.state.mode!=='playing'||event.button!==0)return;
       event.preventDefault();const at=point(event);this.action.aim(at.x,at.y);this.action.mouseAim=at;
-      if(event.button===2){this.action.touchShield=!this.action.touchShield;if(!this.action.touchShield)this.action.mouseAim=null;}
-      else{this.action.touchShield=false;canvas.setPointerCapture(event.pointerId);this.action.press('attack',`mouse:${event.pointerId}`);}
+      canvas.setPointerCapture(event.pointerId);this.action.press('attack',`mouse:${event.pointerId}`);
     };
-    this.mouseMove=event=>{if(this.state.mode==='playing'&&(event.buttons===1||this.action.touchShield))this.action.mouseAim=point(event);};
-    this.mouseUp=event=>{this.action.release(`mouse:${event.pointerId}`);if(!this.action.touchShield)this.action.mouseAim=null;};
+    this.mouseMove=event=>{if(this.state.mode==='playing'&&event.buttons===1)this.action.mouseAim=point(event);};
+    this.mouseUp=event=>{this.action.release(`mouse:${event.pointerId}`);this.action.mouseAim=null;};
     this.contextMenu=event=>event.preventDefault();
     canvas.addEventListener('pointerdown',this.mouseDown);canvas.addEventListener('pointermove',this.mouseMove);canvas.addEventListener('pointerup',this.mouseUp);canvas.addEventListener('pointercancel',this.mouseUp);canvas.addEventListener('contextmenu',this.contextMenu);
     this.events.once('shutdown',()=>{canvas.removeEventListener('pointerdown',this.mouseDown);canvas.removeEventListener('pointermove',this.mouseMove);canvas.removeEventListener('pointerup',this.mouseUp);canvas.removeEventListener('pointercancel',this.mouseUp);canvas.removeEventListener('contextmenu',this.contextMenu);});
@@ -56,7 +55,7 @@ class Adventure extends Phaser.Scene {
     document.querySelectorAll('[data-action]').forEach(button=>{
       const action=button.dataset.action,continuous=['up','down','left','right','attack'].includes(action);
       if(continuous){
-        button.addEventListener('pointerdown',event=>{if(this.state.mode!=='playing')return;if(action==='attack'){this.action.touchShield=false;this.action.mouseAim=null;}button.setPointerCapture(event.pointerId);this.action.press(action,`pointer:${event.pointerId}`);});
+        button.addEventListener('pointerdown',event=>{if(this.state.mode!=='playing')return;if(action==='attack'){this.action.mouseAim=null;}button.setPointerCapture(event.pointerId);this.action.press(action,`pointer:${event.pointerId}`);});
         for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,event=>this.action.release(`pointer:${event.pointerId}`));
       }
       button.addEventListener('click',event=>{if(!continuous||event.detail===0)this.act(action);button.blur();});
@@ -65,7 +64,7 @@ class Adventure extends Phaser.Scene {
     this.render();
   }
   loadRoom() {
-    if(this.worldLayer) {this.worldLayer.removeAll(true);this.tweens.killAll();}
+    if(this.worldLayer) {this.tweens.killAll();this.time.removeAllEvents();this.worldLayer.removeAll(true);this.floatingQuestion=null;}
     this.worldLayer=this.add.container();
     const before=new Set(this.children.list);
     this.room=makeRoom(this.state.chapter,chapters.length);
@@ -73,7 +72,7 @@ class Adventure extends Phaser.Scene {
     this.stationSprites=this.room.seals.map((point,index)=>{
       const {x,y}=tilePosition(point);
       const lit=this.state.sealed.has(`${this.state.chapter}:${index}`);
-      const sprite=this.add.sprite(x,y-2,lit?'key':'crystal').setDisplaySize(40,40).play(lit?'key':'crystal');
+      const sprite=this.add.sprite(x,y-2,'chest').setDisplaySize(40,40).setFrame(lit?3:0);
       this.add.text(x,y+25,['I','II','III'][index],{fontFamily:'Georgia',fontSize:14,color:'#e8d7a6'}).setOrigin(.5);
       return sprite;
     });
@@ -82,11 +81,11 @@ class Adventure extends Phaser.Scene {
     this.add.text(guide.x,guide.y-33,'KEEPER',{fontFamily:'Arial',fontSize:8,color:'#e9d49b',letterSpacing:1}).setOrigin(.5);
     this.shades=this.room.shades.map(point=>{
       const at=tilePosition(point);
-      return {...point,active:true,sprite:this.add.sprite(at.x,at.y,'phantom').setDisplaySize(40,40).play('phantom')};
+      return {...point,active:true,sprite:this.add.sprite(at.x,at.y,'slime').setDisplaySize(80,80).play('slime-idle')};
     });
     const hero=tilePosition(this.state);
     this.facing='down';
-    this.hero=this.add.sprite(hero.x,hero.y,'hero-idle-down').setDisplaySize(40,40).setDepth(20).play('hero-idle-down');
+    this.hero=this.add.sprite(hero.x,hero.y,'player').setDisplaySize(120,120).setOrigin(.5,2/3).setDepth(20).play('hero-idle-down');
     this.gateBars=this.add.graphics();
     this.action=new ActionWorld(this);
     const added=this.children.list.filter(item=>!before.has(item));
@@ -110,7 +109,7 @@ class Adventure extends Phaser.Scene {
     $('puzzle').close();$('journal').close();
     this.exploration=new Map();
     this.state={mode:'playing',chapter:0,...makeRoom(0,5).spawn,hearts:5,score:0,learned:new Set(),sealed:new Set()};
-    this.loadRoom();this.feedback('Walk into a glowing crystal to begin its vocabulary trial.');
+    this.loadRoom();this.feedback('Walk into a treasure chest to begin its vocabulary trial.');
     $('play').blur();$('restart').blur();
   }
   act(action) {
@@ -131,15 +130,14 @@ class Adventure extends Phaser.Scene {
     } else if(s.mode==='playing') {
       if(['up','down','left','right'].includes(action)){this.action.press(action,'tap');this.action.release('tap');}
       else if(action==='interact')this.interact();
-      else if(action==='attack'){this.action.touchShield=false;this.action.mouseAim=null;this.action.attack();}
-      else if(action==='shield'){this.action.touchShield=!this.action.touchShield;if(!this.action.touchShield)this.action.mouseAim=null;}
+      else if(action==='attack'){this.action.mouseAim=null;this.action.attack();}
     }
     this.render();
   }
   nearbyHint() {
     if(this.near(this.room.exit))return this.roomKeys()===3?'The gate is open. Walk into it to continue.':'The gate needs all three rune keys from this chamber.';
     const index=this.room.seals.findIndex(p=>this.near(p));
-    if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Walk into its crystal to begin, or press E.`;
+    if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Walk into its chest to begin, or press E.`;
     if(this.near(this.room.guide))return 'The Keeper has advice. Walk into the Keeper to speak.';
     return 'Explore the chamber. Restore three seals to open the eastern gate.';
   }
@@ -155,15 +153,23 @@ class Adventure extends Phaser.Scene {
     if(index>=0){this.openTrial(index);return;}
     if(this.near(this.room.guide)) {
       s.mode='guide';$('puzzle-label').textContent='THE KEEPER';$('puzzle-title').textContent='Words open what swords cannot.';
-      $('puzzle-prompt').textContent='Walk into crystals, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. Right-click toggles your shield; point toward incoming magic to block it. Ghosts flash violet before firing. Combat pauses while you read. The bottom-right minimap reveals places you explore. After three keys, walk into the eastern gate.';
+      $('puzzle-prompt').textContent='Walk into chests, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. There is no shield. Slimes flash violet before firing; step aside to dodge their slime bolts. Combat pauses while you read. The bottom-right minimap reveals places you explore. After three keys, walk into the eastern gate.';
       $('answers').replaceChildren();$('puzzle-feedback').textContent='Your journal (M) keeps every word you learn.';$('puzzle-progress').textContent=chapters[s.chapter].name;$('puzzle').showModal();return;
     }
-    this.feedback('Walk into a crystal, the Keeper, or the gate to interact. E also works beside them.');
+    this.feedback('Walk into a chest, the Keeper, or the gate to interact. E also works beside them.');
   }
   openTrial(index) {
     const s=this.state;
     if(s.sealed.has(`${s.chapter}:${index}`)){this.feedback('This seal is already restored. Continue to another seal or the gate.');return;}
-    this.activeTrial=index;this.trialFeedback='';s.mode='puzzle';this.renderPuzzle();$('puzzle').showModal();
+    if(s.mode==='opening')return;
+    this.activeTrial=index;this.trialFeedback='';s.mode='opening';this.renderPuzzle();
+    const chest=this.stationSprites[index];chest.clearTint().play('chest-open');
+    this.feedback('The chest opens. A vocabulary question rises from within…');
+    const text=this.add.text(chest.x,chest.y-12,this.question.prompt,{fontFamily:'Georgia',fontSize:12,color:'#fff4cf',backgroundColor:'#21372f',padding:{x:10,y:8},wordWrap:{width:205},align:'center'}).setOrigin(.5,1).setDepth(100).setAlpha(0);
+    this.worldLayer.add(text);this.floatingQuestion=text;this.render();
+    this.tweens.add({targets:text,y:chest.y-65,alpha:1,delay:280,duration:700,ease:'Cubic.easeOut',onComplete:()=>{
+      this.time.delayedCall(500,()=>{text.destroy();this.floatingQuestion=null;if(this.state!==s||s.mode!=='opening')return;s.mode='puzzle';$('puzzle').showModal();this.render();});
+    }});
   }
   hurt(message) {
     this.state.hearts--;this.feedback(message);
@@ -200,7 +206,7 @@ class Adventure extends Phaser.Scene {
     this.trialFeedback=`Correct! ${this.question.explanation} +25 insight.`;
     if(this.currentId()===undefined) {
       this.state.sealed.add(`${this.state.chapter}:${this.activeTrial}`);
-      this.stationSprites[this.activeTrial].play('key');this.drawGate();
+      this.stationSprites[this.activeTrial].stop().setFrame(3).setTint(0xffe6a0);this.drawGate();
       this.state.mode='playing';$('puzzle').close();this.action.invulnerableUntil=Math.max(this.action.invulnerableUntil,this.action.clock+1.2);
       this.feedback(`${objects[this.activeTrial]} restored! Rune key ${this.roomKeys()} of 3 earned. ${this.question.explanation}`);
     } else this.renderPuzzle();
@@ -239,7 +245,7 @@ class Adventure extends Phaser.Scene {
       $('screen-copy').textContent=s.mode==='won'?`All 45 words recovered. Five chambers restored. ${s.score} insight earned. Your knowledge has brought the archive back to life.`:s.mode==='lost'?'The Keeper can restore your hearts. Your learned words and completed seals will remain. Take a breath, then return to the adventure.':'Carry your lantern into a forgotten archive. Decode its inscriptions, outwit its illusions, and recover 45 words about life in the digital world.';
       $('play').textContent=s.mode==='won'?'Begin again ↗':s.mode==='lost'?'Return to chamber ↗':'Begin adventure ↗';
     }
-    Object.assign($('game').dataset,{ready:'true',mode:s.mode,chapter:s.chapter,learned:s.learned.size,keys:this.roomKeys(),quizId:s.mode==='puzzle'?this.currentId():'',shades:this.shades.filter(shade=>shade.active).length});
+    Object.assign($('game').dataset,{ready:'true',mode:s.mode,chapter:s.chapter,learned:s.learned.size,keys:this.roomKeys(),quizId:s.mode==='puzzle'?this.currentId():'',shades:this.shades.filter(shade=>shade.active).length,questionFloating:String(!!this.floatingQuestion),chests:JSON.stringify(this.stationSprites.map(c=>({frame:c.frame.name,animation:c.anims.currentAnim?.key})))});
     this.action.telemetry();
   }
 }

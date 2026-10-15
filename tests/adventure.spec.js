@@ -56,17 +56,17 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
 }
 async function openTrial(page,index){
   const s=await state(page),target=makeRoom(Number(s.chapter),5).seals[index];await walkTo(page,target);
+  if((await state(page)).mode==='opening'){await expect(game(page)).toHaveAttribute('data-mode','puzzle');return;}
   if((await state(page)).mode==='puzzle')return;
-  await contact(page,target,()=>game(page).getAttribute('data-mode').then(mode=>mode==='puzzle'));
+  await contact(page,target,()=>game(page).getAttribute('data-mode').then(mode=>mode==='opening'||mode==='puzzle'));
+  await expect(game(page)).toHaveAttribute('data-mode','puzzle');
 }
 async function contact(page,target,done){
   let at=await state(page),dx=target.x*40+20-Number(at.px),dy=target.y*40+20-Number(at.py);
   // Align the approach so continuous steering makes actual contact, not just proximity.
   const horizontal=Math.abs(dx)>Math.abs(dy),minor=horizontal?dy:dx;
   if(Math.abs(minor)>18){
-    await page.keyboard.down('k'); // Use the game's slower shield movement for precise steering.
-    try{await moveAxis(page,horizontal?'py':'px',(horizontal?target.y:target.x)*40+20);}
-    finally{await page.keyboard.up('k');}
+    await moveAxis(page,horizontal?'py':'px',(horizontal?target.y:target.x)*40+20);
   }
   if(await done())return;
   at=await state(page);dx=target.x*40+20-Number(at.px);dy=target.y*40+20-Number(at.py);
@@ -102,12 +102,12 @@ test('all 45 terms and expanded chamber objectives are complete and reachable',(
 
 test('loads the game, local assets, and attribution without errors',async({page})=>{
   const errors=[],art=new Set();page.on('pageerror',e=>errors.push(e.message));
-  page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&r.url().includes('/assets/topdown/')&&r.url().endsWith('.png'))art.add(r.url());});
+  page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&r.url().includes('/assets/mystic/')&&r.url().endsWith('.png'))art.add(r.url());});
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
-  await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(13);
-  await expect(page.getByRole('link',{name:'TOP-DOWN Adventure Pack by o_lobster'})).toBeVisible();
-  expect(await (await page.request.get('/assets/topdown/CREDITS.txt')).text()).toContain('CC BY 4.0');
+  await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(6);
+  await expect(page.getByRole('link',{name:'Mystic Woods by Game Endeavor'})).toBeVisible();
+  expect(await (await page.request.get('/assets/mystic/CREDITS.txt')).text()).toContain('Non-commercial');
 });
 
 test('held movement is continuous, stops on release, and the closer camera scrolls',async({page})=>{
@@ -132,7 +132,7 @@ test('terrain and world boundaries block continuous motion',async({page})=>{
   expect(Number((await state(page)).py)).toBeGreaterThanOrEqual(770);expect(Number((await state(page)).py)).toBeLessThan(783);
 });
 
-test('crystal contact pauses movement, resumes words, and restart clears progress',async({page})=>{
+test('chest contact pauses movement, resumes words, and restart clears progress',async({page})=>{
   await start(page);await openTrial(page,0);const at=await state(page);
   await hold(page,'d',300);expect((await state(page)).px).toBe(at.px);
   await correct(page);await expect(page.locator('#score')).toHaveText('25');const next=(await state(page)).quizId;
@@ -158,28 +158,20 @@ test('mistakes lose hearts and checkpoint retry preserves solved vocabulary',asy
   expect(Number((await state(page)).px)).toBe(180);
 });
 
-test('ghost bolts pause with dialogs, shield blocks them, unblocked shots hurt, and sword defeats ghosts',async({page})=>{
-  await start(page);
-  await page.keyboard.down('k'); // Protect the approach; the test is about blocking, not taking a setup hit.
-  await walkTo(page,{x:10,y:21},{exact:true,avoidEnemies:false});
-  let ghost=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,ghost.x,ghost.y,'right');await page.keyboard.up('k');
-  await expect(game(page)).toHaveAttribute('data-shield','true');
+test('slime bolts pause during reading, damage the player, and sword defeats slimes without points',async({page})=>{
+  await start(page);await walkTo(page,{x:10,y:21},{exact:true,avoidEnemies:false});
   await expect.poll(async()=>JSON.parse((await state(page)).projectiles).length,{timeout:12000}).toBeGreaterThan(0);
-  await page.keyboard.press('m');const paused=await state(page);await page.waitForTimeout(700);
+  await page.keyboard.press('m');const paused=await state(page),hearts=await page.locator('#hearts').getAttribute('aria-label');await page.waitForTimeout(700);
   expect((await state(page)).enemies).toBe(paused.enemies);expect((await state(page)).projectiles).toBe(paused.projectiles);
-  await page.keyboard.press('Escape');ghost=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,ghost.x,ghost.y,'right');
-  await expect.poll(async()=>Number((await state(page)).projectileBlocks),{timeout:10000}).toBeGreaterThan(Number(paused.projectileBlocks));
-  await expect(page.locator('#hearts')).toHaveAttribute('aria-label','5 of 5 hearts');
-  ghost=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,ghost.x,ghost.y,'right');
-  await expect(page.locator('#hearts')).toHaveAttribute('aria-label','4 of 5 hearts',{timeout:6000});
-  await expect(page.locator('#feedback')).toContainText('ghost bolt');
+  await page.keyboard.press('Escape');
+  await expect.poll(()=>page.locator('#hearts').getAttribute('aria-label'),{timeout:10000}).not.toBe(hearts);
+  await expect(page.locator('#feedback')).toContainText('slime bolt');
   await page.keyboard.down('d');
   await page.waitForFunction(()=>{const s=document.getElementById('game').dataset,e=JSON.parse(s.enemies)[0];return Math.hypot(e.x-Number(s.px),e.y-Number(s.py))<65;});
-  await page.keyboard.up('d');await settle(page);
-  const e=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,e.x,e.y);
+  await page.keyboard.up('d');await settle(page);const e=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,e.x,e.y);
   await expect(game(page)).toHaveAttribute('data-shades','1',{timeout:4000});
-  await expect(page.locator('#score')).toHaveText('0');await hold(page,'Space',550);await expect(page.locator('#score')).toHaveText('0');
-  await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-shades','2');await expect(game(page)).toHaveAttribute('data-blocks','0');
+  await expect(page.locator('#score')).toHaveText('0');
+  await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-shades','2');
 });
 
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
@@ -201,20 +193,26 @@ test('contact opens Keeper dialogue once until the player leaves and returns',as
   await expect(game(page)).toHaveAttribute('data-mode','guide');await page.keyboard.up('d');
 });
 
-test('sword is hidden at rest, Space and left-click swing, and right-click toggles the shield',async({page})=>{
+test('supplied player swings only on attack and the shield is removed',async({page})=>{
   await start(page);await expect(game(page)).toHaveAttribute('data-sword-visible','false');
   await page.keyboard.down('Space');await expect(game(page)).toHaveAttribute('data-sword-visible','true');await page.keyboard.up('Space');
   await expect(game(page)).toHaveAttribute('data-sword-visible','false');
-  await expect(page.locator('#combat-state')).toHaveText('Left-click / Space Sword · Right-click Shield');
-  let s=await state(page);await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await expect(game(page)).toHaveAttribute('data-shield','true');
-  await expect(game(page)).toHaveAttribute('data-sword-visible','false');
-  await clickWorld(page,Number(s.px)+80,Number(s.py),'left');await expect(game(page)).toHaveAttribute('data-shield','false');
-  await expect(game(page)).toHaveAttribute('data-sword-visible','true');await expect(game(page)).toHaveAttribute('data-sword-visible','false');
-  s=await state(page);await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await expect(game(page)).toHaveAttribute('data-shield','true');
-  await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await expect(game(page)).toHaveAttribute('data-shield','false');
-  await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await page.keyboard.press('Space');
-  await expect(game(page)).toHaveAttribute('data-shield','false');await hold(page,'a',180);await settle(page);
-  await expect(game(page)).toHaveAttribute('data-facing','left');
+  let s=await state(page);await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await expect(game(page)).toHaveAttribute('data-shield','false');
+  await expect(page.getByRole('button',{name:'Shield',exact:true})).toHaveCount(0);
+  await expect(page.locator('#combat-state')).toContainText('Dodge slime bolts');await clickWorld(page,Number(s.px)+80,Number(s.py),'left');await expect(game(page)).toHaveAttribute('data-sword-visible','true');
+  await expect(game(page)).toHaveAttribute('data-sword-visible','false');await hold(page,'a',180);await settle(page);await expect(game(page)).toHaveAttribute('data-facing','left');
+});
+
+test('a chest opens on contact and its actual vocabulary question rises before the dialog',async({page})=>{
+  await start(page);await walkTo(page,makeRoom(0,5).seals[0]);
+  if((await state(page)).mode==='playing')await contact(page,makeRoom(0,5).seals[0],()=>game(page).getAttribute('data-mode').then(m=>m==='opening'));
+  await expect(game(page)).toHaveAttribute('data-mode','opening');await expect(game(page)).toHaveAttribute('data-question-floating','true');
+  const at=await state(page);await hold(page,'d',150);expect((await state(page)).px).toBe(at.px);
+  await expect(game(page)).toHaveAttribute('data-mode','puzzle');await expect(game(page)).toHaveAttribute('data-question-floating','false');
+  const chests=JSON.parse((await state(page)).chests);expect(chests[0].frame).toBe(3);
+  expect(await page.locator('#puzzle-prompt').innerText()).not.toBe('');
+  while((await state(page)).mode==='puzzle')await correct(page);
+  await page.keyboard.press('e');await expect(game(page)).toHaveAttribute('data-mode','playing');await expect(page.locator('#feedback')).toContainText('already restored');
 });
 
 test('bottom-right minimap uncovers visited ground, retains it while backtracking, and resets',async({page})=>{
@@ -231,14 +229,12 @@ test('bottom-right minimap uncovers visited ground, retains it while backtrackin
   await page.keyboard.press('r');await expect(map).toHaveAttribute('data-explored',String(initial));
 });
 
-test('mobile held direction, sword, shield toggle, and dialogs fit the screen',async({page})=>{
+test('mobile held direction, sword, and dialogs fit the screen',async({page})=>{
   await page.setViewportSize({width:375,height:812});await start(page);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   const up=page.getByRole('button',{name:'Move up',exact:true});await up.scrollIntoViewIfNeeded();const box=await up.boundingBox();
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForFunction(()=>Number(document.getElementById('game').dataset.py)<810);await page.mouse.up();await settle(page);
   expect(Number((await state(page)).py)).toBeLessThan(830);
-  await page.getByRole('button',{name:'Shield',exact:true}).click();await expect(game(page)).toHaveAttribute('data-shield','true');
-  await page.getByRole('button',{name:'Shield',exact:true}).click();await expect(game(page)).toHaveAttribute('data-shield','false');
   await page.getByRole('button',{name:'Sword',exact:true}).click();await expect(page.locator('#combat-state')).toContainText('recovering');
   await page.getByRole('button',{name:'Open word journal'}).click();await expect(page.locator('#journal')).toBeVisible();
   await page.getByRole('button',{name:'Close journal',exact:true}).click();await expect(game(page)).toHaveAttribute('data-mode','playing');
