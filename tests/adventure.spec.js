@@ -33,7 +33,12 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
     if(distance(p,target)<=(exact?0:1)){path=p.path;break;}
     for(const [dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){
       const n={x:p.x+dx,y:p.y+dy};
-      if(isWalkable(room,n.x,n.y)&&!objects.some(o=>distance(o,n)===0)&&(!avoidEnemies||!room.shades.some(e=>distance(e,n)<=8)))q.push({...n,path:[...p.path,n]});
+      // Leave steering room at corners: WebKit can render another frame between
+      // observing a position and releasing a key. Use open corridors for the tour;
+      // dedicated collision tests exercise the narrow terrain edges separately.
+      const atGoal=distance(n,target)<=(exact?0:1);
+      const clearance=atGoal||[-1,0,1].every(ox=>[-1,0,1].every(oy=>isWalkable(room,n.x+ox,n.y+oy)));
+      if(clearance&&isWalkable(room,n.x,n.y)&&!objects.some(o=>distance(o,n)===0)&&(!avoidEnemies||!room.shades.some(e=>distance(e,n)<=8)))q.push({...n,path:[...p.path,n]});
     }
   }
   if(!path)throw Error(`No path to ${JSON.stringify(target)}`);
