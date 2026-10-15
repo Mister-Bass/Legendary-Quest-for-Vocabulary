@@ -19,7 +19,8 @@
         </div>
         <div class="scene-caption"><span class="scene-icon">◇</span><div><p id="chapter-number" class="eyebrow">CHAMBER 1 / 5</p><h2 id="chapter-title">The Footprint Garden</h2><p id="chapter-subtitle">Every step leaves a trace.</p></div><span class="caption-direction">EAST →</span></div>
         <div class="feedback"><span>✦</span><p id="feedback" role="status" aria-live="polite">Your adventure is waiting.</p></div>
-        <nav class="touch" aria-label="Touch controls"><div><button data-action="up" aria-label="Move up">↑</button><button data-action="left" aria-label="Move left">←</button><button data-action="down" aria-label="Move down">↓</button><button data-action="right" aria-label="Move right">→</button></div><button data-action="interact">Interact</button><button data-action="ward">Lantern ward</button></nav>
+        <div class="navigation"><span id="wayfinder" aria-label="Crystal and gate directions"></span><span id="combat-state"></span></div>
+        <nav class="touch" aria-label="Touch controls"><div><button data-action="up" aria-label="Move up">↑</button><button data-action="left" aria-label="Move left">←</button><button data-action="down" aria-label="Move down">↓</button><button data-action="right" aria-label="Move right">→</button></div><button data-action="interact">Interact</button><button data-action="attack">Sword</button><button data-action="shield" aria-pressed="false">Shield</button></nav>
       </section>
       <aside class="sidebar">
         <section class="quest-card"><p class="eyebrow">YOUR QUEST</p><h2>Restore the archive.</h2><p id="objective">Restore the three rune seals to unlock the eastern gate.</p><ul id="seal-list" class="seals"></ul><div class="inventory"><div><strong id="key-count">0 / 3</strong><span>RUNE KEYS</span></div><div><strong id="word-count">0 / 45</strong><span>WORDS LEARNED</span></div></div><button id="journal-toggle" class="outline">Open word journal <kbd>M</kbd></button></section>
@@ -27,7 +28,7 @@
         <section class="keeper-note"><span>✳</span><p>“A careful reader sees<br>what a hurried hero misses.”<small>— THE KEEPER</small></p></section>
       </aside>
     </div>
-    <section class="controls" aria-label="Game controls"><div><span><kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> Move</span><span><kbd>E</kbd> / <kbd>Space</kbd> Interact</span><span><kbd>J</kbd> Lantern ward</span><span><kbd>1–4</kbd> Answer</span></div><button id="restart" class="text-button">Restart adventure ↻</button></section>
+    <section class="controls" aria-label="Game controls"><div><span><kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> Hold to move</span><span><kbd>E</kbd> / <kbd>Space</kbd> Interact</span><span><kbd>J</kbd> / <kbd>Z</kbd> Sword</span><span>Hold <kbd>K</kbd> / <kbd>Shift</kbd> Shield</span><span><kbd>1–4</kbd> Answer</span></div><button id="restart" class="text-button">Restart adventure ↻</button></section>
     <footer><span>LEVEL 01 · DIGITAL CITIZENSHIP &amp; ONLINE REPUTATION</span><span>45 WORDS TO LIGHT THE WAY.</span></footer>
     <p class="art-credit">Artwork: <a href="https://o-lobster.itch.io/adventure-pack" target="_blank" rel="noopener noreferrer">TOP-DOWN Adventure Pack by o_lobster</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a> · Frames, scale, colors, and map arrangement adapted. <a href="/assets/topdown/CREDITS.txt">Asset credits</a></p>
   </main>

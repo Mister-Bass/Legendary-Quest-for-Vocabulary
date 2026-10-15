@@ -1,6 +1,6 @@
 # Legendary Quest for Vocabulary
 
-An original top-down vocabulary adventure built with Vite, JavaScript, and Phaser. Explore ruined gardens and archives, dispel inkshades with a lantern, solve vocabulary trials, earn rune keys, and open the next gate.
+An original top-down vocabulary adventure built with Vite, JavaScript, and Phaser. Explore scrolling gardens and archives, fight inkshades with a sword and shield, solve vocabulary trials, earn rune keys, and open the next gate.
 
 ## Level 1: Digital citizenship and online reputation
 
@@ -18,18 +18,23 @@ The five chambers are:
 
 Each chamber has three numbered rune seals. Each seal presents 2–4 vocabulary questions. Questions alternate between matching a definition to a term, recognizing a concept in an applied situation, and choosing the meaning of a term. Restore all three seals to receive three rune keys, then interact with the eastern gate to continue. Complete all 45 questions and enter the final gate to win.
 
-Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Inkshades cost one heart if you step onto them; a lantern ward dispels nearby shades. Entering a new chamber restores one heart, up to five. There is no timer.
+Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Inkshades patrol, chase nearby travelers around obstacles, and flash orange for 0.65 seconds before striking. An unblocked strike costs one heart, followed by 1.2 seconds of protection from further enemy damage. Sword strikes disperse nearby enemies in front of you. Combat never awards vocabulary points. Entering a new chamber restores one heart, up to five. There is no timer.
 
-At zero hearts, Return to chamber restores five hearts and preserves learned words, completed seals, score, and chamber position. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
+Each chamber is now 40 by 28 tiles (1,600 by 1,120 world pixels), four times the original area. An 800 by 560 viewport uses a 1.5× zoom and smoothly follows the traveler within the map bounds. Arrows below the world point toward the three crystals and gate. Hold movement keys or touch direction buttons for continuous movement; acceleration and deceleration soften starts/stops, diagonal speed is normalized, and solid terrain blocks both travelers and enemies.
+
+Hold K or Shift to raise your shield. On touch screens, tap Shield to toggle it. Move to face an enemy: the shield protects your front, slows movement, and prevents sword swings while raised. Hold J/Z or the Sword button for repeated swings with a short recovery between attacks. Enemies, movement, and attack timers pause during questions, the Keeper conversation, journal, and win/loss screens. Losing focus releases controls; returning from a dialog requires fresh movement input.
+
+At zero hearts, Return to chamber restores five hearts and returns to the current chamber's entrance, preserving learned words, completed seals, score, and chamber. Enemies return to their starting positions. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
 
 ## Controls
 
 | Action | Keyboard | Touch / mouse |
 | --- | --- | --- |
-| Move | Arrow keys or WASD | Direction buttons under the game |
+| Move continuously | Hold arrow keys or WASD | Hold direction buttons under the game |
 | Open a crystal's vocabulary trial | Walk into the crystal with arrows or WASD | Move toward the crystal with direction buttons |
 | Interact with adjacent crystal, Keeper, or gate | E or Space | Interact button |
-| Dispel inkshades within two grid cells | J or Z | Lantern ward button |
+| Swing sword / repeat while held | J or Z | Sword button (hold to repeat) |
+| Raise shield toward facing direction | Hold K or Shift | Shield button toggles on/off |
 | Answer a vocabulary question | 1–4 | Answer buttons |
 | Open word journal | M | Open word journal button |
 | Close a trial, guide, or journal | Escape | Close button |
@@ -46,7 +51,7 @@ You do not need to write or edit code. Open this repository in your coding assis
 
 > Make the clues harder and add more context questions. Keep gentle feedback after mistakes. Test the complete level and create a pull request.
 
-> Replace the lantern ward with a shield, add a new chamber, or give students more hearts. Update the instructions and tests for me.
+> Add a new chamber or give students more hearts. Keep sword and shield combat. Update the instructions and tests for me.
 
 The assistant should extract and check your list, implement the game, run the checks, provide screenshots or a preview, and create a PR. Review it before approving a merge. Passing CI alone does not authorize the assistant to merge or publish.
 
@@ -58,6 +63,7 @@ The assistant should extract and check your list, implement the game, run the ch
 - src/art.js: local sprite loading, animations, scenery, and original Keeper artwork.
 - public/assets/topdown/: selected TOP-DOWN Adventure Pack PNGs and attribution notice.
 - src/adventure.js: Phaser scene, movement, trials, hearts, gates, journal, and game states.
+- src/action-world.js: continuous movement, collision, enemy patrol/chase/attacks, sword/shield combat, follow camera, and direction hints.
 - src/adventure.css and index.html: responsive shell and accessible native controls/dialogs.
 - tests/adventure.spec.js: browser tests using actual keyboard and button input. Read-only DOM state supports assertions; there are no test-only game mutation shortcuts.
 
@@ -65,7 +71,7 @@ All 45 terms are assigned to exactly one chamber. Artwork loads from this site's
 
 ## Artwork credits
 
-TOP-DOWN Adventure Pack v1.0 by [o_lobster](https://o-lobster.itch.io/adventure-pack), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) as listed on the creator's asset page. Selected unmodified PNGs were supplied by the owner through Google Drive and renamed for loading. The game selects frames, scales pixels, tints terrain, and arranges them into original chamber maps. No endorsement is implied. The Keeper, rune bases, gate bars, lantern effect, and interface remain original project artwork.
+TOP-DOWN Adventure Pack v1.0 by [o_lobster](https://o-lobster.itch.io/adventure-pack), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) as listed on the creator's asset page. Selected unmodified PNGs were supplied by the owner through Google Drive and renamed for loading. The game selects frames, scales pixels, tints terrain, and arranges them into original chamber maps. No endorsement is implied. The Keeper, rune bases, gate bars, sword/shield effects, and interface remain original project artwork.
 
 Animated four-direction idle/run characters, phantoms, water, crystals, and earned keys come from this pack. Crystals mark the numbered rune trials; completed trials display gold keys. Attribution and the original pack credit are retained in public/assets/topdown/CREDITS.txt, on the game page, and in both playable and source ZIP folders. Keep this notice with reused assets. Other packs in the supplied Drive folder are not included.
 
@@ -80,7 +86,7 @@ Node 24 is recommended. The assistant or developer runs:
     npm test
     npm run package
 
-The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, loading, movement and collisions, gates, guide dialogs, numbered answers, mistakes and loss, checkpoint recovery, journal, restart, touch controls, lantern wards, and a full 45-word playthrough through all five chambers.
+The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, asset loading, held movement and collisions, scrolling camera, gates, dialogs and pause behavior, numbered answers, mistakes/loss, checkpoint recovery, journal, restart, touch controls, enemy pursuit/strikes, sword attacks, shield blocks, and a full 45-word playthrough through all five chambers.
 
 GitHub Actions runs Build and browser tests for every PR, main update, merge queue, and manual run. It builds, runs the full suite in Chromium, Firefox, and WebKit, and generates a ZIP. In the run’s Artifacts section, download legendary-quest-package. It contains legendary-quest-for-vocabulary.zip with playable/ (built game) and source/ (reusable project). GitHub may wrap that ZIP in another ZIP. Game artifacts last 30 days; browser reports last 14 days.
 

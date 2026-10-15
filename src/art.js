@@ -1,4 +1,5 @@
 // TOP-DOWN Adventure Pack by o_lobster, CC BY 4.0. See public/assets/topdown/CREDITS.txt.
+import { WORLD } from './world.js';
 export const directions = ['down', 'up', 'left', 'right'];
 
 export function preloadArt(scene) {
@@ -30,18 +31,18 @@ export function createArt(scene) {
 export function paintWorld(scene, room, chapter) {
   const tint=[0xd8e6bf,0xb9bcdd,0xc7dbb5,0xe8c69c,0xa8d2d7][chapter];
   const tile=(x,y,frame)=>scene.add.image(x*40+20,y*40+20,'terrain',frame).setDisplaySize(40,40).setTint(tint);
-  for(let y=0;y<14;y++)for(let x=0;x<20;x++){
+  for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++){
     const key=`${x},${y}`;
-    const path=(x>=2&&x<=17&&y>=6&&y<=8)||(x>=4&&x<=6&&y>=3&&y<=11)||(x>=9&&x<=11&&y>=3&&y<=11)||(x>=15&&x<=17&&y>=10&&y<=11);
+    const path=(y>=12&&y<=14&&x>=3&&x<=37)||(x>=9&&x<=11&&y>=5&&y<=23)||(y>=21&&y<=23&&x>=3&&x<=35)||(x>=33&&x<=35&&y>=13&&y<=24);
     tile(x,y,path?54:24);
     if(room.water.has(key))scene.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).play('water');
     if(room.walls.has(key)){
-      if(x===7||y===9&&x>10)tile(x,y,7*18+8);
+      if(x>0&&y>0&&x<WORLD.columns-1&&y<WORLD.rows-1)tile(x,y,7*18+8);
       else scene.add.image(x*40+20,y*40+6,'terrain','tree').setDisplaySize(52,72).setTint(tint);
     }
   }
-  scene.add.image(740,286,'terrain','gate').setDisplaySize(120,80).setTint(tint);
-  for(const [x,y]of[[2,3],[8,11],[17,3],[11,2]])tile(x,y,4*18+1);
+  scene.add.image(room.exit.x*40+20,room.exit.y*40+6,'terrain','gate').setDisplaySize(120,80).setTint(tint);
+  for(const [x,y]of[[3,8],[13,12],[18,23],[32,9],[36,24]])tile(x,y,4*18+1);
   const g=scene.add.graphics();
   for(const point of room.seals){g.fillStyle(0x34484d);g.fillEllipse(point.x*40+20,point.y*40+34,34,12);g.lineStyle(2,0xb7bda0);g.strokeEllipse(point.x*40+20,point.y*40+34,34,12);}
   return g;

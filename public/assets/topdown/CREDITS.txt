@@ -24,6 +24,6 @@ Credits go to:
 o_lobster
 https://o-lobster.itch.io/
 
-The Keeper, rune bases, gate bars, lantern effect, interface, and game maps
+The Keeper, rune bases, gate bars, sword/shield effects, interface, and game maps
 are original project artwork/layout. The supplied vocabulary is separate
 from this artwork license. Keep this notice with redistributed pack assets.
