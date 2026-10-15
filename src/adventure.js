@@ -24,7 +24,7 @@ class Adventure extends Phaser.Scene {
       if(this.state.mode==='puzzle'&&['1','2','3','4'].includes(key)) {event.preventDefault();this.answer(Number(key)-1);return;}
       if(action) {
         event.preventDefault();
-        if(['up','down','left','right','attack','shield'].includes(action)) {if(this.state.mode==='playing'&&!event.repeat){if(action==='attack')this.action.touchShield=false;this.action.press(action,event.code);}}
+        if(['up','down','left','right','attack','shield'].includes(action)) {if(this.state.mode==='playing'&&!event.repeat){if(action==='attack'){this.action.touchShield=false;this.action.mouseAim=null;}this.action.press(action,event.code);}}
         else if(!event.repeat)this.act(action);
       }
     };
@@ -56,7 +56,7 @@ class Adventure extends Phaser.Scene {
     document.querySelectorAll('[data-action]').forEach(button=>{
       const action=button.dataset.action,continuous=['up','down','left','right','attack'].includes(action);
       if(continuous){
-        button.addEventListener('pointerdown',event=>{if(this.state.mode!=='playing')return;button.setPointerCapture(event.pointerId);this.action.press(action,`pointer:${event.pointerId}`);});
+        button.addEventListener('pointerdown',event=>{if(this.state.mode!=='playing')return;if(action==='attack'){this.action.touchShield=false;this.action.mouseAim=null;}button.setPointerCapture(event.pointerId);this.action.press(action,`pointer:${event.pointerId}`);});
         for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,event=>this.action.release(`pointer:${event.pointerId}`));
       }
       button.addEventListener('click',event=>{if(!continuous||event.detail===0)this.act(action);button.blur();});
@@ -131,8 +131,8 @@ class Adventure extends Phaser.Scene {
     } else if(s.mode==='playing') {
       if(['up','down','left','right'].includes(action)){this.action.press(action,'tap');this.action.release('tap');}
       else if(action==='interact')this.interact();
-      else if(action==='attack'){this.action.touchShield=false;this.action.attack();}
-      else if(action==='shield')this.action.touchShield=!this.action.touchShield;
+      else if(action==='attack'){this.action.touchShield=false;this.action.mouseAim=null;this.action.attack();}
+      else if(action==='shield'){this.action.touchShield=!this.action.touchShield;if(!this.action.touchShield)this.action.mouseAim=null;}
     }
     this.render();
   }

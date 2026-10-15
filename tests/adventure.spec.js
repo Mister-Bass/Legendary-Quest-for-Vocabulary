@@ -212,6 +212,9 @@ test('sword is hidden at rest, Space and left-click swing, and right-click toggl
   await expect(game(page)).toHaveAttribute('data-sword-visible','true');await expect(game(page)).toHaveAttribute('data-sword-visible','false');
   s=await state(page);await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await expect(game(page)).toHaveAttribute('data-shield','true');
   await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await expect(game(page)).toHaveAttribute('data-shield','false');
+  await clickWorld(page,Number(s.px)+80,Number(s.py),'right');await page.keyboard.press('Space');
+  await expect(game(page)).toHaveAttribute('data-shield','false');await hold(page,'a',180);await settle(page);
+  await expect(game(page)).toHaveAttribute('data-facing','left');
 });
 
 test('bottom-right minimap uncovers visited ground, retains it while backtracking, and resets',async({page})=>{
