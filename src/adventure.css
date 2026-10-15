@@ -3,3 +3,4 @@
 .arena .touch{margin:0;padding:12px;background:#192f27;border-top:1px solid #354b3b}.arena .touch button{min-width:36px}
 .art-credit{font-size:.72rem;line-height:1.7;color:#aab9aa;text-align:center;margin:0 0 2rem;padding:0 1rem}.art-credit a{color:#d9c592;text-underline-offset:3px}
 .navigation{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:9px 16px;background:#172b27;color:#d6c795;font-size:10px}.touch button{touch-action:none;user-select:none}.touch button[aria-pressed=true]{background:#628c99;color:#fff}.controls>div{flex-wrap:wrap}
+.minimap{position:absolute;right:9px;bottom:9px;width:clamp(90px,22%,176px);padding:5px;background:#0b1915eF;border:1px solid #a58d57;box-shadow:0 2px 12px #0006;pointer-events:none}.minimap span{display:block;color:#d2c694;font-size:7px;letter-spacing:1px;margin-bottom:4px;text-align:center}.minimap canvas{width:100%;height:auto;image-rendering:pixelated}

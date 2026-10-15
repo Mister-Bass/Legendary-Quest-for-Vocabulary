@@ -14,16 +14,17 @@ class Adventure extends Phaser.Scene {
   preload() { preloadArt(this); }
   create() {
     createArt(this);
+    this.exploration=new Map();
     this.state = { mode:'title', chapter:0, ...makeRoom(0,5).spawn, hearts:5, score:0, learned:new Set(), sealed:new Set() };
     this.loadRoom();
     this.keyHandler = event => {
       const key=event.key.length===1?event.key.toLowerCase():event.key;
       if (event.target instanceof HTMLButtonElement && ['Enter',' '].includes(key)) return;
-      const action={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',e:'interact',' ':'interact',j:'attack',z:'attack',k:'shield',Shift:'shield',r:'restart',Enter:'start',Escape:'close',m:'journal'}[key];
+      const action={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',e:'interact',' ':'attack',k:'shield',Shift:'shield',r:'restart',Enter:'start',Escape:'close',m:'journal'}[key];
       if(this.state.mode==='puzzle'&&['1','2','3','4'].includes(key)) {event.preventDefault();this.answer(Number(key)-1);return;}
       if(action) {
         event.preventDefault();
-        if(['up','down','left','right','attack','shield'].includes(action)) {if(this.state.mode==='playing'&&!event.repeat)this.action.press(action,event.code);}
+        if(['up','down','left','right','attack','shield'].includes(action)) {if(this.state.mode==='playing'&&!event.repeat){if(action==='attack')this.action.touchShield=false;this.action.press(action,event.code);}}
         else if(!event.repeat)this.act(action);
       }
     };
@@ -32,6 +33,19 @@ class Adventure extends Phaser.Scene {
     window.addEventListener('keyup',this.keyUp);window.addEventListener('blur',this.unfocus);
     this.visibility=()=>{if(document.hidden)this.unfocus();};document.addEventListener('visibilitychange',this.visibility);
     this.events.once('shutdown',()=>{window.removeEventListener('keydown',this.keyHandler);window.removeEventListener('keyup',this.keyUp);window.removeEventListener('blur',this.unfocus);document.removeEventListener('visibilitychange',this.visibility);});
+    const canvas=this.game.canvas;
+    const point=event=>{const r=canvas.getBoundingClientRect();return this.cameras.main.getWorldPoint((event.clientX-r.left)*WORLD.viewportWidth/r.width,(event.clientY-r.top)*WORLD.viewportHeight/r.height);};
+    this.mouseDown=event=>{
+      if(this.state.mode!=='playing'||![0,2].includes(event.button))return;
+      event.preventDefault();const at=point(event);this.action.aim(at.x,at.y);this.action.mouseAim=at;
+      if(event.button===2){this.action.touchShield=!this.action.touchShield;if(!this.action.touchShield)this.action.mouseAim=null;}
+      else{this.action.touchShield=false;canvas.setPointerCapture(event.pointerId);this.action.press('attack',`mouse:${event.pointerId}`);}
+    };
+    this.mouseMove=event=>{if(this.state.mode==='playing'&&(event.buttons===1||this.action.touchShield))this.action.mouseAim=point(event);};
+    this.mouseUp=event=>{this.action.release(`mouse:${event.pointerId}`);if(!this.action.touchShield)this.action.mouseAim=null;};
+    this.contextMenu=event=>event.preventDefault();
+    canvas.addEventListener('pointerdown',this.mouseDown);canvas.addEventListener('pointermove',this.mouseMove);canvas.addEventListener('pointerup',this.mouseUp);canvas.addEventListener('pointercancel',this.mouseUp);canvas.addEventListener('contextmenu',this.contextMenu);
+    this.events.once('shutdown',()=>{canvas.removeEventListener('pointerdown',this.mouseDown);canvas.removeEventListener('pointermove',this.mouseMove);canvas.removeEventListener('pointerup',this.mouseUp);canvas.removeEventListener('pointercancel',this.mouseUp);canvas.removeEventListener('contextmenu',this.contextMenu);});
     $('play').addEventListener('click',()=>this.act('start'));
     $('restart').addEventListener('click',()=>this.act('restart'));
     $('close-puzzle').addEventListener('click',()=>this.act('close'));
@@ -94,6 +108,7 @@ class Adventure extends Phaser.Scene {
   }
   reset() {
     $('puzzle').close();$('journal').close();
+    this.exploration=new Map();
     this.state={mode:'playing',chapter:0,...makeRoom(0,5).spawn,hearts:5,score:0,learned:new Set(),sealed:new Set()};
     this.loadRoom();this.feedback('Walk into a glowing crystal to begin its vocabulary trial.');
     $('play').blur();$('restart').blur();
@@ -114,16 +129,16 @@ class Adventure extends Phaser.Scene {
     } else if(s.mode==='playing') {
       if(['up','down','left','right'].includes(action)){this.action.press(action,'tap');this.action.release('tap');}
       else if(action==='interact')this.interact();
-      else if(action==='attack')this.action.attack();
+      else if(action==='attack'){this.action.touchShield=false;this.action.attack();}
       else if(action==='shield')this.action.touchShield=!this.action.touchShield;
     }
     this.render();
   }
   nearbyHint() {
-    if(this.near(this.room.exit))return this.roomKeys()===3?'The gate is open. Press E to continue.':'The gate needs all three rune keys from this chamber.';
+    if(this.near(this.room.exit))return this.roomKeys()===3?'The gate is open. Walk into it to continue.':'The gate needs all three rune keys from this chamber.';
     const index=this.room.seals.findIndex(p=>this.near(p));
     if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Walk into its crystal to begin, or press E.`;
-    if(this.near(this.room.guide))return 'The Keeper has advice. Press E to speak.';
+    if(this.near(this.room.guide))return 'The Keeper has advice. Walk into the Keeper to speak.';
     return 'Explore the chamber. Restore three seals to open the eastern gate.';
   }
   interact() {
@@ -138,10 +153,10 @@ class Adventure extends Phaser.Scene {
     if(index>=0){this.openTrial(index);return;}
     if(this.near(this.room.guide)) {
       s.mode='guide';$('puzzle-label').textContent='THE KEEPER';$('puzzle-title').textContent='Words open what swords cannot.';
-      $('puzzle-prompt').textContent='Walk into each numbered crystal to open its vocabulary trial automatically. Use 1–4 or the answer buttons. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. J swings your sword; hold K or Shift to raise your shield toward the direction you face. Enemies flash before striking. Read in peace: movement and enemies pause during trials and the journal. Follow the crystal arrows below the world. After three keys, find the eastern gate and press E.';
+      $('puzzle-prompt').textContent='Walk into crystals, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. Right-click toggles your shield; point toward incoming magic to block it. Ghosts flash violet before firing. Combat pauses while you read. The bottom-right minimap reveals places you explore. After three keys, walk into the eastern gate.';
       $('answers').replaceChildren();$('puzzle-feedback').textContent='Your journal (M) keeps every word you learn.';$('puzzle-progress').textContent=chapters[s.chapter].name;$('puzzle').showModal();return;
     }
-    this.feedback('Walk into a crystal to begin a trial. Press E beside the Keeper or eastern gate to interact.');
+    this.feedback('Walk into a crystal, the Keeper, or the gate to interact. E also works beside them.');
   }
   openTrial(index) {
     const s=this.state;

@@ -18,11 +18,13 @@ The five chambers are:
 
 Each chamber has three numbered rune seals. Each seal presents 2–4 vocabulary questions. Questions alternate between matching a definition to a term, recognizing a concept in an applied situation, and choosing the meaning of a term. Restore all three seals to receive three rune keys, then interact with the eastern gate to continue. Complete all 45 questions and enter the final gate to win.
 
-Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Inkshades patrol, chase nearby travelers around obstacles, and flash orange for 0.65 seconds before striking. An unblocked strike costs one heart, followed by 1.2 seconds of protection from further enemy damage. Sword strikes disperse nearby enemies in front of you. Combat never awards vocabulary points. Entering a new chamber restores one heart, up to five. There is no timer.
+Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Ghosts patrol and chase around obstacles. At range they signal a violet cast for 0.8 seconds, then fire a magic bolt toward your previous position; at close range they signal orange before striking. Bolts travel visibly, collide with terrain, and can be dodged or blocked by facing them with your shield. An unblocked hit costs one heart, followed by 1.2 seconds of protection from further enemy damage. Sword strikes disperse nearby enemies in front of you. Combat never awards vocabulary points. Entering a new chamber restores one heart, up to five. There is no timer.
 
 Each chamber is now 40 by 28 tiles (1,600 by 1,120 world pixels), four times the original area. An 800 by 560 viewport uses a 1.5× zoom and smoothly follows the traveler within the map bounds. Arrows below the world point toward the three crystals and gate. Hold movement keys or touch direction buttons for continuous movement; acceleration and deceleration soften starts/stops, diagonal speed is normalized, and solid terrain blocks both travelers and enemies.
 
-Hold K or Shift to raise your shield. On touch screens, tap Shield to toggle it. Move to face an enemy: the shield protects your front, slows movement, and prevents sword swings while raised. Hold J/Z or the Sword button for repeated swings with a short recovery between attacks. Enemies, movement, and attack timers pause during questions, the Keeper conversation, journal, and win/loss screens. Losing focus releases controls; returning from a dialog requires fresh movement input.
+The sword is hidden while idle. Left-click inside the game world or press Space to draw and swing it; holding either repeats swings with a short recovery. Right-click inside the world toggles the shield. Aim the mouse toward an incoming threat; the shield protects your front and slows movement. Left-click or Space lowers a toggled shield to swing. K/Shift remain hold-to-block keyboard alternatives, and touch screens have Sword and Shield buttons. Enemies, projectiles, movement, and attack timers pause during questions, the Keeper conversation, journal, and win/loss screens. Losing focus releases controls and lowers the shield; returning from a dialog requires fresh movement input. Game mouse controls do not apply to menus, answer buttons, or the rest of the page.
+
+The bottom-right exploration minimap starts under fog of war and reveals terrain around places the traveler visits. Unvisited terrain and undiscovered objects remain hidden. Explored terrain stays visible while you backtrack; nearby ghosts appear only within the current revealed vicinity. Exploration is kept separately for each chamber and survives checkpoint retries during the page session. Restarting the adventure or reloading clears exploration.
 
 At zero hearts, Return to chamber restores five hearts and returns to the current chamber's entrance, preserving learned words, completed seals, score, and chamber. Enemies return to their starting positions. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
 
@@ -32,16 +34,16 @@ At zero hearts, Return to chamber restores five hearts and returns to the curren
 | --- | --- | --- |
 | Move continuously | Hold arrow keys or WASD | Hold direction buttons under the game |
 | Open a crystal's vocabulary trial | Walk into the crystal with arrows or WASD | Move toward the crystal with direction buttons |
-| Interact with adjacent crystal, Keeper, or gate | E or Space | Interact button |
-| Swing sword / repeat while held | J or Z | Sword button (hold to repeat) |
-| Raise shield toward facing direction | Hold K or Shift | Shield button toggles on/off |
+| Interact with crystal, Keeper, or gate | Walk into it; E remains a nearby alternative | Move into it; Interact button also works |
+| Draw/swing sword / repeat while held | Space or left mouse button inside the world | Sword button (hold to repeat) |
+| Raise shield toward incoming attacks | Right-click toggles; hold K/Shift as an alternative | Shield button toggles on/off |
 | Answer a vocabulary question | 1–4 | Answer buttons |
 | Open word journal | M | Open word journal button |
 | Close a trial, guide, or journal | Escape | Close button |
 | Start / return after losing | Enter | Begin / Return button |
 | Reset the whole adventure | R | Restart adventure button |
 
-Walk into an unsolved crystal to open its trial automatically. The traveler stays beside it while the dialog is open. Closing a trial preserves answered words; touch it again to resume. Completed crystals display keys and cannot award duplicate points. E/Space and the Interact button also work beside crystals. The Keeper and gates still use those interaction controls. Stone walls, trees, water, and monuments block movement. The Keeper beside the starting position explains the rules. The journal stores the definitions of words answered correctly. Puzzle dialogs trap focus and support normal keyboard navigation. The canvas world is visual; this is not a fully nonvisual game.
+Walk into crystals, the Keeper, and gates to interact automatically. An unlocked gate advances to the next chamber on contact; a locked gate explains which keys are missing. The traveler stays beside a crystal or the Keeper while a dialog is open. Closing a trial preserves answered words. Step away and touch the object again to resume, or use E/Interact beside it; dialogs do not repeatedly reopen while you remain in contact. Completed crystals display keys and cannot award duplicate points. Space is now reserved for the sword. Stone walls, trees, water, and monuments block movement. The journal stores learned definitions. Puzzle dialogs trap focus and support normal keyboard navigation. The canvas world is visual; this is not a fully nonvisual game.
 
 ## Request changes using plain English
 
@@ -64,6 +66,7 @@ The assistant should extract and check your list, implement the game, run the ch
 - public/assets/topdown/: selected TOP-DOWN Adventure Pack PNGs and attribution notice.
 - src/adventure.js: Phaser scene, movement, trials, hearts, gates, journal, and game states.
 - src/action-world.js: continuous movement, collision, enemy patrol/chase/attacks, sword/shield combat, follow camera, and direction hints.
+- src/minimap.js: per-chamber exploration, fog of war, and the bottom-right canvas minimap.
 - src/adventure.css and index.html: responsive shell and accessible native controls/dialogs.
 - tests/adventure.spec.js: browser tests using actual keyboard and button input. Read-only DOM state supports assertions; there are no test-only game mutation shortcuts.
 
@@ -86,7 +89,7 @@ Node 24 is recommended. The assistant or developer runs:
     npm test
     npm run package
 
-The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, asset loading, held movement and collisions, scrolling camera, gates, dialogs and pause behavior, numbered answers, mistakes/loss, checkpoint recovery, journal, restart, touch controls, enemy pursuit/strikes, sword attacks, shield blocks, and a full 45-word playthrough through all five chambers.
+The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, asset loading, movement/collision, scrolling camera, contact interactions and gates, modal/projectile pause, mistakes/loss, checkpoint recovery, journal, restart, mobile controls, mouse/Space sword controls, right-click shielding, ghost projectiles and blocking, fog exploration/reset, and a full 45-word contact playthrough across five chambers.
 
 GitHub Actions runs Build and browser tests for every PR, main update, merge queue, and manual run. It builds, runs the full suite in Chromium, Firefox, and WebKit, and generates a ZIP. In the run’s Artifacts section, download legendary-quest-package. It contains legendary-quest-for-vocabulary.zip with playable/ (built game) and source/ (reusable project). GitHub may wrap that ZIP in another ZIP. Game artifacts last 30 days; browser reports last 14 days.
 
