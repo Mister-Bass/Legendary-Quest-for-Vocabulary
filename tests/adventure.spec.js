@@ -62,7 +62,12 @@ async function openTrial(page,index){
 async function contact(page,target,done){
   let at=await state(page),dx=target.x*40+20-Number(at.px),dy=target.y*40+20-Number(at.py);
   // Align the approach so continuous steering makes actual contact, not just proximity.
-  await moveAxis(page,Math.abs(dx)>Math.abs(dy)?'py':'px',(Math.abs(dx)>Math.abs(dy)?target.y:target.x)*40+20);
+  const horizontal=Math.abs(dx)>Math.abs(dy),minor=horizontal?dy:dx;
+  if(Math.abs(minor)>18){
+    await page.keyboard.down('k'); // Use the game's slower shield movement for precise steering.
+    try{await moveAxis(page,horizontal?'py':'px',(horizontal?target.y:target.x)*40+20);}
+    finally{await page.keyboard.up('k');}
+  }
   if(await done())return;
   at=await state(page);dx=target.x*40+20-Number(at.px);dy=target.y*40+20-Number(at.py);
   const key=Math.abs(dx)>Math.abs(dy)?dx>0?'ArrowRight':'ArrowLeft':dy>0?'ArrowDown':'ArrowUp';
