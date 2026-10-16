@@ -44,5 +44,12 @@
     <p class="atlas-legend">Tan: paths &amp; cliffs · Blue: rivers &amp; lakes · Dark green: forests · White: citadel · Gold dot: traveler. The atlas shows geography; your exploration minimap keeps its fog of war.</p>
     <div class="atlas-actions"><button id="explore-overworld" class="primary">Explore overworld ↗</button><button id="return-to-quest">Return to quest</button></div>
   </dialog>
+  <dialog id="gate-cutscene" aria-labelledby="gate-title" aria-describedby="gate-status">
+    <p class="eyebrow">THREE KEYS / ONE WAY FORWARD</p><h2 id="gate-title">The rune door awakens</h2>
+    <canvas id="gate-film" width="128" height="80" tabindex="-1" role="img" aria-label="Three keys unlocking a pixel door"></canvas>
+    <p id="gate-status" role="status" aria-live="polite"></p>
+    <p class="small">Your adventure continues when the door opens.</p>
+    <button data-action="restart" class="text-button">Restart adventure</button>
+  </dialog>
   <script type="module" src="/src/adventure.js"></script>
 </body></html>

@@ -4,6 +4,7 @@ import { SLIME_HEALTH, strikeSlime } from '../src/combat.js';
 import { WORLD, makeRoom, isWalkable, distance } from '../src/world.js';
 import { areas, makeOverworld, overworldWalkable, entranceFor } from '../src/overworld.js';
 import { chapterAreaIds, regionStyles, makeChamberLandscape, TILE_PIXELS } from '../src/region-art.js';
+import { gateFrame, GATE_DURATION } from '../src/gate.js';
 
 test.setTimeout(360000);
 const game=page=>page.locator('#game');
@@ -215,6 +216,7 @@ test('slime bolts pause, three distinct sword hits kill, and a nearby death burs
 });
 
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
+  test.setTimeout(480000);
   await start(page);
   for(let chapter=0;chapter<5;chapter++){
     await expect(game(page)).toHaveAttribute('data-art-area',chapterAreaIds[chapter]);
@@ -222,11 +224,47 @@ test('all 45 contact trials unlock the scrolling chambers and win; replay resets
     await page.screenshot({path:test.info().outputPath(`chamber-${chapterAreaIds[chapter]}.png`)});
     for(let trial=0;trial<3;trial++)await finishTrial(page,trial);
     await expect(game(page)).toHaveAttribute('data-keys','3');const gate=makeRoom(chapter,5).exit;await walkTo(page,gate);
-    if((await state(page)).chapter===String(chapter)&& (await state(page)).mode==='playing')await contact(page,gate,async()=>{const s=await state(page);return s.chapter!==String(chapter)||s.mode==='won';});
+    if((await state(page)).chapter===String(chapter)&& (await state(page)).mode==='playing')await contact(page,gate,async()=>{const s=await state(page);return s.mode==='gate-opening';});
+    await expect(game(page)).toHaveAttribute('data-mode','gate-opening');
+    const film=page.locator('#gate-cutscene'),before=await state(page);
+    await expect(film).toBeVisible();await expect(film).toHaveAttribute('data-inserted','1');
+    await hold(page,'d',120);await page.keyboard.press('e');await page.keyboard.press('Space');await page.keyboard.press('Escape');
+    expect((await state(page)).px).toBe(before.px);expect((await state(page)).enemies).toBe(before.enemies);
+    await expect(film).toHaveAttribute('data-inserted','2');
+    await expect(film).toHaveAttribute('data-inserted','3');
+    await expect(film).toHaveAttribute('data-phase','unlocking');
+    const slots=await page.locator('#gate-film').evaluate(canvas=>[53,65,74].map(x=>Array.from(canvas.getContext('2d').getImageData(x,34,1,1).data).slice(0,3)));
+    expect(slots).toEqual([[242,203,112],[157,218,224],[208,195,251]]);
+    if(chapter===0)await page.screenshot({path:test.info().outputPath('three-keys-inserted.png')});
+    await expect(film).toHaveAttribute('data-phase','open');
+    if(chapter===0)await page.screenshot({path:test.info().outputPath('pixel-door-open.png')});
     if(chapter<4)await expect(game(page)).toHaveAttribute('data-chapter',String(chapter+1));
   }
   await expect(game(page)).toHaveAttribute('data-mode','won');await expect(game(page)).toHaveAttribute('data-learned','45');await expect(page.locator('#score')).toHaveText('1125');
   await page.getByRole('button',{name:'Begin again'}).click();await expect(game(page)).toHaveAttribute('data-learned','0');await expect(game(page)).toHaveAttribute('data-chapter','0');
+});
+
+test('three-key door timeline seats every key before opening',()=>{
+  expect(gateFrame(0)).toMatchObject({inserted:0,phase:'key-1',opening:0});
+  expect([550,1350,2150].map(ms=>gateFrame(ms).inserted)).toEqual([1,2,3]);
+  expect(gateFrame(2400)).toMatchObject({inserted:3,phase:'unlocking',opening:0});
+  expect(gateFrame(3150).opening).toBe(.5);
+  expect(gateFrame(GATE_DURATION)).toMatchObject({inserted:3,phase:'open',opening:1});
+});
+
+test('locked door refuses entry and restart cancels its cutscene without a delayed transition',async({page})=>{
+  await start(page);const gate=makeRoom(0,5).exit;
+  await walkTo(page,gate);await page.keyboard.press('e');
+  await expect(game(page)).toHaveAttribute('data-mode','playing');await expect(page.locator('#feedback')).toContainText('locked');
+  await expect(page.locator('#gate-cutscene')).not.toBeVisible();
+  for(let trial=0;trial<3;trial++)await finishTrial(page,trial);
+  await walkTo(page,gate);
+  if((await state(page)).mode==='playing')await contact(page,gate,()=>game(page).getAttribute('data-mode').then(m=>m==='gate-opening'));
+  await expect(page.locator('#gate-cutscene')).toBeVisible();
+  await page.locator('#gate-cutscene').getByRole('button',{name:'Restart adventure',exact:true}).click();
+  await expect(page.locator('#gate-cutscene')).not.toBeVisible();
+  await page.waitForTimeout(GATE_DURATION+100);
+  await expect(game(page)).toHaveAttribute('data-chapter','0');await expect(game(page)).toHaveAttribute('data-keys','0');await expect(game(page)).toHaveAttribute('data-learned','0');
 });
 
 test('contact opens Keeper dialogue once until the player leaves and returns',async({page})=>{

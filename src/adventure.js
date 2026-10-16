@@ -5,6 +5,7 @@ import { ActionWorld } from './action-world.js';
 import { preloadArt, createArt, paintWorld } from './art.js';
 import { Atlas } from './atlas.js';
 import { OverworldScene } from './overworld-scene.js';
+import { GateCutscene } from './gate.js';
 import './adventure.css';
 
 const $ = id => document.getElementById(id);
@@ -16,6 +17,7 @@ class Adventure extends Phaser.Scene {
   preload() { preloadArt(this); }
   create() {
     createArt(this);
+    this.gateCutscene=new GateCutscene(this);
     this.exploration=new Map();this.unlocked=0;this.overworldExplored=new Set();this.overworldPosition=null;
     this.state = { mode:'title', chapter:0, ...makeRoom(0,5).spawn, hearts:5, score:0, learned:new Set(), sealed:new Set() };
     this.loadRoom();
@@ -90,7 +92,6 @@ class Adventure extends Phaser.Scene {
     const hero=tilePosition(this.state);
     this.facing='down';
     this.hero=this.add.sprite(hero.x,hero.y,'player').setDisplaySize(120,120).setOrigin(.5,2/3).setDepth(20).play('hero-idle-down');
-    this.gateBars=this.add.graphics();
     this.action=new ActionWorld(this);
     const added=this.children.list.filter(item=>!before.has(item));
     this.worldLayer.add(added);
@@ -121,14 +122,11 @@ class Adventure extends Phaser.Scene {
   near(point){return Math.hypot(this.state.x-point.x,this.state.y-point.y)<1.65;}
   roomKeys() {return [0,1,2].filter(i=>this.state.sealed.has(`${this.state.chapter}:${i}`)).length;}
   drawGate() {
-    this.gateBars.clear();
-    const open=this.roomKeys()===3;
-    this.gateBars.fillStyle(open?0x8bcbb4:0xd9b56f,open?.25:1);
-    const at=tilePosition(this.room.exit);
-    if(open)this.gateBars.fillRect(at.x-18,at.y-24,36,60);
-    else for(let i=0;i<3;i++)this.gateBars.fillRect(at.x-13+i*11,at.y-24,4,60);
+    this.doorSprite.setTexture('rune-door');
+    document.getElementById('game').dataset.doorReady=String(this.roomKeys()===3);
   }
   reset() {
+    this.gateCutscene.cancel();
     $('puzzle').close();$('journal').close();$('atlas').close();this.scene.stop('Overworld');
     this.exploration=new Map();this.unlocked=0;this.overworldExplored=new Set();this.overworldPosition=null;
     this.state={mode:'playing',chapter:0,...makeRoom(0,5).spawn,hearts:5,score:0,learned:new Set(),sealed:new Set()};
@@ -161,7 +159,7 @@ class Adventure extends Phaser.Scene {
     this.render();
   }
   nearbyHint() {
-    if(this.near(this.room.exit))return this.roomKeys()===3?'The gate is open. Walk into it to continue.':'The gate needs all three rune keys from this chamber.';
+    if(this.near(this.room.exit))return this.roomKeys()===3?'All three keys are ready. Touch the door or press E to unlock it.':'The door has three empty key slots. Restore all three seals to earn its keys.';
     const index=this.room.seals.findIndex(p=>this.near(p));
     if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Walk into its chest to begin, or press E.`;
     if(this.near(this.room.guide))return 'The Keeper has advice. Walk into the Keeper to speak.';
@@ -171,9 +169,14 @@ class Adventure extends Phaser.Scene {
     const s=this.state;
     if(this.near(this.room.exit)) {
       if(this.roomKeys()<3){this.feedback('The gate is locked. Restore all three seals to earn its keys.');return;}
-      if(s.chapter===chapters.length-1){s.mode='won';this.feedback('The archive remembers. You have mastered all 45 words.');return;}
-      s.chapter++;const firstVisit=s.chapter>this.unlocked;this.unlocked=Math.max(this.unlocked,s.chapter);Object.assign(s,makeRoom(s.chapter,5).spawn);if(firstVisit)s.hearts=Math.min(5,s.hearts+1);
-      this.loadRoom();this.feedback(firstVisit?'A new chamber opens. One heart restored. Find its three seals.':'You return to an unlocked chamber. Your completed seals are preserved.');return;
+      if(s.mode!=='playing')return;
+      s.mode='gate-opening';this.action.stop();this.feedback('Three keys. Three locks. The way forward awakens.');this.render();
+      this.gateCutscene.start(()=>{
+        if(this.state!==s||s.mode!=='gate-opening')return;
+        if(s.chapter===chapters.length-1){s.mode='won';this.feedback('The archive remembers. You have mastered all 45 words.');this.render();return;}
+        s.chapter++;s.mode='playing';const firstVisit=s.chapter>this.unlocked;this.unlocked=Math.max(this.unlocked,s.chapter);Object.assign(s,makeRoom(s.chapter,5).spawn);if(firstVisit)s.hearts=Math.min(5,s.hearts+1);
+        this.loadRoom();this.feedback(firstVisit?'A new chamber opens. One heart restored. Find its three seals.':'You return to an unlocked chamber. Your completed seals are preserved.');this.render();
+      });return;
     }
     const index=this.room.seals.findIndex(point=>this.near(point));
     if(index>=0){this.openTrial(index);return;}

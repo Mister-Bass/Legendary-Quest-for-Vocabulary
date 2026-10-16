@@ -81,6 +81,8 @@ For maintainers, `src/overworld.js` owns the area registry, deterministic geogra
 
 ## Controls
 
+The eastern exit is an original 16×16 pixel door with three empty key slots. Earn all three chamber keys, then touch the door or press E beside it. A short pixel cutscene inserts the three keys one by one, releases the lock, and opens the doorway before advancing. The final chamber plays the same sequence before the win screen. Movement, attacks, enemies, and projectiles pause during the cutscene; Escape cannot skip the locks. **Restart adventure** (or R) cancels the animation and resets the adventure safely. The images and credits are bundled locally in `public/assets/gate/`; no external artwork or service is required.
+
 | Action | Keyboard | Touch / mouse |
 | --- | --- | --- |
 | Move continuously | Hold arrow keys or WASD | Hold direction buttons under the game |

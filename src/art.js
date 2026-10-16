@@ -10,6 +10,7 @@ export function preloadArt(scene){
   const scenery=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/scenery/${file}.png`,{frameWidth:w,frameHeight:h});
   scene.load.image('bridge',`${import.meta.env.BASE_URL}assets/bridge/pontev2.png`);
   scene.load.image('puny',`${import.meta.env.BASE_URL}assets/puny/punyworld.png`);
+  for(const [key,file]of[['rune-door','door'],['rune-door-open','door-open'],['rune-key','key']])scene.load.image(key,`${import.meta.env.BASE_URL}assets/gate/${file}.svg`);
   scenery('guide','mage-cyan',32);scenery('water','water',16);
   for(let i=1;i<=4;i++)scenery(`tree${i}`,`tree${i}`,192,i<=2?256:192);
 }
@@ -50,8 +51,7 @@ export function paintWorld(scene,room){
     const height=variant<=2?256:192;
     return scene.add.sprite(x*40+20,y*40+28,`tree${variant}`).setOrigin(.5,variant<=2?.94:.88).setDisplaySize(134,height*.7).setTint(regionStyles[room.areaId].tree).play(`tree${variant}-sway`);
   });
-  const arch=scene.add.graphics();const x=room.exit.x*40+20,y=room.exit.y*40+20;
-  arch.fillStyle(0x344a36).fillRoundedRect(x-35,y-44,70,83,15);
-  arch.fillStyle(0xb49a6c).fillRect(x-34,y-25,10,63).fillRect(x+24,y-25,10,63).fillRect(x-34,y-35,68,12);
-  return arch;
+  const x=room.exit.x*40+20,y=room.exit.y*40+20;
+  scene.doorSprite=scene.add.image(x,y,'rune-door').setDisplaySize(80,80).setOrigin(.5,.65);
+  return scene.doorSprite;
 }
