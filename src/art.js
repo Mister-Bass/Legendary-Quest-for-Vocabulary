@@ -40,7 +40,7 @@ export function paintWorld(scene,room){
     }
     if(room.walls.has(key))tile(x,y,'fences',x===0||x===WORLD.columns-1||x===15?4:1);
   }
-  if(room.bridge.size)scene.add.image(400,718,'bridge').setDisplaySize(272,200);
+  if(room.bridge.size)scene.add.image(402,680,'bridge').setDisplaySize(272,200).setAngle(90);
   scene.treeSprites=room.trees.map(({x,y,variant})=>{
     const height=variant<=2?256:192;
     return scene.add.sprite(x*40+20,y*40+28,`tree${variant}`).setOrigin(.5,variant<=2?.94:.88).setDisplaySize(134,height*.7).play(`tree${variant}-sway`);

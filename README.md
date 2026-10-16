@@ -91,9 +91,9 @@ All additional files load locally from public/assets/scenery/. CREDITS.txt docum
 
 ### Starting pond bridge
 
-The first chamber now has a west–east stone bridge over the nearby pond at row 17, columns 7–12. Walk onto it from either bank; surrounding water remains impassable. The minimap shows explored bridge tiles in tan. Other chambers retain their pond layouts.
+The first chamber now has a north–south stone bridge over the nearby pond at column 10, rows 15–18. Walk onto it from either bank; surrounding water remains impassable. The minimap shows explored bridge tiles in tan. Other chambers retain their pond layouts.
 
-Artwork: [16x16 Bridge by Deco](https://opengameart.org/content/16x16-bridge-0), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The unmodified pontev2.png is rendered at 4× pixel scale across the original starting pond. Attribution/source/license links are retained in public/assets/bridge/CREDITS.txt, the game footer, and source/playable ZIP folders. No endorsement is implied.
+Artwork: [16x16 Bridge by Deco](https://opengameart.org/content/16x16-bridge-0), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The unmodified pontev2.png is rendered at 4× pixel scale and rotated 90° across the original starting pond. Attribution/source/license links are retained in public/assets/bridge/CREDITS.txt, the game footer, and source/playable ZIP folders. No endorsement is implied.
 
 ## Build and checks
 

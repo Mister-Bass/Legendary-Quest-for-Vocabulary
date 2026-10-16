@@ -28,7 +28,7 @@ export function makeRoom(index, total) {
     seals: [{ x: 10, y: 6 }, { x: 22, y: 13 }, { x: 34, y: 23 }],
     shades: [{ x: 14, y: 22 }, { x: 30, y: 12 }],
     trees: [[3,4],[6,7],[18,5],[21,9],[33,3],[36,9],[3,16],[17,15],[28,17],[2,25],[17,25],[26,25],[37,21]].map(([x,y],i)=>({x,y,variant:1+(i+index)%4})),
-    bridge:new Set(index===0?Array.from({length:6},(_,i)=>`${i+7},17`):[]),
+    bridge:new Set(index===0?Array.from({length:4},(_,i)=>`10,${i+15}`):[]),
     walls, water,
   };
 }

@@ -290,19 +290,19 @@ test('a slime takes three separate swings; only a death within its radius costs 
   }
 });
 
-test('the starting pond bridge crosses both ways while adjacent water stays solid',async({page})=>{
-  const room=makeRoom(0,5);for(let x=7;x<=12;x++){expect(isWalkable(room,x,17)).toBe(true);expect(isWalkable(room,x,16)).toBe(false);}
+test('the starting pond bridge runs north-south and crosses both ways while adjacent water stays solid',async({page})=>{
+  const room=makeRoom(0,5);for(let y=15;y<=18;y++){expect(isWalkable(room,10,y)).toBe(true);expect(isWalkable(room,9,y)).toBe(false);expect(isWalkable(room,11,y)).toBe(false);}
   expect(makeRoom(1,5).bridge.size).toBe(0);
-  await start(page);await moveAxis(page,'py',700);
+  await start(page);await moveAxis(page,'py',820);await moveAxis(page,'px',420);
   for(let i=0;i<6;i++){
-    const error=700-Number((await state(page)).py);if(Math.abs(error)<=7)break;
-    await page.keyboard.press(error>0?'s':'w',{delay:Math.min(120,Math.max(25,(Math.abs(error)-6)/170*1000))});await settle(page);
+    const error=420-Number((await state(page)).px);if(Math.abs(error)<=7)break;
+    await page.keyboard.press(error>0?'d':'a',{delay:Math.min(120,Math.max(25,(Math.abs(error)-6)/170*1000))});await settle(page);
   }
-  expect(Math.abs(Number((await state(page)).py)-700)).toBeLessThan(9);
-  await hold(page,'d',2300);await settle(page);
-  expect(Number((await state(page)).px)).toBeGreaterThan(540);expect(Number((await state(page)).py)).toBeGreaterThan(680);
-  expect(Number((await state(page)).py)).toBeLessThan(720);
-  await hold(page,'a',2200);await settle(page);expect(Number((await state(page)).px)).toBeLessThan(280);
-  const explored=await page.locator('#minimap').evaluate(c=>Array.from(c.getContext('2d').getImageData(9*5+2,17*5+2,1,1).data).slice(0,3));
+  expect(Math.abs(Number((await state(page)).px)-420)).toBeLessThan(9);
+  await hold(page,'w',2100);await settle(page);
+  expect(Number((await state(page)).py)).toBeLessThan(600);expect(Number((await state(page)).px)).toBeGreaterThan(400);
+  expect(Number((await state(page)).px)).toBeLessThan(440);
+  await hold(page,'s',2300);await settle(page);expect(Number((await state(page)).py)).toBeGreaterThan(760);
+  const explored=await page.locator('#minimap').evaluate(c=>Array.from(c.getContext('2d').getImageData(10*5+2,17*5+2,1,1).data).slice(0,3));
   expect(explored).toEqual([212,180,134]);
 });
