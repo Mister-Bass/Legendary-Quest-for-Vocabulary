@@ -32,6 +32,32 @@ The bottom-right exploration minimap starts under fog of war and reveals terrain
 
 At zero hearts, Return to chamber restores five hearts and returns to the current chamber's entrance, preserving learned words, completed seals, score, and chamber. Enemies return to their starting positions. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
 
+## The Lanternlands overworld and area designations
+
+Press **O** or click **Overworld atlas** during play. Select a region to see its permanent ID, description, landmark, and chamber status. **Explore overworld** enters an original 72 × 54 tile (2,880 × 2,160 pixel) landscape with a following camera, connected roads, northern lake, southern marsh, stone ridges, courtyards, animated trees, and water. It takes inspiration from classic top-down adventure geography; the layout and names are original. All previously included assets remain in the repository and package.
+
+The areas are arranged in this north-to-south grid:
+
+| West | Center | East |
+| --- | --- | --- |
+| **A01 · Whisperwood** — forest / Listening Grove | **A02 · Mirror Lake** — lake / Hall of Mirrors (chamber 2) | **A03 · Crown Heights** — highlands / Crown Lookout |
+| **A04 · Citizens’ Commons** — meadow / Citizens’ Court (chamber 3) | **A05 · Lantern Crossroads** — central roads / Lantern Monument | **A06 · Ember Quarry** — stone terraces / Forge of Ideas (chamber 4) |
+| **A07 · Footprint Fields** — starting garden / Footprint Garden (chamber 1) | **A08 · Willow Marsh** — wetland / Willow Crossing | **A09 · Trust Sanctuary** — sanctuary / Sanctum of Trust (chamber 5) |
+
+Hold arrows/WASD or the touch direction buttons to explore. Walk into an available marked chamber entrance, or press E/Interact nearby, to enter it. Finish chambers in order to unlock the next entrance; exploring does not bypass vocabulary trials. The overworld is peaceful; combat stays in the existing chambers. Open the atlas and choose **Return to quest** to resume the current chamber at the exact position you left. Entering a different unlocked chamber starts at that chamber's checkpoint and resets its enemies, while preserving hearts, score, learned terms, and completed chests. Revisiting an already unlocked chamber never restores an extra heart. Your overworld position and revealed terrain persist until restart/reload. The atlas shows the complete geography for planning; the bottom-right minimap reveals only traveled areas. The atlas pauses movement and combat.
+
+**No code editing is needed to request an area change.** Select its designation in the atlas, then tell the assistant what to change, for example:
+
+> In A01 (Whisperwood), add a hidden vocabulary chest behind a winding tree path. Keep the player, slime, water, and tree assets. Test it and update the pull request for my approval.
+
+> In A08 (Willow Marsh), widen the river and add another north–south bridge. Leave A07 unchanged.
+
+> Rename A03 to Scholar’s Peak and put a new vocabulary challenge there using my next word list. Keep the stable ID A03.
+
+Area IDs stay fixed when names or layouts change. The atlas is a selection/reference interface, not a terrain painting editor. The assistant makes requested changes in a pull request. This release adds exploration locations, not extra vocabulary beyond the existing 45 terms. Regions A01, A03, A05, and A08 are exploration landmarks ready for future content.
+
+For maintainers, `src/overworld.js` owns the area registry, deterministic geography, passability, and atlas drawing; `src/overworld-scene.js` renders exploration with the existing sprite assets; `src/atlas.js` manages the accessible atlas dialog and selection. Existing vocabulary/chamber files remain the content source. The overworld is included automatically in the source/playable ZIP and Cloudflare Pages build.
+
 ## Controls
 
 | Action | Keyboard | Touch / mouse |
@@ -41,6 +67,7 @@ At zero hearts, Return to chamber restores five hearts and returns to the curren
 | Interact with chest, Keeper, or gate | Walk into it; E remains a nearby alternative | Move into it; Interact button also works |
 | Draw/swing sword / repeat while held | Space or left mouse button inside the world | Sword button (hold to repeat) |
 | Answer a vocabulary question | 1–4 | Answer buttons |
+| Open overworld atlas / close atlas | O / Escape | Overworld atlas / close button |
 | Open word journal | M | Open word journal button |
 | Close a trial, guide, or journal | Escape | Close button |
 | Start / return after losing | Enter | Begin / Return button |

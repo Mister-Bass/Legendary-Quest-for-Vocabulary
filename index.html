@@ -24,16 +24,25 @@
         <nav class="touch" aria-label="Touch controls"><div><button data-action="up" aria-label="Move up">↑</button><button data-action="left" aria-label="Move left">←</button><button data-action="down" aria-label="Move down">↓</button><button data-action="right" aria-label="Move right">→</button></div><button data-action="interact">Interact</button><button data-action="attack">Sword</button></nav>
       </section>
       <aside class="sidebar">
-        <section class="quest-card"><p class="eyebrow">YOUR QUEST</p><h2>Restore the archive.</h2><p id="objective">Restore the three rune seals to unlock the eastern gate.</p><ul id="seal-list" class="seals"></ul><div class="inventory"><div><strong id="key-count">0 / 3</strong><span>RUNE KEYS</span></div><div><strong id="word-count">0 / 45</strong><span>WORDS LEARNED</span></div></div><button id="journal-toggle" class="outline">Open word journal <kbd>M</kbd></button></section>
-        <section class="map-card"><p class="eyebrow">LEVEL 1 / DIGITAL CITIZENSHIP</p><ol id="map-list"></ol><p class="map-note">Five chambers. One connected world.</p></section>
+        <section class="quest-card"><p class="eyebrow">YOUR QUEST</p><h2>Restore the archive.</h2><p id="objective">Restore the three rune seals to unlock the eastern gate.</p><ul id="seal-list" class="seals"></ul><div class="inventory"><div><strong id="key-count">0 / 3</strong><span>RUNE KEYS</span></div><div><strong id="word-count">0 / 45</strong><span>WORDS LEARNED</span></div></div><button id="overworld-toggle" class="outline">Overworld atlas <kbd>O</kbd></button><button id="journal-toggle" class="outline">Open word journal <kbd>M</kbd></button></section>
+        <section class="map-card"><p class="eyebrow">LEVEL 1 / DIGITAL CITIZENSHIP</p><ol id="map-list"></ol><p class="map-note">Five chambers across nine overworld regions. Open the atlas to explore.</p></section>
         <section class="keeper-note"><span>✳</span><p>“A careful reader sees<br>what a hurried hero misses.”<small>— THE KEEPER</small></p></section>
       </aside>
     </div>
-    <section class="controls" aria-label="Game controls"><div><span><kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> Hold to move</span><span>Touch objects to interact</span><span>Left-click / <kbd>Space</kbd> Sword</span><span><kbd>1–4</kbd> Answer</span></div><button id="restart" class="text-button">Restart adventure ↻</button></section>
+    <section class="controls" aria-label="Game controls"><div><span><kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> Hold to move</span><span>Touch objects to interact</span><span>Left-click / <kbd>Space</kbd> Sword</span><span><kbd>1–4</kbd> Answer</span><span><kbd>O</kbd> Overworld atlas</span></div><button id="restart" class="text-button">Restart adventure ↻</button></section>
     <footer><span>LEVEL 01 · DIGITAL CITIZENSHIP &amp; ONLINE REPUTATION</span><span>45 WORDS TO LIGHT THE WAY.</span></footer>
     <p class="art-credit">Artwork: <a href="https://game-endeavor.itch.io/mystic-woods">Mystic Woods by Game Endeavor</a> · Non-commercial use · <a href="/assets/mystic/CREDITS.txt">Asset credits</a> · <a href="/assets/scenery/CREDITS.txt">Water, mage &amp; tree credits</a> (Atari Boy, Shade, Pixel Frog). Bridge: <a href="https://opengameart.org/content/16x16-bridge-0">16x16 Bridge by Deco</a> · <a href="/assets/bridge/CREDITS.txt">CC BY 4.0 credits</a>.</p>
   </main>
   <dialog id="puzzle" aria-labelledby="puzzle-title"><button id="close-puzzle" class="dialog-close" aria-label="Close trial">✕</button><p class="eyebrow" id="puzzle-label">RUNE TRIAL</p><h2 id="puzzle-title">The Root Seal</h2><p id="puzzle-progress" class="small"></p><p id="puzzle-prompt" class="puzzle-prompt"></p><div id="answers"></div><p id="puzzle-feedback" role="status" aria-live="polite"></p></dialog>
   <dialog id="journal" aria-labelledby="journal-title"><button id="close-journal" class="dialog-close" aria-label="Close journal">✕</button><p class="eyebrow">THE TRAVELER’S FIELD NOTES</p><h2 id="journal-title">Word journal</h2><p id="journal-count"></p><div id="journal-entries"></div></dialog>
+  <dialog id="atlas" aria-labelledby="atlas-title">
+    <button id="close-atlas" class="dialog-close" aria-label="Close atlas">✕</button>
+    <p class="eyebrow">THE HOLLOW ARCHIVE / WORLD ATLAS</p><h2 id="atlas-title">The Lanternlands</h2>
+    <p id="atlas-location"></p><p class="atlas-intro">Nine regions. Follow the roads, cross the water, and find the five vocabulary chambers. Select an area to see its permanent editing designation.</p>
+    <div class="atlas-layout"><div class="atlas-picture"><canvas id="atlas-map" width="720" height="540" role="img" aria-label="Original Lanternlands overworld atlas, nine regions arranged north to south in a three by three grid"></canvas><span class="atlas-north">N ↑</span></div><div id="area-buttons" aria-label="Select an overworld area"></div></div>
+    <section class="area-detail" aria-live="polite"><h3 id="area-title"></h3><p id="area-description"></p><p id="area-status"></p><p id="area-request"></p></section>
+    <p class="atlas-legend">Gold: roads &amp; crossings · Blue: water · Dark green: trees · Pale stone: ridges · Gold dot: traveler. The atlas shows geography; your exploration minimap keeps its fog of war.</p>
+    <div class="atlas-actions"><button id="explore-overworld" class="primary">Explore overworld ↗</button><button id="return-to-quest">Return to quest</button></div>
+  </dialog>
   <script type="module" src="/src/adventure.js"></script>
 </body></html>

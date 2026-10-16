@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { chapters, vocabulary, chapterTrials } from '../src/lesson.js';
 import { SLIME_HEALTH, strikeSlime } from '../src/combat.js';
 import { WORLD, makeRoom, isWalkable, distance } from '../src/world.js';
+import { areas, makeOverworld, overworldWalkable, entranceFor } from '../src/overworld.js';
 
 test.setTimeout(360000);
 const game=page=>page.locator('#game');
@@ -305,4 +306,109 @@ test('the starting pond bridge runs north-south and crosses both ways while adja
   await hold(page,'s',2300);await settle(page);expect(Number((await state(page)).py)).toBeGreaterThan(760);
   const explored=await page.locator('#minimap').evaluate(c=>Array.from(c.getContext('2d').getImageData(10*5+2,17*5+2,1,1).data).slice(0,3));
   expect(explored).toEqual([212,180,134]);
+});
+
+
+test('overworld geography has nine stable designations and reachable landmarks',()=>{
+  const map=makeOverworld(),start=entranceFor(0),queue=[start],seen=new Set([`${start.x},${start.y}`]);
+  expect(areas.map(a=>a.id)).toEqual(['A01','A02','A03','A04','A05','A06','A07','A08','A09']);
+  expect(areas.filter(a=>a.chapter!==undefined).map(a=>a.chapter).sort()).toEqual([0,1,2,3,4]);
+  for(let i=0;i<queue.length;i++)for(const [dx,dy]of[[0,1],[0,-1],[1,0],[-1,0]]){
+    const x=queue[i].x+dx,y=queue[i].y+dy,key=`${x},${y}`;
+    if(!seen.has(key)&&overworldWalkable(map,x,y)){seen.add(key);queue.push({x,y});}
+  }
+  for(const a of areas)expect(seen.has(`${a.x},${a.y}`),`${a.id} landmark reachable`).toBeTruthy();
+  expect(map.trees.length).toBeGreaterThan(50);
+  expect(overworldWalkable(map,36,42)).toBeTruthy();
+  expect(overworldWalkable(map,30,42)).toBeFalsy();
+});
+
+test('atlas selects areas, pauses combat, and preserves vocabulary progress',async({page})=>{
+  await start(page);await openTrial(page,0);await correct(page);await page.getByRole('button',{name:'Close trial'}).click();
+  await page.keyboard.press('o');await expect(page.locator('#atlas')).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-mode','atlas');
+  await expect(page.locator('#area-buttons button')).toHaveCount(9);
+  await page.getByRole('button',{name:'A03 · Crown Heights',exact:true}).click();
+  await expect(page.locator('#area-request')).toContainText('In A03 (Crown Heights)');
+  await expect(page.locator('#area-title')).toHaveText('A03 · Crown Heights');
+  const before=await state(page);await hold(page,'d',500);
+  expect((await state(page)).enemies).toBe(before.enemies);
+  await page.keyboard.press('Escape');await expect(game(page)).toHaveAttribute('data-mode','playing');
+  await expect(page.locator('#score')).toHaveText('25');
+  await expect(game(page)).toHaveAttribute('data-learned','1');
+});
+
+test('overworld scrolls, reveals fog, blocks water, and returns to the same quest',async({page})=>{
+  await start(page);const original=await state(page);
+  await page.getByRole('button',{name:'Overworld atlas'}).click();
+  await page.getByRole('button',{name:'Explore overworld'}).click();
+  await expect(game(page)).toHaveAttribute('data-mode','overworld');
+  await expect(game(page)).toHaveAttribute('data-area','A07');
+  const initial=await state(page);
+  await hold(page,'d',2700);
+  await expect(game(page)).toHaveAttribute('data-area','A08');
+  const moved=await state(page);
+  expect(Number(moved.overworldCameraX)).toBeGreaterThan(Number(initial.overworldCameraX)+200);
+  expect(Number(moved.overworldExplored)).toBeGreaterThan(Number(initial.overworldExplored)+40);
+  await hold(page,'w',1200); // The marsh water stops travel off the causeway.
+  const blocked=await state(page);expect(Number(blocked.overworldY)).toBeGreaterThanOrEqual(1770);
+  expect(Number(blocked.overworldY)).toBeLessThan(1810);
+  await page.keyboard.press('o');await expect(page.locator('#atlas-location')).toContainText('A08');
+  const paused=await state(page);await hold(page,'a',350);expect((await state(page)).overworldX).toBe(paused.overworldX);
+  await page.getByRole('button',{name:'A09 · Trust Sanctuary',exact:true}).click();
+  await expect(page.locator('#area-status')).toContainText('locked');
+  await page.getByRole('button',{name:'Return to quest',exact:true}).click();
+  await expect(game(page)).toHaveAttribute('data-mode','playing');
+  await expect(game(page)).toHaveAttribute('data-chapter','0');
+  expect((await state(page)).px).toBe(original.px);expect((await state(page)).py).toBe(original.py);
+  await page.keyboard.press('o');await page.getByRole('button',{name:'Explore overworld'}).click();
+  await expect.poll(async()=>Number((await state(page)).overworldX)).toBeCloseTo(Number(blocked.overworldX),0);
+  await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-mode','playing');
+  await page.keyboard.press('o');await page.getByRole('button',{name:'Explore overworld'}).click();
+  await expect(game(page)).toHaveAttribute('data-area','A07');
+});
+
+test('mobile atlas fits and touch exploration releases movement',async({page})=>{
+  await page.setViewportSize({width:375,height:812});await start(page);
+  await page.getByRole('button',{name:'Overworld atlas'}).click();
+  await page.getByRole('button',{name:'A01 · Whisperwood',exact:true}).click();
+  await expect(page.locator('#area-title')).toHaveText('A01 · Whisperwood');
+  expect(await page.locator('#atlas').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBeTruthy();
+  await page.getByRole('button',{name:'Explore overworld'}).click();
+  const before=Number((await state(page)).overworldX),button=page.getByRole('button',{name:'Move right'}),box=await button.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(500);await page.mouse.up();
+  await expect.poll(async()=>Number((await state(page)).overworldX)).toBeGreaterThan(before+50);
+  await page.waitForTimeout(400);const stopped=Number((await state(page)).overworldX);await page.waitForTimeout(350);
+  expect(Math.abs(Number((await state(page)).overworldX)-stopped)).toBeLessThan(1);
+  await page.getByRole('button',{name:'Open word journal'}).click();
+  await expect(game(page)).toHaveAttribute('data-mode','journal');
+  await page.getByRole('button',{name:'Close journal'}).click();
+  await expect(game(page)).toHaveAttribute('data-mode','overworld');
+  await expect(page.locator('#chapter-number')).toContainText('OVERWORLD / A07');
+  await page.getByRole('button',{name:'Overworld atlas'}).click();await page.getByRole('button',{name:'Return to quest',exact:true}).click();
+  await expect(game(page)).toHaveAttribute('data-mode','playing');
+});
+
+
+test('overworld chamber contact resumes play without a re-entry loop and locked entrances stay locked',async({page})=>{
+  await start(page);await page.keyboard.press('o');await page.getByRole('button',{name:'Explore overworld'}).click();
+  await page.keyboard.down('w');
+  try{await expect(game(page)).toHaveAttribute('data-mode','playing',{timeout:10000});}finally{await page.keyboard.up('w');}
+  await page.keyboard.press('o');await page.getByRole('button',{name:'Explore overworld'}).click();
+  await page.waitForTimeout(350);await expect(game(page)).toHaveAttribute('data-mode','overworld');
+  await page.keyboard.press('Enter');await expect(game(page)).toHaveAttribute('data-mode','overworld');
+  // Travel by real controls along the southern road, then up the central causeway.
+  await page.keyboard.down('d');
+  try{await page.waitForFunction(()=>Number(document.getElementById('game').dataset.overworldX)>=1450);}finally{await page.keyboard.up('d');}
+  await page.waitForTimeout(250);
+  for(let i=0;i<6;i++){
+    const error=1460-Number((await state(page)).overworldX);if(Math.abs(error)<10)break;
+    await hold(page,error>0?'d':'a',Math.max(30,Math.min(100,Math.abs(error)/220*1000)));await page.waitForTimeout(200);
+  }
+  await page.keyboard.down('w');
+  try{await page.waitForFunction(()=>Number(document.getElementById('game').dataset.overworldY)<405,null,{timeout:15000});}finally{await page.keyboard.up('w');}
+  await expect(game(page)).toHaveAttribute('data-mode','overworld');
+  await expect(game(page)).toHaveAttribute('data-area','A02');
+  await page.keyboard.press('e');await expect(page.locator('#feedback')).toContainText('is locked');
+  await expect(game(page)).toHaveAttribute('data-chapter','0');await expect(page.locator('#score')).toHaveText('0');
 });
