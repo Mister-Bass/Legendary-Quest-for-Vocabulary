@@ -77,8 +77,8 @@ class Adventure extends Phaser.Scene {
       return sprite;
     });
     const guide=tilePosition(this.room.guide);
-    this.add.image(guide.x,guide.y-4,'guide').setDisplaySize(35,40);
-    this.add.text(guide.x,guide.y-33,'KEEPER',{fontFamily:'Arial',fontSize:8,color:'#e9d49b',letterSpacing:1}).setOrigin(.5);
+    this.keeper=this.add.sprite(guide.x,guide.y,'guide').setDisplaySize(80,80).setOrigin(.5,.65).play('keeper-dance');
+    this.add.text(guide.x,guide.y-48,'KEEPER',{fontFamily:'Arial',fontSize:8,color:'#e9d49b',letterSpacing:1}).setOrigin(.5);
     this.shades=this.room.shades.map(point=>{
       const at=tilePosition(point);
       return {...point,active:true,sprite:this.add.sprite(at.x,at.y,'slime').setDisplaySize(80,80).play('slime-idle')};
@@ -245,7 +245,7 @@ class Adventure extends Phaser.Scene {
       $('screen-copy').textContent=s.mode==='won'?`All 45 words recovered. Five chambers restored. ${s.score} insight earned. Your knowledge has brought the archive back to life.`:s.mode==='lost'?'The Keeper can restore your hearts. Your learned words and completed seals will remain. Take a breath, then return to the adventure.':'Carry your lantern into a forgotten archive. Decode its inscriptions, outwit its illusions, and recover 45 words about life in the digital world.';
       $('play').textContent=s.mode==='won'?'Begin again ↗':s.mode==='lost'?'Return to chamber ↗':'Begin adventure ↗';
     }
-    Object.assign($('game').dataset,{ready:'true',mode:s.mode,chapter:s.chapter,learned:s.learned.size,keys:this.roomKeys(),quizId:s.mode==='puzzle'?this.currentId():'',shades:this.shades.filter(shade=>shade.active).length,questionFloating:String(!!this.floatingQuestion),chests:JSON.stringify(this.stationSprites.map(c=>({frame:c.frame.name,animation:c.anims.currentAnim?.key})))});
+    Object.assign($('game').dataset,{ready:'true',trees:this.room.trees.length,mode:s.mode,chapter:s.chapter,learned:s.learned.size,keys:this.roomKeys(),quizId:s.mode==='puzzle'?this.currentId():'',shades:this.shades.filter(shade=>shade.active).length,questionFloating:String(!!this.floatingQuestion),chests:JSON.stringify(this.stationSprites.map(c=>({frame:c.frame.name,animation:c.anims.currentAnim?.key})))});
     this.action.telemetry();
   }
 }

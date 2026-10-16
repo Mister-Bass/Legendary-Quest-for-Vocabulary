@@ -77,9 +77,17 @@ All 45 terms are assigned to exactly one chamber. Artwork loads from this site's
 
 ## Artwork credits
 
-Mystic Woods Free 2.1 by [Game Endeavor](https://game-endeavor.itch.io/mystic-woods), supplied by the owner. Uses player.png (48×48 frames), slime.png (32×32), chest_01.png (16×16), and grass/plains/fence terrain from the supplied tilesets folder. All 45 vocabulary terms belong to Level 1 across its five chambers, which now share this artwork. Pixel frames are selected, flipped, and scaled in original maps. The player's own sword-swing frames replace the old generated sword. The Keeper, water surface, gate, and interface are original project artwork.
+Mystic Woods Free 2.1 by [Game Endeavor](https://game-endeavor.itch.io/mystic-woods), supplied by the owner. Uses player.png (48×48 frames), slime.png (32×32), chest_01.png (16×16), and grass/plains/fence terrain from the supplied tilesets folder. All 45 vocabulary terms belong to Level 1 across its five chambers, which now share this artwork. Pixel frames are selected, flipped, and scaled in original maps. The player's own sword-swing frames replace the old generated sword. The gate and interface are original project artwork. The Keeper, water, and trees use the additional owner-supplied packs credited below.
 
 This free pack permits non-commercial use and restricts redistribution. The owner confirmed permission to include the supplied files in this project's public repository and downloadable ZIP on October 15, 2026. That confirmation does not change the creator's license or grant downstream users rights to extract/reuse the pack. The original license and attribution are retained in public/assets/mystic/LICENSE.txt and CREDITS.txt and in both playable and source ZIP folders. Old TOP-DOWN pack files are retained with their separate CC BY 4.0 notice for historical compatibility but are no longer loaded by the game.
+
+### Water, dancing Keeper, and scattered trees
+
+The ponds use all eight 16×16 frames of **Myth of Pixel – Water Temple** water by [Atari Boy](https://atari-boy.itch.io/myth-of-pixel-pack-dungeon-asset-water-temple), looping at 6 fps. The Keeper uses **Mage-Cyan.png from Puny Characters** by [Shade](https://opengameart.org/content/puny-characters), CC0, with stepping and arm-raise poses arranged into a 7 fps dance. The dance is decorative; contact and E still open the Keeper's advice.
+
+Each chamber has 13 scattered trees with four varieties from **Tiny Swords Free Pack** by [Pixel Frog](https://pixelfrog-assets.itch.io/tiny-swords), swaying through eight frames. Trunk cells block the traveler, enemies, and projectiles and appear on explored minimap terrain. Positions are deterministic, away from the main dirt paths and interactions; all objectives remain reachable. Restart/retry redraw the same grove. Water still blocks walking.
+
+All additional files load locally from public/assets/scenery/. CREDITS.txt documents authors, source links, selected frames, and terms. Tiny Swords and Water Temple permit game use but restrict redistribution of assets. The owner confirmed permission to include these new files in the public repository and downloadable ZIP on October 15, 2026. This is not a blanket downstream license to extract/reuse them. The water page also displays CC0 metadata, but this project retains its more restrictive custom terms. Credit links are visible in the footer.
 
 ## Build and checks
 

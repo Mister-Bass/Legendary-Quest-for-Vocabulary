@@ -16,7 +16,7 @@ export class Minimap {
     const c=this.ctx;c.fillStyle='#07110f';c.fillRect(0,0,200,140);
     for(const key of this.explored){
       const [tx,ty]=key.split(',').map(Number);
-      c.fillStyle=room.walls.has(key)?'#6d796d':room.water.has(key)?'#557dba':'#557044';c.fillRect(tx*5,ty*5,5,5);
+      c.fillStyle=room.trees.some(p=>p.x===tx&&p.y===ty)?'#294c39':room.walls.has(key)?'#6d796d':room.water.has(key)?'#557dba':'#557044';c.fillRect(tx*5,ty*5,5,5);
     }
     const marker=(point,color,size=3)=>{if(!this.explored.has(`${point.x},${point.y}`))return;c.fillStyle=color;c.fillRect(point.x*5+2-size/2,point.y*5+2-size/2,size,size);};
     marker(room.guide,'#efe5c8');marker(room.exit,'#dfb268',4);

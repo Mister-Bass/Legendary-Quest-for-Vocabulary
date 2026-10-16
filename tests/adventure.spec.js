@@ -99,7 +99,8 @@ test('all 45 terms and expanded chamber objectives are complete and reachable',(
   expect(chapterTrials(0).flat().length).toBe(chapters[0].terms.length);
   expect(WORLD.columns*WORLD.rows).toBe(1120);
   for(let i=0;i<5;i++){
-    const room=makeRoom(i,5),seen=new Set(),q=[room.spawn];
+    const room=makeRoom(i,5);expect(room.trees).toHaveLength(13);for(const tree of room.trees){expect(isWalkable(room,tree.x,tree.y)).toBe(false);expect(room.water.has(`${tree.x},${tree.y}`)).toBe(false);}
+    const seen=new Set(),q=[room.spawn];
     for(let k=0;k<q.length;k++){
       const p=q[k],key=`${p.x},${p.y}`;if(seen.has(key))continue;seen.add(key);
       for(const [dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){const n={x:p.x+dx,y:p.y+dy};if(isWalkable(room,n.x,n.y)&&!seen.has(`${n.x},${n.y}`))q.push(n);}
@@ -110,10 +111,10 @@ test('all 45 terms and expanded chamber objectives are complete and reachable',(
 
 test('loads the game, local assets, and attribution without errors',async({page})=>{
   const errors=[],art=new Set();page.on('pageerror',e=>errors.push(e.message));
-  page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&r.url().includes('/assets/mystic/')&&r.url().endsWith('.png'))art.add(r.url());});
+  page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&(/\/assets\/(mystic|scenery)\//).test(r.url())&&r.url().endsWith('.png'))art.add(r.url());});
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
-  await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(6);
+  await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(12);
   await expect(page.getByRole('link',{name:'Mystic Woods by Game Endeavor'})).toBeVisible();
   expect(await (await page.request.get('/assets/mystic/CREDITS.txt')).text()).toContain('Non-commercial');
 });
@@ -248,4 +249,15 @@ test('mobile held direction, sword, and dialogs fit the screen',async({page})=>{
   await page.getByRole('button',{name:'Sword',exact:true}).click();await expect(page.locator('#combat-state')).toContainText('recovering');
   await page.getByRole('button',{name:'Open word journal'}).click();await expect(page.locator('#journal')).toBeVisible();
   await page.getByRole('button',{name:'Close journal',exact:true}).click();await expect(game(page)).toHaveAttribute('data-mode','playing');
+});
+
+test('supplied water ripples, the cyan Keeper dances, and scattered tree trunks block movement',async({page})=>{
+  await start(page);await expect(game(page)).toHaveAttribute('data-trees','13');
+  const initial=await state(page);
+  await expect.poll(async()=>(await state(page)).waterFrame).not.toBe(initial.waterFrame);
+  await expect.poll(async()=>(await state(page)).keeperFrame).not.toBe(initial.keeperFrame);
+  await moveAxis(page,'px',100);await hold(page,'s',1100);await settle(page);
+  const at=await state(page);expect(Number(at.py)).toBeGreaterThan(980);expect(Number(at.py)).toBeLessThanOrEqual(990);
+  await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-py','900.0');
+  await page.keyboard.press('e');await expect(game(page)).toHaveAttribute('data-mode','guide');
 });
