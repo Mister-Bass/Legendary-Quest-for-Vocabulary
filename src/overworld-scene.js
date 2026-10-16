@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { areas, areaAt, entranceFor, makeOverworld, roadAt, overworldWalkable, drawAtlas } from './overworld.js';
+import { areas, areaAt, entranceFor, makeOverworld, overworldWalkable, drawAtlas } from './overworld.js';
+import { paintOverworldTile } from './overworld-art.js';
 
 const vectors={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const $=id=>document.getElementById(id);
@@ -8,31 +9,41 @@ export class OverworldScene extends Phaser.Scene {
   constructor(){super('Overworld');}
   init({adventure}){this.adventure=adventure;this.keys=adventure.overworldInput;this.vx=0;this.vy=0;this.facing='down';this.contact=null;this.lastCell='';}
   create(){
-    this.map=makeOverworld();const tile=(x,y,key,frame=0)=>this.add.image(x*40+20,y*40+20,key,frame).setDisplaySize(40,40);
-    for(let y=0;y<54;y++)for(let x=0;x<72;x++){
-      const key=`${x},${y}`,area=areaAt(x,y);
-      const tint=area.biome==='forest'?0xc9e2c2:['quarry','highlands'].includes(area.biome)?0xe2d2b5:area.biome==='marsh'?0xc2ded7:0xffffff;
-      tile(x,y,'grass').setTint(tint);
-      if(roadAt(x,y)){
-        const col=!roadAt(x-1,y)?1:!roadAt(x+1,y)?3:2,row=!roadAt(x,y-1)?0:!roadAt(x,y+1)?2:1;
-        tile(x,y,'terrain',row*6+col);
-      }
-      if(this.map.water.has(key))this.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).play('water-ripple');
-      if(this.map.walls.has(key))tile(x,y,'fences',4);
-      if(this.map.bridge.has(key))tile(x,y,'terrain',8).setTint(0xe4c58b);
+    this.map=makeOverworld();
+    const art=Object.fromEntries(['grass','terrain','water'].map(key=>[key,this.textures.get(key).getSourceImage()]));
+    // Bake static scenery into small chunks. Only trees and water need per-frame animation.
+    const chunkKeys=[];
+    for(let cy=0;cy<54;cy+=12)for(let cx=0;cx<72;cx+=12){
+      const id=`overworld-ground-${cx}-${cy}`,w=Math.min(12,72-cx),h=Math.min(12,54-cy);
+      const texture=this.textures.createCanvas(id,w*40,h*40),c=texture.context;chunkKeys.push(id);
+      c.translate(-cx*40,-cy*40);
+      for(let y=cy;y<cy+h;y++)for(let x=cx;x<cx+w;x++)paintOverworldTile(c,this.map,x,y,40,art);
+      texture.refresh();this.add.image(cx*40,cy*40,id).setOrigin(0).setDepth(-10);
     }
-    // Existing bridge artwork at the wetland crossing, oriented north–south.
-    this.add.image(36*40+2,42*40,'bridge').setDisplaySize(272,200).setAngle(90);
-    this.map.trees.forEach(t=>this.add.sprite(t.x*40+20,t.y*40+28,`tree${t.variant}`).setOrigin(.5,t.variant<=2?.94:.88).setDisplaySize(134,(t.variant<=2?256:192)*.7).setDepth(t.y*40+28).play(`tree${t.variant}-sway`));
+    this.events.once('shutdown',()=>chunkKeys.forEach(id=>this.textures.remove(id)));
+    for(const k of this.map.water){
+      if(this.map.bridge.has(k))continue;
+      const [x,y]=k.split(',').map(Number);
+      this.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).setDepth(-5).setAlpha(.5).setTint(0x93b7d9).play('water-ripple');
+    }
+    this.add.image(36*40+2,43*40,'bridge').setDisplaySize(272,200).setAngle(90).setDepth(-2);
+    this.map.trees.forEach(t=>{
+      const size=t.forest?200:134,height=t.forest?200:(t.variant<=2?256:192)*.7;
+      const sprite=this.add.sprite(t.x*40+20,t.y*40+28,`tree${t.variant}`).setOrigin(.5,t.variant<=2?.94:.88).setDisplaySize(size,height).setDepth(t.y*40+28).play(`tree${t.variant}-sway`);
+      if(t.forest)sprite.setTint(0x94c37f);
+    });
+    this.areaLabels=[];
     for(const a of areas){
-      const x=a.x*40+20,y=a.y*40+20,g=this.add.graphics();
-      g.fillStyle(0x293d35).fillRoundedRect(x-48,y-58,96,80,8);
-      g.lineStyle(5,a.chapter===undefined?0xaaba94:0xe2c17d).strokeRoundedRect(x-48,y-58,96,80,8);
+      const x=a.x*40+20,y=a.y*40+20,g=this.add.graphics().setDepth(y-8);
+      g.fillStyle(0x526b52).fillRect(x-35,y+8,70,12);
+      g.fillStyle(0xb0b995).fillRect(x-31,y+5,62,10);
+      g.fillStyle(0xe7d7a3).fillRect(x-28,y+5,56,2);
       if(a.chapter!==undefined){
-        this.add.sprite(x,y-22,'chest',this.adventure.roomComplete(a.chapter)?3:0).setDisplaySize(48,48);
-      }else this.add.sprite(x,y-22,'guide').setDisplaySize(64,64).play('keeper-dance');
-      this.add.text(x,y-100,`${a.id} · ${a.name}`,{fontFamily:'Georgia',fontSize:19,color:'#fff0bd',backgroundColor:'#172d28',padding:{x:9,y:5}}).setOrigin(.5);
-      this.add.text(x,y+30,a.chapter===undefined?a.landmark:a.chapter>this.adventure.unlocked?'CHAMBER LOCKED':`ENTER · ${a.landmark}`,{fontFamily:'Arial',fontSize:12,color:'#f7e9c2',backgroundColor:'#20372f',padding:{x:6,y:4}}).setOrigin(.5);
+        this.add.sprite(x,y-8,'chest',this.adventure.roomComplete(a.chapter)?3:0).setDisplaySize(40,40).setDepth(y);
+      }else this.add.sprite(x,y-10,'guide').setDisplaySize(64,64).setDepth(y).play('keeper-dance');
+      this.add.text(x,y-65,a.id,{fontFamily:'Arial',fontSize:10,color:'#f0dc9e',backgroundColor:'#264732',padding:{x:5,y:3}}).setOrigin(.5).setDepth(10000);
+      const label=this.add.text(x,y+35,a.chapter===undefined?a.landmark:a.chapter>this.adventure.unlocked?`${a.landmark} · LOCKED`:`${a.landmark} · ENTER`,{fontFamily:'Georgia',fontSize:13,color:'#fff0bf',backgroundColor:'#243f30',padding:{x:6,y:4}}).setOrigin(.5).setDepth(10000);
+      this.areaLabels.push({a,label});
     }
     const entry=entranceFor(this.adventure.state.chapter),saved=this.adventure.overworldPosition;
     this.hero=this.add.sprite(saved?.x??entry.x*40+20,saved?.y??(entry.y+3)*40+20,'player').setDisplaySize(120,120).setOrigin(.5,2/3).play('hero-idle-down');
@@ -61,6 +72,7 @@ export class OverworldScene extends Phaser.Scene {
     const dt=Math.min(delta/1000,.1);this.adventure.overworldClock+=dt;const blend=1-Math.exp(-24*dt);this.vx+=(dx*220-this.vx)*blend;this.vy+=(dy*220-this.vy)*blend;
     const steps=Math.ceil(dt*120)||1;
     for(let i=0;i<steps;i++){if(!this.solid(this.hero.x+this.vx*dt/steps,this.hero.y))this.hero.x+=this.vx*dt/steps;if(!this.solid(this.hero.x,this.hero.y+this.vy*dt/steps))this.hero.y+=this.vy*dt/steps;}
+    this.areaLabels.forEach(({a,label})=>label.setVisible(Math.hypot(this.hero.x-(a.x*40+20),this.hero.y-(a.y*40+20))<320));
     this.hero.setDepth(this.hero.y).setFlipX(this.facing==='left').play(`hero-${m?'run':'idle'}-${this.facing}`,true);
     this.adventure.overworldPosition={x:this.hero.x,y:this.hero.y};
     const nearby=areas.find(a=>Math.hypot(this.hero.x-(a.x*40+20),this.hero.y-(a.y*40+20))<35);

@@ -34,6 +34,9 @@ At zero hearts, Return to chamber restores five hearts and returns to the curren
 
 ## The Lanternlands overworld and area designations
 
+The landscape now follows the artistic direction of the supplied classic overworld reference: dense woodland masses, warm stepped cliffs, a central white-walled citadel and moat, a western settlement, connected rivers, a wetland crossing, and a southeastern lake with a sanctuary island. Geography flows across the area boundaries; the nine IDs remain administrative editing references. This is original scenery composed with existing assets and code-painted terrain, not a traced or imported reference image. The existing player, slimes, trees, water, Keeper, chests, bridge, and all asset/credit files are retained. The atlas and playable terrain share one painter so paths, shorelines, cliffs, houses, and walls agree with collision. Static terrain uses small canvas chunks to reduce rendering work; the existing water and tree animations remain live.
+
+
 Press **O** or click **Overworld atlas** during play. Select a region to see its permanent ID, description, landmark, and chamber status. **Explore overworld** enters an original 72 × 54 tile (2,880 × 2,160 pixel) landscape with a following camera, connected roads, northern lake, southern marsh, stone ridges, courtyards, animated trees, and water. It takes inspiration from classic top-down adventure geography; the layout and names are original. All previously included assets remain in the repository and package.
 
 The areas are arranged in this north-to-south grid:
@@ -41,7 +44,7 @@ The areas are arranged in this north-to-south grid:
 | West | Center | East |
 | --- | --- | --- |
 | **A01 · Whisperwood** — forest / Listening Grove | **A02 · Mirror Lake** — lake / Hall of Mirrors (chamber 2) | **A03 · Crown Heights** — highlands / Crown Lookout |
-| **A04 · Citizens’ Commons** — meadow / Citizens’ Court (chamber 3) | **A05 · Lantern Crossroads** — central roads / Lantern Monument | **A06 · Ember Quarry** — stone terraces / Forge of Ideas (chamber 4) |
+| **A04 · Citizens’ Commons** — meadow / Citizens’ Court (chamber 3) | **A05 · Lantern Crossroads** — central roads / Lantern Citadel | **A06 · Ember Quarry** — stone terraces / Forge of Ideas (chamber 4) |
 | **A07 · Footprint Fields** — starting garden / Footprint Garden (chamber 1) | **A08 · Willow Marsh** — wetland / Willow Crossing | **A09 · Trust Sanctuary** — sanctuary / Sanctum of Trust (chamber 5) |
 
 Hold arrows/WASD or the touch direction buttons to explore. Walk into an available marked chamber entrance, or press E/Interact nearby, to enter it. Finish chambers in order to unlock the next entrance; exploring does not bypass vocabulary trials. The overworld is peaceful; combat stays in the existing chambers. Open the atlas and choose **Return to quest** to resume the current chamber at the exact position you left. Entering a different unlocked chamber starts at that chamber's checkpoint and resets its enemies, while preserving hearts, score, learned terms, and completed chests. Revisiting an already unlocked chamber never restores an extra heart. Your overworld position and revealed terrain persist until restart/reload. The atlas shows the complete geography for planning; the bottom-right minimap reveals only traveled areas. The atlas pauses movement and combat.
@@ -56,7 +59,7 @@ Hold arrows/WASD or the touch direction buttons to explore. Walk into an availab
 
 Area IDs stay fixed when names or layouts change. The atlas is a selection/reference interface, not a terrain painting editor. The assistant makes requested changes in a pull request. This release adds exploration locations, not extra vocabulary beyond the existing 45 terms. Regions A01, A03, A05, and A08 are exploration landmarks ready for future content.
 
-For maintainers, `src/overworld.js` owns the area registry, deterministic geography, passability, and atlas drawing; `src/overworld-scene.js` renders exploration with the existing sprite assets; `src/atlas.js` manages the accessible atlas dialog and selection. Existing vocabulary/chamber files remain the content source. The overworld is included automatically in the source/playable ZIP and Cloudflare Pages build.
+For maintainers, `src/overworld.js` owns the area registry, deterministic geography, passability, and atlas drawing; `src/overworld-art.js` paints the shared pixel scenery; `src/overworld-scene.js` renders exploration with the existing sprite assets; `src/atlas.js` manages the accessible atlas dialog and selection. Existing vocabulary/chamber files remain the content source. The overworld is included automatically in the source/playable ZIP and Cloudflare Pages build.
 
 ## Controls
 

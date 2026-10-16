@@ -319,6 +319,17 @@ test('overworld geography has nine stable designations and reachable landmarks',
   }
   for(const a of areas)expect(seen.has(`${a.x},${a.y}`),`${a.id} landmark reachable`).toBeTruthy();
   expect(map.trees.length).toBeGreaterThan(50);
+  expect(map.fortress.size).toBeGreaterThan(50);
+  expect(map.buildings.size).toBeGreaterThan(40);
+  expect(map.cliffs.size).toBeGreaterThan(100);
+  expect(map.water.size).toBeGreaterThan(500);
+  // The scenery follows landforms rather than painting the nine editing cells as a grid.
+  expect(map.terrain.get('5,5')).toBe('forest');
+  expect(map.terrain.get('60,3')).toBe('highland');
+  expect(map.terrain.get('5,45')).toBe('sand');
+  expect(map.fortress.has('29,23')).toBeTruthy();
+  expect(map.water.has('27,24')).toBeTruthy();
+  expect(overworldWalkable(map,29,23)).toBeFalsy();
   expect(overworldWalkable(map,36,42)).toBeTruthy();
   expect(overworldWalkable(map,30,42)).toBeFalsy();
 });
@@ -339,6 +350,7 @@ test('atlas selects areas, pauses combat, and preserves vocabulary progress',asy
 });
 
 test('overworld scrolls, reveals fog, blocks water, and returns to the same quest',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await start(page);const original=await state(page);
   await page.getByRole('button',{name:'Overworld atlas'}).click();
   await page.getByRole('button',{name:'Explore overworld'}).click();
@@ -366,6 +378,7 @@ test('overworld scrolls, reveals fog, blocks water, and returns to the same ques
   await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-mode','playing');
   await page.keyboard.press('o');await page.getByRole('button',{name:'Explore overworld'}).click();
   await expect(game(page)).toHaveAttribute('data-area','A07');
+  expect(errors).toEqual([]);
 });
 
 test('mobile atlas fits and touch exploration releases movement',async({page})=>{
