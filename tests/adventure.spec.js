@@ -375,6 +375,8 @@ test('mobile atlas fits and touch exploration releases movement',async({page})=>
   await expect(page.locator('#area-title')).toHaveText('A01 · Whisperwood');
   expect(await page.locator('#atlas').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBeTruthy();
   await page.getByRole('button',{name:'Explore overworld'}).click();
+  // Scene creation runs on Phaser's next frame; observe readiness before reading coordinates.
+  await expect(game(page)).toHaveAttribute('data-overworld-x',/^\d+(\.\d+)?$/);
   const before=Number((await state(page)).overworldX),button=page.getByRole('button',{name:'Move right'}),box=await button.boundingBox();
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(500);await page.mouse.up();
   await expect.poll(async()=>Number((await state(page)).overworldX)).toBeGreaterThan(before+50);
@@ -406,7 +408,8 @@ test('overworld chamber contact resumes play without a re-entry loop and locked 
     await hold(page,error>0?'d':'a',Math.max(30,Math.min(100,Math.abs(error)/220*1000)));await page.waitForTimeout(200);
   }
   await page.keyboard.down('w');
-  try{await page.waitForFunction(()=>Number(document.getElementById('game').dataset.overworldY)<405,null,{timeout:15000});}finally{await page.keyboard.up('w');}
+  // Software rendering on shared CI runners can take longer than real-time travel.
+  try{await page.waitForFunction(()=>Number(document.getElementById('game').dataset.overworldY)<405,null,{timeout:30000});}finally{await page.keyboard.up('w');}
   await expect(game(page)).toHaveAttribute('data-mode','overworld');
   await expect(game(page)).toHaveAttribute('data-area','A02');
   await page.keyboard.press('e');await expect(page.locator('#feedback')).toContainText('is locked');
