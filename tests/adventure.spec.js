@@ -362,9 +362,17 @@ test('overworld scrolls, reveals fog, blocks water, and returns to the same ques
   const moved=await state(page);
   expect(Number(moved.overworldCameraX)).toBeGreaterThan(Number(initial.overworldCameraX)+200);
   expect(Number(moved.overworldExplored)).toBeGreaterThan(Number(initial.overworldExplored)+40);
-  await hold(page,'w',1200); // The marsh water stops travel off the causeway.
-  const blocked=await state(page);expect(Number(blocked.overworldY)).toBeGreaterThanOrEqual(1770);
-  expect(Number(blocked.overworldY)).toBeLessThan(1810);
+  // The new curved shoreline has different banks at different x coordinates.
+  // Verify real movement against the authored water mask, rather than an old fixed bank.
+  const terrain=makeOverworld();
+  await page.keyboard.down('w');
+  try{await expect.poll(async()=>{
+    const s=await state(page),x=Math.floor(Number(s.overworldX)/40),y=Math.floor(Number(s.overworldY)/40),ahead=`${x},${y-1}`;
+    return overworldWalkable(terrain,x,y)&&terrain.water.has(ahead)&&!terrain.bridge.has(ahead)&&Number(s.overworldY)%40<12;
+  },{timeout:10000}).toBeTruthy();}finally{await page.keyboard.up('w');}
+  const blocked=await state(page);
+  await hold(page,'w',500);
+  expect(Math.abs(Number((await state(page)).overworldY)-Number(blocked.overworldY))).toBeLessThan(1);
   await page.keyboard.press('o');await expect(page.locator('#atlas-location')).toContainText('A08');
   const paused=await state(page);await hold(page,'a',350);expect((await state(page)).overworldX).toBe(paused.overworldX);
   await page.getByRole('button',{name:'A09 · Trust Sanctuary',exact:true}).click();
