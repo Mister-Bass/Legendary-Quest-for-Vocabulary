@@ -33,7 +33,7 @@ class Adventure extends Phaser.Scene {
       }
     };
     window.addEventListener('keydown',this.keyHandler);
-    this.keyUp=event=>{this.action.release(event.code);this.overworldInput?.delete(event.code);if(this.scene.isActive('Overworld'))this.scene.get('Overworld').release(event.code);};this.unfocus=()=>{this.action.stop();this.overworldInput?.clear();if(this.scene.isActive('Overworld'))this.scene.get('Overworld').stop();};
+    this.keyUp=event=>{this.action.release(event.code);this.overworldInput?.delete(event.code);if(this.scene.isActive('Overworld'))this.scene.get('Overworld').release(event.code);};this.unfocus=()=>{this.action.stop();this.overworldInput?.clear();this.overworldTaps?.clear();if(this.scene.isActive('Overworld'))this.scene.get('Overworld').stop();};
     window.addEventListener('keyup',this.keyUp);window.addEventListener('blur',this.unfocus);
     this.visibility=()=>{if(document.hidden)this.unfocus();};document.addEventListener('visibilitychange',this.visibility);
     this.events.once('shutdown',()=>{window.removeEventListener('keydown',this.keyHandler);window.removeEventListener('keyup',this.keyUp);window.removeEventListener('blur',this.unfocus);document.removeEventListener('visibilitychange',this.visibility);});
@@ -101,13 +101,13 @@ class Adventure extends Phaser.Scene {
   update(time,delta){if(!this.scene.isActive('Overworld'))this.action?.update(delta);}
   roomComplete(chapter){return [0,1,2].every(i=>this.state.sealed.has(`${chapter}:${i}`));}
   pressOverworld(action,id){
-    if(['up','down','left','right'].includes(action))this.overworldInput?.set(id,action);
+    if(['up','down','left','right'].includes(action)){this.overworldInput?.set(id,action);this.overworldTaps?.set(action,this.overworldClock+.08);}
     else if(action==='interact'&&this.scene.isActive('Overworld'))this.scene.get('Overworld').enter();
   }
   openOverworld(){
     if(!['playing','overworld'].includes(this.state.mode))return;
     if(this.state.mode==='overworld')return;
-    this.action.stop();this.overworldInput=new Map();this.state.mode='overworld';this.render();
+    this.action.stop();this.overworldInput=new Map();this.overworldTaps=new Map();this.overworldClock=0;this.state.mode='overworld';this.render();
     this.scene.launch('Overworld',{adventure:this});
     this.feedback('Explore nine regions. Touch a chamber entrance to enter. O opens the labeled atlas; Return to quest resumes your chamber.');
   }
@@ -250,7 +250,7 @@ class Adventure extends Phaser.Scene {
   render() {
     const s=this.state;
     if(s.mode!=='playing')this.action.stop();
-    if(s.mode!=='overworld')this.overworldInput?.clear();
+    if(s.mode!=='overworld'){this.overworldInput?.clear();this.overworldTaps?.clear();}
     $('hearts').textContent='♥'.repeat(Math.max(0,s.hearts))+'♡'.repeat(5-Math.max(0,s.hearts));
     $('hearts').setAttribute('aria-label',`${s.hearts} of 5 hearts`);
     $('score').textContent=s.score;$('word-count').textContent=`${s.learned.size} / 45`;

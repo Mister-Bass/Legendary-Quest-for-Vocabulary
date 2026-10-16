@@ -42,7 +42,7 @@ export class OverworldScene extends Phaser.Scene {
   }
   press(action,id){if(vectors[action])this.keys.set(id,action);else if(action==='interact')this.enter();}
   release(id){this.keys.delete(id);}
-  stop(){this.keys.clear();this.vx=0;this.vy=0;}
+  stop(){this.keys?.clear();this.adventure.overworldTaps?.clear();this.vx=0;this.vy=0;}
   solid(x,y){for(const ox of [-10,10])for(const oy of [-10,10])if(!overworldWalkable(this.map,Math.floor((x+ox)/40),Math.floor((y+oy)/40)))return true;return false;}
   enter(){
     const a=areas.find(a=>Math.hypot(this.hero.x-(a.x*40+20),this.hero.y-(a.y*40+20))<64);
@@ -53,9 +53,12 @@ export class OverworldScene extends Phaser.Scene {
   }
   update(time,delta){
     if(this.adventure.state.mode!=='overworld'){this.stop();return;}
-    const held=new Set(this.keys.values());let dx=Number(held.has('right'))-Number(held.has('left')),dy=Number(held.has('down'))-Number(held.has('up')),m=Math.hypot(dx,dy);
+    const held=new Set(this.keys.values());
+    // Keep brief press/release pairs until a simulation frame consumes them.
+    for(const [action,until] of this.adventure.overworldTaps)if(until>this.adventure.overworldClock)held.add(action);
+    let dx=Number(held.has('right'))-Number(held.has('left')),dy=Number(held.has('down'))-Number(held.has('up')),m=Math.hypot(dx,dy);
     if(m){dx/=m;dy/=m;this.facing=Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down';}
-    const dt=Math.min(delta/1000,.1),blend=1-Math.exp(-24*dt);this.vx+=(dx*220-this.vx)*blend;this.vy+=(dy*220-this.vy)*blend;
+    const dt=Math.min(delta/1000,.1);this.adventure.overworldClock+=dt;const blend=1-Math.exp(-24*dt);this.vx+=(dx*220-this.vx)*blend;this.vy+=(dy*220-this.vy)*blend;
     const steps=Math.ceil(dt*120)||1;
     for(let i=0;i<steps;i++){if(!this.solid(this.hero.x+this.vx*dt/steps,this.hero.y))this.hero.x+=this.vx*dt/steps;if(!this.solid(this.hero.x,this.hero.y+this.vy*dt/steps))this.hero.y+=this.vy*dt/steps;}
     this.hero.setDepth(this.hero.y).setFlipX(this.facing==='left').play(`hero-${m?'run':'idle'}-${this.facing}`,true);

@@ -376,12 +376,16 @@ test('mobile atlas fits and touch exploration releases movement',async({page})=>
   expect(await page.locator('#atlas').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBeTruthy();
   await page.getByRole('button',{name:'Explore overworld'}).click();
   // Scene creation runs on Phaser's next frame; observe readiness before reading coordinates.
+  await page.keyboard.press('o');await expect(page.locator('#atlas')).toBeVisible();
+  await page.getByRole('button',{name:'Close atlas',exact:true}).click();
   await expect(game(page)).toHaveAttribute('data-overworld-x',/^\d+(\.\d+)?$/);
   const before=Number((await state(page)).overworldX),button=page.getByRole('button',{name:'Move right'}),box=await button.boundingBox();
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(500);await page.mouse.up();
   await expect.poll(async()=>Number((await state(page)).overworldX)).toBeGreaterThan(before+50);
   await page.waitForTimeout(400);const stopped=Number((await state(page)).overworldX);await page.waitForTimeout(350);
   expect(Math.abs(Number((await state(page)).overworldX)-stopped)).toBeLessThan(1);
+  await page.keyboard.press('d',{delay:1});
+  await expect.poll(async()=>Number((await state(page)).overworldX)).toBeGreaterThan(stopped+2);
   await page.getByRole('button',{name:'Open word journal'}).click();
   await expect(game(page)).toHaveAttribute('data-mode','journal');
   await page.getByRole('button',{name:'Close journal'}).click();

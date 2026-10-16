@@ -19,7 +19,7 @@ export class Atlas {
     if(this.adventure.state.mode==='atlas'){this.close();return;}
     if(!['playing','overworld'].includes(this.adventure.state.mode))return;
     const a=this.adventure;this.returnMode=a.state.mode;a.action.stop();
-    if(this.returnMode==='overworld')a.scene.get('Overworld').stop();
+    if(this.returnMode==='overworld'&&a.scene.isActive('Overworld'))a.scene.get('Overworld').stop();
     a.state.mode='atlas';a.render();
     const p=a.overworldPosition,current=this.returnMode==='overworld'&&p?areaAt(p.x/40,p.y/40):entranceFor(a.state.chapter);
     $('atlas-location').textContent=`Current location: ${current.id} · ${current.name}${this.returnMode==='playing'?' / vocabulary chamber':''}.`;
@@ -41,6 +41,6 @@ export class Atlas {
     if(a.state.mode==='playing')a.action.invulnerableUntil=Math.max(a.action.invulnerableUntil,a.action.clock+1.2);
     a.render();
     if(a.state.mode==='playing')a.action.minimap.update(a.action.clock,true);
-    else if(a.state.mode==='overworld')a.scene.get('Overworld').refresh(true);
+    else if(a.state.mode==='overworld'&&a.scene.isActive('Overworld'))a.scene.get('Overworld').refresh(true);
   }
 }
