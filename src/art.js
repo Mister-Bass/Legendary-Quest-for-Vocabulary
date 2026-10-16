@@ -6,6 +6,7 @@ export function preloadArt(scene){
   sheet('player','player',48);sheet('slime','slime',32);sheet('chest','chest_01',16);
   sheet('terrain','plains',16);sheet('fences','fences',16);sheet('grass','grass',16);
   const scenery=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/scenery/${file}.png`,{frameWidth:w,frameHeight:h});
+  scene.load.image('bridge',`${import.meta.env.BASE_URL}assets/bridge/pontev2.png`);
   scenery('guide','mage-cyan',32);scenery('water','water',16);
   for(let i=1;i<=4;i++)scenery(`tree${i}`,`tree${i}`,192,i<=2?256:192);
 }
@@ -39,6 +40,7 @@ export function paintWorld(scene,room){
     }
     if(room.walls.has(key))tile(x,y,'fences',x===0||x===WORLD.columns-1||x===15?4:1);
   }
+  if(room.bridge.size)scene.add.image(400,718,'bridge').setDisplaySize(272,200);
   scene.treeSprites=room.trees.map(({x,y,variant})=>{
     const height=variant<=2?256:192;
     return scene.add.sprite(x*40+20,y*40+28,`tree${variant}`).setOrigin(.5,variant<=2?.94:.88).setDisplaySize(134,height*.7).play(`tree${variant}-sway`);

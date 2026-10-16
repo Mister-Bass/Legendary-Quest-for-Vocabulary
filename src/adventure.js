@@ -153,7 +153,7 @@ class Adventure extends Phaser.Scene {
     if(index>=0){this.openTrial(index);return;}
     if(this.near(this.room.guide)) {
       s.mode='guide';$('puzzle-label').textContent='THE KEEPER';$('puzzle-title').textContent='Words open what swords cannot.';
-      $('puzzle-prompt').textContent='Walk into chests, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. There is no shield. Slimes flash violet before firing; step aside to dodge their slime bolts. Combat pauses while you read. The bottom-right minimap reveals places you explore. After three keys, walk into the eastern gate.';
+      $('puzzle-prompt').textContent='Walk into chests, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. There is no shield. Slimes take three sword hits. Their final hit releases a death burst: stand outside the red ring to avoid losing one heart. Slimes flash violet before firing; step aside to dodge their slime bolts. A stone bridge crosses the first pond from west to east. Combat pauses while you read. The bottom-right minimap reveals places you explore. After three keys, walk into the eastern gate.';
       $('answers').replaceChildren();$('puzzle-feedback').textContent='Your journal (M) keeps every word you learn.';$('puzzle-progress').textContent=chapters[s.chapter].name;$('puzzle').showModal();return;
     }
     this.feedback('Walk into a chest, the Keeper, or the gate to interact. E also works beside them.');

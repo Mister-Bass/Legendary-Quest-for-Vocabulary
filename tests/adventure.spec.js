@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { chapters, vocabulary, chapterTrials } from '../src/lesson.js';
+import { SLIME_HEALTH, strikeSlime } from '../src/combat.js';
 import { WORLD, makeRoom, isWalkable, distance } from '../src/world.js';
 
 test.setTimeout(360000);
@@ -111,10 +112,10 @@ test('all 45 terms and expanded chamber objectives are complete and reachable',(
 
 test('loads the game, local assets, and attribution without errors',async({page})=>{
   const errors=[],art=new Set();page.on('pageerror',e=>errors.push(e.message));
-  page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&(/\/assets\/(mystic|scenery)\//).test(r.url())&&r.url().endsWith('.png'))art.add(r.url());});
+  page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&(/\/assets\/(mystic|scenery|bridge)\//).test(r.url())&&r.url().endsWith('.png'))art.add(r.url());});
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
-  await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(12);
+  await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(13);
   await expect(page.getByRole('link',{name:'Mystic Woods by Game Endeavor'})).toBeVisible();
   expect(await (await page.request.get('/assets/mystic/CREDITS.txt')).text()).toContain('Non-commercial');
 });
@@ -168,7 +169,7 @@ test('mistakes lose hearts and checkpoint retry preserves solved vocabulary',asy
   expect(Number((await state(page)).px)).toBe(180);
 });
 
-test('slime bolts pause during reading, damage the player, and sword defeats slimes without points',async({page})=>{
+test('slime bolts pause, three distinct sword hits kill, and a nearby death burst costs one heart',async({page})=>{
   await start(page);await walkTo(page,{x:10,y:21},{exact:true,avoidEnemies:false});
   await expect.poll(async()=>JSON.parse((await state(page)).projectiles).length,{timeout:12000}).toBeGreaterThan(0);
   await page.keyboard.press('m');const paused=await state(page),hearts=await page.locator('#hearts').getAttribute('aria-label');await page.waitForTimeout(700);
@@ -178,11 +179,25 @@ test('slime bolts pause during reading, damage the player, and sword defeats sli
   await expect(page.locator('#feedback')).toContainText('slime bolt');
   const target=JSON.parse((await state(page)).enemies)[0];await moveAxis(page,'py',target.y);
   await page.keyboard.down('d');
-  await page.waitForFunction(()=>{const s=document.getElementById('game').dataset,e=JSON.parse(s.enemies)[0];return Math.hypot(e.x-Number(s.px),e.y-Number(s.py))<65;});
-  await page.keyboard.up('d');await settle(page);const e=JSON.parse((await state(page)).enemies)[0];await clickWorld(page,e.x,e.y);
+  await page.waitForFunction(()=>{const s=document.getElementById('game').dataset,e=JSON.parse(s.enemies)[0];return Math.hypot(e.x-Number(s.px),e.y-Number(s.py))<43;});
+  await page.keyboard.up('d');await settle(page);
+  const enemy=()=>state(page).then(s=>JSON.parse(s.enemies)[0]);
+  for(const expected of [2,1]){
+    const e=await enemy();await clickWorld(page,e.x,e.y);
+    await expect.poll(async()=>(await enemy()).hp).toBe(expected);
+    await expect(game(page)).toHaveAttribute('data-shades','2');
+    await expect(game(page)).toHaveAttribute('data-sword-visible','false');
+    expect((await enemy()).hp).toBe(expected); // A long animation is still only one hit.
+    await expect(page.locator('#combat-state')).toContainText('Dodge slime bolts');
+  }
+  const before=Number((await page.locator('#hearts').getAttribute('aria-label')).split(' ')[0]);
+  const e=await enemy();await clickWorld(page,e.x,e.y);
   await expect(game(page)).toHaveAttribute('data-shades','1',{timeout:4000});
+  expect((await enemy()).hp).toBe(0);await expect(game(page)).toHaveAttribute('data-burst-hits','1');
+  await expect(page.locator('#hearts')).toHaveAttribute('aria-label',`${before-1} of 5 hearts`);
+  await page.waitForTimeout(500);await expect(game(page)).toHaveAttribute('data-burst-hits','1');
   await expect(page.locator('#score')).toHaveText('0');
-  await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-shades','2');
+  await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-shades','2');expect((await enemy()).hp).toBe(3);await expect(game(page)).toHaveAttribute('data-burst-hits','0');
 });
 
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
@@ -260,4 +275,26 @@ test('supplied water ripples, the cyan Keeper dances, and scattered tree trunks 
   const at=await state(page);expect(Number(at.py)).toBeGreaterThan(980);expect(Number(at.py)).toBeLessThanOrEqual(990);
   await page.keyboard.press('r');await expect(game(page)).toHaveAttribute('data-py','900.0');
   await page.keyboard.press('e');await expect(game(page)).toHaveAttribute('data-mode','guide');
+});
+
+test('a slime takes three separate swings; only a death within its radius costs a heart',()=>{
+  for(const distance of [40,56,68]){
+    const slime={hp:SLIME_HEALTH,lastHitSwing:null};
+    expect(strikeSlime(slime,1,distance)).toEqual({hit:true,dead:false,burstDamage:0});
+    for(let frame=0;frame<20;frame++)expect(strikeSlime(slime,1,distance).hit).toBe(false);
+    expect(slime.hp).toBe(2);expect(strikeSlime(slime,2,distance).dead).toBe(false);expect(slime.hp).toBe(1);
+    expect(strikeSlime(slime,3,distance)).toEqual({hit:true,dead:true,burstDamage:distance<=56?1:0});
+    expect(strikeSlime(slime,4,distance)).toEqual({hit:false,dead:false,burstDamage:0});expect(slime.hp).toBe(0);
+  }
+});
+
+test('the starting pond bridge crosses both ways while adjacent water stays solid',async({page})=>{
+  const room=makeRoom(0,5);for(let x=7;x<=12;x++){expect(isWalkable(room,x,17)).toBe(true);expect(isWalkable(room,x,16)).toBe(false);}
+  expect(makeRoom(1,5).bridge.size).toBe(0);
+  await start(page);await moveAxis(page,'py',700);await hold(page,'d',2300);await settle(page);
+  expect(Number((await state(page)).px)).toBeGreaterThan(540);expect(Number((await state(page)).py)).toBeGreaterThan(680);
+  expect(Number((await state(page)).py)).toBeLessThan(720);
+  await hold(page,'a',2200);await settle(page);expect(Number((await state(page)).px)).toBeLessThan(280);
+  const explored=await page.locator('#minimap').evaluate(c=>Array.from(c.getContext('2d').getImageData(9*5+2,17*5+2,1,1).data).slice(0,3));
+  expect(explored).toEqual([212,180,134]);
 });

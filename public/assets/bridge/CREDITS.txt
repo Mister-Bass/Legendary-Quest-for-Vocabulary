@@ -1,0 +1,8 @@
+16x16 Bridge by Deco
+https://opengameart.org/content/16x16-bridge-0
+pontev2.png, used under Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+Creator attribution request: link the source page and mention Deco.
+Image is rendered at 4x pixel scale and placed across the starting pond in an
+original map. Original PNG is unmodified. No endorsement is implied.
+Keep this attribution with redistributed game/source copies.

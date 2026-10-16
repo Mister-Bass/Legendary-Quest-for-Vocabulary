@@ -1,4 +1,5 @@
 import { WORLD, isWalkable } from './world.js';
+import { SLIME_HEALTH, SLIME_BURST_RADIUS, strikeSlime } from './combat.js';
 import { Minimap } from './minimap.js';
 
 const vectors={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
@@ -11,11 +12,11 @@ export class ActionWorld {
     this.scene=scene;this.hero=scene.hero;this.room=scene.room;this.enemies=scene.shades;
     this.keys=new Map();this.taps=new Map();this.vx=0;this.vy=0;this.clock=0;
     this.facing='down';this.attackAt=-10;this.invulnerableUntil=1;
-    this.contacts=new Set();this.projectiles=[];this.shots=0;this.mouseAim=null;
+    this.contacts=new Set();this.projectiles=[];this.shots=0;this.mouseAim=null;this.deathBursts=0;this.burstHits=0;
     if(!scene.exploration.has(scene.state.chapter))scene.exploration.set(scene.state.chapter,new Set());
     this.minimap=new Minimap(scene,scene.exploration.get(scene.state.chapter));
 
-    this.enemies.forEach(e=>{e.home={x:e.sprite.x,y:e.sprite.y};e.phase='patrol';e.until=0;e.pathAt=0;e.nextShot=1.2;e.warning=scene.add.graphics();});
+    this.enemies.forEach(e=>{e.hp=SLIME_HEALTH;e.lastHitSwing=null;e.healthBar=scene.add.graphics();e.home={x:e.sprite.x,y:e.sprite.y};e.phase='patrol';e.until=0;e.pathAt=0;e.nextShot=1.2;e.warning=scene.add.graphics();});
     scene.cameras.main.setBounds(0,0,WORLD.columns*40,WORLD.rows*40).setZoom(WORLD.zoom).startFollow(this.hero,true,.12,.12);
     scene.cameras.main.centerOn(this.hero.x,this.hero.y);
     this.minimap.update(0,true);
@@ -90,7 +91,14 @@ export class ActionWorld {
       if(!e.active)continue;
       const distance=length(this.hero,e.sprite),[fx,fy]=vectors[this.facing];
       const frontal=((e.sprite.x-this.hero.x)*fx+(e.sprite.y-this.hero.y)*fy)/Math.max(1,distance);
-      if(swing&&distance<72&&frontal>.2){e.active=false;e.sprite.setVisible(false);e.warning.clear();e.sprite.setVisible(true).clearTint().play('slime-death');e.sprite.once('animationcomplete',()=>e.sprite.setVisible(false));this.scene.feedback('Your sword defeats the slime.');continue;}
+      if(swing&&distance<72&&frontal>.2){
+        const result=strikeSlime(e,this.attackAt,distance);
+        if(result.hit){
+          if(result.dead){this.defeatSlime(e,result.burstDamage);if(this.scene.state.mode!=='playing')break;continue;}
+          e.phase='hurt';e.until=this.clock+.7;e.hitUntil=this.clock+.15;e.warning.clear();
+          this.scene.feedback(`Slime: ${e.hp} of 3 health. ${e.hp===1?'Final hit causes a burst — stay outside the red ring!':'Two more sword hits will defeat it.'}`);
+        }
+      }
       this.updateEnemy(e,dt,distance);
       if(this.scene.state.mode!=='playing')break;
     }
@@ -99,7 +107,9 @@ export class ActionWorld {
     this.paintEquipment(swing);
   }
   updateEnemy(e,dt,distance){
-    const now=this.clock;e.warning.clear();e.sprite.play(e.phase==='windup'?'slime-attack':e.phase==='chase'||e.phase==='patrol'?'slime-run':'slime-idle',true);
+    const now=this.clock;e.warning.clear();this.paintSlimeHealth(e);
+    if(e.phase==='hurt'&&now<e.until){e.sprite.play('slime-idle',true);if(now<e.hitUntil)e.sprite.setTint(0xffebae);else e.sprite.clearTint();return;}
+    e.sprite.play(e.phase==='windup'?'slime-attack':e.phase==='chase'||e.phase==='patrol'?'slime-run':'slime-idle',true);
     if(e.phase==='cast'){
       e.sprite.setTint(0xc9b6ff);e.warning.lineStyle(2,0xc5a7ff,.9);e.warning.strokeCircle(e.sprite.x,e.sprite.y,28);
       if(now>=e.until){this.fire(e);e.phase='recover';e.until=now+.7;e.nextShot=now+2.3;e.sprite.clearTint();}
@@ -127,6 +137,22 @@ export class ActionWorld {
     if(now>=e.pathAt||!e.target||length(e.sprite,e.target)<5){e.target=this.pathTo(e.sprite,target);e.pathAt=now+.35;}
     const dx=e.target.x-e.sprite.x,dy=e.target.y-e.sprite.y,d=Math.hypot(dx,dy);
     if(d>2){const step=Math.min(d,(e.phase==='chase'?76:24)*dt);this.slide(e.sprite,dx/d*step,dy/d*step);e.sprite.setFlipX(dx<0);}
+  }
+  paintSlimeHealth(e){
+    const g=e.healthBar;g.clear();
+    if(e.hp===1){g.fillStyle(0xf48865,.08).fillCircle(e.sprite.x,e.sprite.y,SLIME_BURST_RADIUS);g.lineStyle(1,0xf4a17c,.6).strokeCircle(e.sprite.x,e.sprite.y,SLIME_BURST_RADIUS);}
+    for(let i=0;i<SLIME_HEALTH;i++){g.fillStyle(i<e.hp?0x9ce9ba:0x294b48);g.fillRect(e.sprite.x-11+i*8,e.sprite.y-25,6,4);}
+  }
+  defeatSlime(e,damage){
+    e.active=false;e.phase='dead';e.healthBar.clear();e.warning.clear();
+    e.sprite.clearTint().play('slime-death');e.sprite.once('animationcomplete',()=>e.sprite.setVisible(false));
+    const burst=this.scene.add.graphics({x:e.sprite.x,y:e.sprite.y});
+    burst.fillStyle(0x8bebac,.24).fillCircle(0,0,SLIME_BURST_RADIUS);burst.lineStyle(3,0xf4aa7d,.9).strokeCircle(0,0,SLIME_BURST_RADIUS);
+    this.scene.worldLayer.add(burst);this.scene.tweens.add({targets:burst,alpha:0,duration:450,onComplete:()=>burst.destroy()});this.deathBursts++;
+    if(damage){
+      this.burstHits++;this.invulnerableUntil=this.clock+1.2;
+      this.scene.hurt('The slime bursts! You were inside its radius and lose one heart.');this.scene.render();
+    }else this.scene.feedback('Slime defeated in three hits. You stayed outside its death burst!');
   }
   clearShot(from,to){
     const d=length(from,to),steps=Math.ceil(d/10);
@@ -157,10 +183,10 @@ export class ActionWorld {
   }
   telemetry(){
     const s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{waterFrame:this.scene.waterSprites[0]?.frame.name,keeperFrame:this.scene.keeper.frame.name,x:s.x.toFixed(2),y:s.y.toFixed(2),px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),speed:Math.hypot(this.vx,this.vy).toFixed(1),facing:this.facing,shield:'false',cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:WORLD.columns*40,worldHeight:WORLD.rows*40,shades:this.enemies.filter(e=>e.active).length,enemies:JSON.stringify(this.enemies.map(e=>({x:+e.sprite.x.toFixed(1),y:+e.sprite.y.toFixed(1),active:e.active,phase:e.phase})))});
+    Object.assign(document.getElementById('game').dataset,{waterFrame:this.scene.waterSprites[0]?.frame.name,keeperFrame:this.scene.keeper.frame.name,x:s.x.toFixed(2),y:s.y.toFixed(2),px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),speed:Math.hypot(this.vx,this.vy).toFixed(1),facing:this.facing,shield:'false',cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:WORLD.columns*40,worldHeight:WORLD.rows*40,shades:this.enemies.filter(e=>e.active).length,enemies:JSON.stringify(this.enemies.map(e=>({x:+e.sprite.x.toFixed(1),y:+e.sprite.y.toFixed(1),active:e.active,hp:e.hp,phase:e.phase})))});
     const arrow=p=>{const dx=p.x-s.x,dy=p.y-s.y;return Math.abs(dx)>Math.abs(dy)?dx>0?'→':'←':dy>0?'↓':'↑';};
     document.getElementById('wayfinder').textContent=this.room.seals.map((p,i)=>`${['I','II','III'][i]} ${s.sealed.has(`${s.chapter}:${i}`)?'✓':arrow(p)}`).join('   ·   ')+`   ·   Gate ${arrow(this.room.exit)}`;
-    Object.assign(document.getElementById('game').dataset,{swordVisible:String(this.scene.state.mode==='playing'&&this.clock-this.attackAt<.28),shots:this.shots,projectiles:JSON.stringify(this.projectiles.map(p=>({x:+p.sprite.x.toFixed(1),y:+p.sprite.y.toFixed(1)})))});
+    Object.assign(document.getElementById('game').dataset,{deathBursts:this.deathBursts,burstHits:this.burstHits,swordVisible:String(this.scene.state.mode==='playing'&&this.clock-this.attackAt<.28),shots:this.shots,projectiles:JSON.stringify(this.projectiles.map(p=>({x:+p.sprite.x.toFixed(1),y:+p.sprite.y.toFixed(1)})))});
     document.getElementById('combat-state').textContent=this.clock-this.attackAt<.45?'Sword recovering':'Left-click / Space Sword · Dodge slime bolts';
   }
 }
