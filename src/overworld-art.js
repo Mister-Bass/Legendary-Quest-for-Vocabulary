@@ -84,7 +84,7 @@ export function paintAtlasDetails(c,map,sx,sy,art){
     const canopy=document.createElement('canvas');canopy.width=192;canopy.height=192;
     const cc=canopy.getContext('2d');cc.drawImage(art.tree3,0,0,192,192,0,0,192,192);
     const pixels=cc.getImageData(0,0,192,192),d=pixels.data;
-    for(let i=0;i<d.length;i+=4){d[i]*=148/255;d[i+1]*=195/255;d[i+2]*=127/255;}
+    for(let i=0;i<d.length;i+=4){d[i]*=80/255;d[i+1]*=150/255;d[i+2]*=160/255;}
     cc.putImageData(pixels,0,0);art.forestTree=canopy;
   }
   for(const t of map.trees){

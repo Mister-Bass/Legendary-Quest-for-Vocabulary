@@ -30,7 +30,7 @@ export class OverworldScene extends Phaser.Scene {
     this.map.trees.forEach(t=>{
       const size=t.forest?200:134,height=t.forest?200:(t.variant<=2?256:192)*.7;
       const sprite=this.add.sprite(t.x*40+20,t.y*40+28,`tree${t.variant}`).setOrigin(.5,t.variant<=2?.94:.88).setDisplaySize(size,height).setDepth(t.y*40+28).play(`tree${t.variant}-sway`);
-      if(t.forest)sprite.setTint(0x94c37f);
+      if(t.forest)sprite.setTint(0x5096a0);
     });
     this.areaLabels=[];
     for(const a of areas){
