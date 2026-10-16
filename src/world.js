@@ -1,3 +1,4 @@
+import { chapterAreaIds } from './region-art.js';
 // Original adventure layouts. Coordinates are grid cells; art is rendered by Phaser.
 export const WORLD = { columns: 40, rows: 28, tileSize: 40, viewportWidth:800, viewportHeight:560, zoom:1.5 };
 const themes = [
@@ -20,6 +21,7 @@ export function makeRoom(index, total) {
   }
   return {
     ...theme,
+    areaId:chapterAreaIds[index%chapterAreaIds.length],
     name: index < themes.length ? theme.name : `${theme.name} · ${Math.floor(index / themes.length) + 1}`,
     number: index + 1, total,
     spawn: { x: 4, y: 22 },

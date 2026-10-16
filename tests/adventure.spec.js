@@ -3,6 +3,7 @@ import { chapters, vocabulary, chapterTrials } from '../src/lesson.js';
 import { SLIME_HEALTH, strikeSlime } from '../src/combat.js';
 import { WORLD, makeRoom, isWalkable, distance } from '../src/world.js';
 import { areas, makeOverworld, overworldWalkable, entranceFor } from '../src/overworld.js';
+import { chapterAreaIds, regionStyles, makeChamberLandscape, TILE_PIXELS } from '../src/region-art.js';
 
 test.setTimeout(360000);
 const game=page=>page.locator('#game');
@@ -96,6 +97,13 @@ async function correct(page){
 async function finishTrial(page,index){await openTrial(page,index);while((await state(page)).mode==='puzzle')await correct(page);}
 
 test('all 45 terms and expanded chamber objectives are complete and reachable',()=>{
+  expect(TILE_PIXELS).toBe(16);expect(Object.keys(regionStyles)).toEqual(areas.map(a=>a.id));
+  for(let chapter=0;chapter<5;chapter++){
+    const room=makeRoom(chapter,5),landscape=makeChamberLandscape(room);
+    expect(room.areaId).toBe(entranceFor(chapter).id);
+    expect(landscape.terrain.get('4,22')).toBe(regionStyles[room.areaId].terrain);
+    expect(landscape.water).toBe(room.water);expect(landscape.walls).toBe(room.walls);
+  }
   const ids=chapters.flatMap(c=>c.terms);expect(vocabulary).toHaveLength(45);expect(new Set(ids).size).toBe(45);
   expect(ids.toSorted((a,b)=>a-b)).toEqual(Array.from({length:45},(_,i)=>i));
   expect(chapterTrials(0).flat().length).toBe(chapters[0].terms.length);
@@ -112,11 +120,14 @@ test('all 45 terms and expanded chamber objectives are complete and reachable',(
 });
 
 test('loads the game, local assets, and attribution without errors',async({page})=>{
-  const errors=[],art=new Set();page.on('pageerror',e=>errors.push(e.message));
+  const errors=[],art=new Set(),tiles=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('response',r=>{if(r.ok()&&r.url().endsWith('/assets/puny/punyworld.png'))tiles.push(r.url());});
   page.on('response',r=>{if(r.status()>=400)errors.push(r.url());if(r.ok()&&(/\/assets\/(mystic|scenery|bridge)\//).test(r.url())&&r.url().endsWith('.png'))art.add(r.url());});
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
   await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(13);
+  expect(tiles).toHaveLength(1);await expect(game(page)).toHaveAttribute('data-tile-pixels','16');
+  expect(await (await page.request.get('/assets/puny/CREDITS.txt')).text()).toContain('CC0');
   await expect(page.getByRole('link',{name:'Mystic Woods by Game Endeavor'})).toBeVisible();
   expect(await (await page.request.get('/assets/mystic/CREDITS.txt')).text()).toContain('Non-commercial');
 });
@@ -206,6 +217,9 @@ test('slime bolts pause, three distinct sword hits kill, and a nearby death burs
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
   await start(page);
   for(let chapter=0;chapter<5;chapter++){
+    await expect(game(page)).toHaveAttribute('data-art-area',chapterAreaIds[chapter]);
+    await expect(game(page)).toHaveAttribute('data-terrain-theme',regionStyles[chapterAreaIds[chapter]].terrain);
+    await page.screenshot({path:test.info().outputPath(`chamber-${chapterAreaIds[chapter]}.png`)});
     for(let trial=0;trial<3;trial++)await finishTrial(page,trial);
     await expect(game(page)).toHaveAttribute('data-keys','3');const gate=makeRoom(chapter,5).exit;await walkTo(page,gate);
     if((await state(page)).chapter===String(chapter)&& (await state(page)).mode==='playing')await contact(page,gate,async()=>{const s=await state(page);return s.chapter!==String(chapter)||s.mode==='won';});

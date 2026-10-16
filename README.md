@@ -34,6 +34,24 @@ At zero hearts, Return to chamber restores five hearts and returns to the curren
 
 ## The Lanternlands overworld and area designations
 
+### 16×16 terrain and matching chamber scenery
+
+The free **Puny World** tileset by [Shade on itch.io](https://merchant-shade.itch.io/16x16-puny-world) now supplies native 16×16 grass, dirt paths, ledges, masonry, roofs, and stone floors. It is CC0; the unmodified sheet, source links, and credit record are bundled locally in `public/assets/puny/`. The atlas, playable overworld, and vocabulary chambers use the same tile painter. Terrain textures are authored at 16 pixels per cell and enlarged with nearest-neighbor sampling; the existing 40-pixel movement grid and camera zoom remain intact. Characters and the supplied animated trees/water retain their original frame sizes and credits.
+
+| Area | Scenery direction | Vocabulary chamber |
+| --- | --- | --- |
+| A01 · Whisperwood | Dense green woods, mossy ledges, dirt clearings | Exploration landmark |
+| A02 · Mirror Lake | Blue lake banks and pale stone terraces | Hall of Mirrors |
+| A03 · Crown Heights | Golden highland paths and rock ledges | Exploration landmark |
+| A04 · Citizens’ Commons | Village greens, timber roofs, civic paving | Citizens’ Court |
+| A05 · Lantern Crossroads | Pale citadel walls, formal gardens, moat | Exploration landmark |
+| A06 · Ember Quarry | Ochre rock terraces and warm forge paving | Forge of Ideas |
+| A07 · Footprint Fields | Dry fields, planted rows, sandy garden paths | Footprint Garden |
+| A08 · Willow Marsh | Mossy banks, wetland channels, bridge | Exploration landmark |
+| A09 · Trust Sanctuary | Cool stone, island gardens, lake water | Sanctum of Trust |
+
+Chambers remain separate vocabulary arenas with their tested objective and collision layouts; their terrain, walls, gardens, and tree colors now reflect the home region. They are not literal enlarged crops of the atlas. Existing water, tree, player, slime, Keeper, chest, and bridge assets remain. The chamber minimap samples the actual terrain texture beneath its fog. Tell the assistant, for example: “Make A06 more rocky and carry those changes into the Forge chamber; keep the vocabulary and controls.” No code editing is needed.
+
 The landscape now follows the artistic direction of the supplied classic overworld reference: dense woodland masses, warm stepped cliffs, a central white-walled citadel and moat, a western settlement, connected rivers, a wetland crossing, and a southeastern lake with a sanctuary island. Geography flows across the area boundaries; the nine IDs remain administrative editing references. This is original scenery composed with existing assets and code-painted terrain, not a traced or imported reference image. The existing player, slimes, trees, water, Keeper, chests, bridge, and all asset/credit files are retained. The atlas and playable terrain share one painter so paths, shorelines, cliffs, houses, and walls agree with collision. Static terrain uses small canvas chunks to reduce rendering work; the existing water and tree animations remain live.
 
 

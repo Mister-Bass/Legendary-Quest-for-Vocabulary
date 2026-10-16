@@ -1,3 +1,4 @@
+import { groundTile, stamp } from './region-art.js';
 // Original pixel scenery, painted identically in the atlas and the playable world.
 // Existing grass/path/water/tree sprites remain the texture sources.
 const colors={grass:'#73a955',forest:'#34663c',sand:'#b9a365',highland:'#a8985c',marsh:'#669663',stone:'#9da88a'};
@@ -7,6 +8,7 @@ export function paintOverworldTile(context,map,x,y,size,art){
   const c=context,k=key(x,y),kind=map.terrain.get(k)||'grass',n=(x*37+y*19)%17;
   c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;
   c.fillStyle=colors[kind];c.fillRect(0,0,16,16);
+  groundTile(c,art,kind,x,y);
   if(art&&kind==='grass'){c.globalAlpha=.35;c.drawImage(art.grass,0,0,16,16,0,0,16,16);c.globalAlpha=1;}
   // A restrained, repeatable pixel grain, rather than flat administrative blocks.
   c.fillStyle=kind==='forest'?'#487a44':kind==='highland'||kind==='sand'?'#cbb778':'#88b861';
@@ -26,7 +28,10 @@ export function paintOverworldTile(context,map,x,y,size,art){
   if(map.paths.has(k)&&!map.water.has(k)){
     const col=!map.paths.has(key(x-1,y))?1:!map.paths.has(key(x+1,y))?3:2;
     const row=!map.paths.has(key(x,y-1))?0:!map.paths.has(key(x,y+1))?2:1;
-    if(art)c.drawImage(art.terrain,col*16,row*16,16,16,0,0,16,16);
+    if(art?.puny&&kind==='stone'){groundTile(c,art,kind,x,y);c.globalAlpha=.12;c.fillStyle='#f6e4b1';c.fillRect(0,0,16,16);c.globalAlpha=1;}
+    else if(art?.puny&&(kind==='sand'||kind==='highland'))stamp(c,art.puny,14,1);
+    else if(art?.puny)stamp(c,art.puny,3+col,row);
+    else if(art)c.drawImage(art.terrain,col*16,row*16,16,16,0,0,16,16);
     else{c.fillStyle='#b69b64';c.fillRect(0,0,16,16);}
   }
   if(map.bridge.has(k)){
@@ -44,6 +49,7 @@ export function paintOverworldTile(context,map,x,y,size,art){
     c.fillStyle='#c3ac6b';c.fillRect(0,0,16,3);c.fillRect(1,3,14,1);
     c.fillStyle='#665330';c.fillRect(3,6,1,7);c.fillRect(11,5,1,8);c.fillRect(6,12,5,1);
     c.fillStyle='#557743';c.fillRect(0,0,4,1);c.fillRect(12,0,4,1);
+    if(art?.puny){stamp(c,art.puny,3,5);c.globalAlpha=.35;c.fillStyle=kind==='forest'?'#2e5d36':'#b18a52';c.fillRect(0,0,16,16);c.globalAlpha=1;}
   }
   if((!x||!y||x===71||y===53)&&kind!=='sand'&&kind!=='highland'&&!map.water.has(k)){
     c.fillStyle='#203e2c';c.fillRect(0,0,16,16);c.fillStyle='#426d3d';c.fillRect(2,2,12,10);c.fillStyle='#59894a';c.fillRect(4,2,7,2);
@@ -53,6 +59,7 @@ export function paintOverworldTile(context,map,x,y,size,art){
     c.fillStyle='#fff1ce';c.fillRect(1,0,14,2);c.fillRect(1,0,2,12);
     c.fillStyle='#8f9c87';c.fillRect(2,7,12,1);c.fillRect(7,2,1,5);c.fillRect(4,8,1,4);
     c.fillStyle='#e9e4c2';c.fillRect(0,0,4,4);c.fillRect(6,0,4,4);c.fillRect(12,0,4,4);
+    if(art?.puny)stamp(c,art.puny,19,27);
   }
   if(map.fields.has(k)){
     c.fillStyle='#846746';c.fillRect(0,0,16,16);
@@ -64,6 +71,7 @@ export function paintOverworldTile(context,map,x,y,size,art){
       c.fillStyle=b.roof;c.fillRect(0,0,16,16);c.fillStyle='#533f33';c.fillRect(0,14,16,2);
       c.fillStyle=b.highlight;for(let row=2;row<15;row+=4)c.fillRect(0,row,16,1);
       c.fillStyle='#463e32';if(b.lx===0)c.fillRect(0,0,2,16);if(b.lx===b.w-1)c.fillRect(14,0,2,16);
+      if(art?.puny)stamp(c,art.puny,b.lx===0?4:b.lx===b.w-1?6:5,b.ly===0?26:27);
     }else{
       c.fillStyle='#584e3e';c.fillRect(0,0,16,15);c.fillStyle='#d0bd86';c.fillRect(1,0,14,11);
       c.fillStyle='#a18e64';c.fillRect(1,8,14,1);

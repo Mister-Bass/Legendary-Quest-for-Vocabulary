@@ -10,15 +10,16 @@ export class OverworldScene extends Phaser.Scene {
   init({adventure}){this.adventure=adventure;this.keys=adventure.overworldInput;this.vx=0;this.vy=0;this.facing='down';this.contact=null;this.lastCell='';}
   create(){
     this.map=makeOverworld();
-    const art=Object.fromEntries(['grass','terrain','water'].map(key=>[key,this.textures.get(key).getSourceImage()]));
+    const art=Object.fromEntries(['grass','terrain','water','puny'].map(key=>[key,this.textures.get(key).getSourceImage()]));
+    this.art=art;
     // Bake static scenery into small chunks. Only trees and water need per-frame animation.
     const chunkKeys=[];
     for(let cy=0;cy<54;cy+=12)for(let cx=0;cx<72;cx+=12){
       const id=`overworld-ground-${cx}-${cy}`,w=Math.min(12,72-cx),h=Math.min(12,54-cy);
-      const texture=this.textures.createCanvas(id,w*40,h*40),c=texture.context;chunkKeys.push(id);
-      c.translate(-cx*40,-cy*40);
-      for(let y=cy;y<cy+h;y++)for(let x=cx;x<cx+w;x++)paintOverworldTile(c,this.map,x,y,40,art);
-      texture.refresh();this.add.image(cx*40,cy*40,id).setOrigin(0).setDepth(-10);
+      const texture=this.textures.createCanvas(id,w*16,h*16),c=texture.context;chunkKeys.push(id);
+      c.translate(-cx*16,-cy*16);
+      for(let y=cy;y<cy+h;y++)for(let x=cx;x<cx+w;x++)paintOverworldTile(c,this.map,x,y,16,art);
+      texture.refresh();this.add.image(cx*40,cy*40,id).setOrigin(0).setDisplaySize(w*40,h*40).setDepth(-10);
     }
     this.events.once('shutdown',()=>chunkKeys.forEach(id=>this.textures.remove(id)));
     for(const k of this.map.water){
@@ -84,12 +85,12 @@ export class OverworldScene extends Phaser.Scene {
     const x=Math.floor(this.hero.x/40),y=Math.floor(this.hero.y/40),cell=`${x},${y}`,a=areaAt(x,y);
     if(cell!==this.lastCell||force){
       for(let oy=-4;oy<=4;oy++)for(let ox=-4;ox<=4;ox++)if(Math.hypot(ox,oy)<=4.3&&x+ox>=0&&x+ox<72&&y+oy>=0&&y+oy<54)this.explored.add(`${x+ox},${y+oy}`);
-      this.lastCell=cell;drawAtlas($('minimap'),this.map,{explored:this.explored,position:this.hero});
+      this.lastCell=cell;drawAtlas($('minimap'),this.map,{explored:this.explored,position:this.hero,art:this.art});
       $('minimap').dataset.explored=String(this.explored.size);$('minimap').dataset.total='3888';$('minimap').dataset.chapter='overworld';$('minimap').setAttribute('aria-label',`Overworld exploration minimap. ${a.id} ${a.name}. Unvisited terrain is hidden.`);
       $('game').setAttribute('aria-label',`Explorable Lanternlands overworld. ${a.id} ${a.name}. Roads connect nine named areas and five vocabulary chamber entrances.`);document.querySelector('.caption-direction').textContent='N ↑ · ATLAS O';
       $('chapter-number').textContent=`OVERWORLD / ${a.id}`;$('chapter-title').textContent=a.name;$('chapter-subtitle').textContent=a.description;
       $('wayfinder').textContent=`${a.id} · ${a.name} · O: atlas · Enter a marked chamber on contact`;$('combat-state').textContent='Peaceful overworld';
     }
-    Object.assign($('game').dataset,{area:a.id,overworldX:this.hero.x.toFixed(1),overworldY:this.hero.y.toFixed(1),overworldCameraX:this.cameras.main.scrollX.toFixed(1),overworldExplored:this.explored.size});
+    Object.assign($('game').dataset,{area:a.id,artArea:a.id,tilePixels:16,tileset:'puny-world',overworldX:this.hero.x.toFixed(1),overworldY:this.hero.y.toFixed(1),overworldCameraX:this.cameras.main.scrollX.toFixed(1),overworldExplored:this.explored.size});
   }
 }

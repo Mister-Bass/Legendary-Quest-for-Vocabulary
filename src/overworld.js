@@ -1,4 +1,5 @@
 import { paintOverworldTile, paintAtlasDetails } from './overworld-art.js';
+import { regionStyles } from './region-art.js';
 // Original geography. Stable IDs are the owner's plain-English editing handles.
 export const OVERWORLD = { columns:72, rows:54, tileSize:40, areaWidth:24, areaHeight:18 };
 export const areas = [
@@ -11,7 +12,7 @@ export const areas = [
   {id:'A07',name:'Footprint Fields',biome:'garden',color:'#638248',description:'The southern starting fields, with a protected garden and the first vocabulary chamber.',landmark:'Footprint Garden',chapter:0},
   {id:'A08',name:'Willow Marsh',biome:'marsh',color:'#426f59',description:'A winding river runs through low wetlands. Cross north–south over the old stone bridge.',landmark:'The Willow Crossing'},
   {id:'A09',name:'Trust Sanctuary',biome:'sanctuary',color:'#66867c',description:'A sanctuary island rises from a broad southeastern lake. A causeway leads to the final archive entrance.',landmark:'Sanctum of Trust',chapter:4},
-].map((area,index)=>({...area,column:index%3,row:Math.floor(index/3),x:(index%3)*24+12,y:Math.floor(index/3)*18+9}));
+].map((area,index)=>({...area,style:regionStyles[area.id],column:index%3,row:Math.floor(index/3),x:(index%3)*24+12,y:Math.floor(index/3)*18+9}));
 
 
 export const areaAt=(x,y)=>areas[Math.min(2,Math.max(0,Math.floor(y/18)))*3+Math.min(2,Math.max(0,Math.floor(x/24)))];
