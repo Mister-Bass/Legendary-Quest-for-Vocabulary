@@ -190,7 +190,9 @@ test('slime bolts pause, three distinct sword hits kill, and a nearby death burs
     expect((await enemy()).hp).toBe(expected); // A long animation is still only one hit.
     await expect(page.locator('#combat-state')).toContainText('Dodge slime bolts');
   }
+  await page.keyboard.press('m');await expect(game(page)).toHaveAttribute('data-mode','journal');
   const before=Number((await page.locator('#hearts').getAttribute('aria-label')).split(' ')[0]);
+  await page.keyboard.press('Escape'); // Normal hits are protected briefly; the death burst must still cost exactly one heart.
   const e=await enemy();await clickWorld(page,e.x,e.y);
   await expect(game(page)).toHaveAttribute('data-shades','1',{timeout:4000});
   expect((await enemy()).hp).toBe(0);await expect(game(page)).toHaveAttribute('data-burst-hits','1');
@@ -291,7 +293,13 @@ test('a slime takes three separate swings; only a death within its radius costs 
 test('the starting pond bridge crosses both ways while adjacent water stays solid',async({page})=>{
   const room=makeRoom(0,5);for(let x=7;x<=12;x++){expect(isWalkable(room,x,17)).toBe(true);expect(isWalkable(room,x,16)).toBe(false);}
   expect(makeRoom(1,5).bridge.size).toBe(0);
-  await start(page);await moveAxis(page,'py',700);await hold(page,'d',2300);await settle(page);
+  await start(page);await moveAxis(page,'py',700);
+  for(let i=0;i<6;i++){
+    const error=700-Number((await state(page)).py);if(Math.abs(error)<=7)break;
+    await page.keyboard.press(error>0?'s':'w',{delay:Math.min(120,Math.max(25,(Math.abs(error)-6)/170*1000))});await settle(page);
+  }
+  expect(Math.abs(Number((await state(page)).py)-700)).toBeLessThan(9);
+  await hold(page,'d',2300);await settle(page);
   expect(Number((await state(page)).px)).toBeGreaterThan(540);expect(Number((await state(page)).py)).toBeGreaterThan(680);
   expect(Number((await state(page)).py)).toBeLessThan(720);
   await hold(page,'a',2200);await settle(page);expect(Number((await state(page)).px)).toBeLessThan(280);
