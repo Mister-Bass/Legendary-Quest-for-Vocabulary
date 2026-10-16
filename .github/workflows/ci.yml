@@ -11,10 +11,14 @@ concurrency:
   group: game-ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  build-and-test:
-    name: Build and browser tests
+  browser-tests:
+    name: ${{ matrix.browser }} browser tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,8 +27,36 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm test
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      # Each runner renders only one game, keeping timing-sensitive input/combat checks reliable.
+      - run: npm test -- --project=${{ matrix.browser }} --workers=1
+      - name: Browser test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 14
+  build-and-test:
+    # Preserve the required check name. always() prevents a failed dependency from
+    # turning this required gate into a skipped (and potentially mergeable) check.
+    name: Build and browser tests
+    if: always()
+    needs: browser-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every browser suite to pass
+        env:
+          BROWSER_RESULT: ${{ needs.browser-tests.result }}
+        run: test "$BROWSER_RESULT" = "success"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
       - run: npm run package
       - name: Downloadable game ZIP
         uses: actions/upload-artifact@v4
@@ -33,10 +65,3 @@ jobs:
           path: release/legendary-quest-for-vocabulary.zip
           if-no-files-found: error
           retention-days: 30
-      - name: Browser test report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-test-report
-          path: playwright-report/
-          retention-days: 14
