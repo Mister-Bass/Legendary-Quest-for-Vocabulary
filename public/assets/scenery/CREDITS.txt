@@ -1,0 +1,24 @@
+Scenery supplied by the owner, integrated October 15, 2026 (America/Chicago).
+
+Mage-Cyan.png: Puny Characters by Shade, CC0.
+https://opengameart.org/content/puny-characters
+Selected idle, stepping and arm-raise frames arranged into a dance loop.
+
+water.png: Myth of Pixel - Water Temple 1.05 by Atari Boy.
+https://atari-boy.itch.io/myth-of-pixel-pack-dungeon-asset-water-temple
+Eight 16x16 animation frames, scaled into pond tiles.
+Creator permits personal/commercial use and modification, excludes NFTs,
+and restricts redistribution/resale of assets, including modifications.
+The page also lists CC0 in metadata; this project retains the stricter custom terms.
+
+Tree1-4.png: Tiny Swords Free Pack by Pixel Frog.
+https://pixelfrog-assets.itch.io/tiny-swords
+Eight 192px-wide frames per sheet, scaled and placed in original maps.
+Creator permits personal/commercial project use and modifications;
+credit optional; redistribution/resale/repackaging of assets prohibited.
+This is the supplied current Free Pack, not the separately listed older CC0 pack.
+
+Owner confirmed permission to include these supplied restricted files in this
+project's public GitHub repository and downloadable ZIP. That permission does
+not grant downstream users rights to extract, redistribute, or reuse the packs.
+The original creator terms continue to apply. No endorsement is implied.
