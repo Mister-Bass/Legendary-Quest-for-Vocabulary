@@ -1,64 +1,60 @@
-// Original pixel artwork drawn locally; no external artwork or game assets are used.
-export function createArt(scene) {
-  const texture = (name, paint, size = 16) => {
-    const g = scene.make.graphics({ x: 0, y: 0 }, false);
-    const p = (x, y, w, h, color) => { g.fillStyle(color); g.fillRect(x, y, w, h); };
-    paint(p); g.generateTexture(name, size, size); g.destroy();
-  };
-  texture('traveler', p => {
-    p(3,14,11,2,0x172c29); p(5,12,3,3,0x323645); p(10,12,3,3,0x323645);
-    p(4,7,10,6,0x428d8c); p(3,9,2,4,0xdab795); p(13,9,2,4,0xdab795);
-    p(5,2,8,7,0x326f79); p(7,4,6,5,0xe1bca0); p(11,5,1,2,0x25363b);
-    p(4,1,8,3,0x438e95); p(4,3,3,5,0x438e95); p(7,9,6,2,0xe4a56a);
-    p(3,10,3,4,0x365773); p(8,12,5,1,0xd4bc84); p(14,7,1,5,0xe2d9aa);
-  });
-  texture('tree', p => {
-    p(6,11,4,5,0x62513c); p(3,4,11,8,0x1e3d34); p(1,5,14,5,0x234a3b);
-    p(4,1,8,4,0x2d6247); p(2,4,11,4,0x397854); p(4,3,5,3,0x4b8960);
-    p(3,8,4,2,0x2f6547); p(10,6,3,3,0x306148); p(5,2,2,1,0x72a272);
-  });
-  texture('seal', p => {
-    p(2,13,12,3,0x364945); p(4,4,8,10,0x8c9d8d); p(3,3,10,3,0xabb7a0);
-    p(5,6,6,6,0x384d4d); p(7,6,2,2,0xf1cf83); p(6,8,4,1,0xf1cf83); p(7,9,2,2,0xf1cf83);
-    p(4,2,8,1,0xd2c6a0); p(2,14,12,1,0xa8a78b);
-  });
-  texture('seal-lit', p => {
-    p(2,13,12,3,0x3c6258); p(4,4,8,10,0x99b8a0); p(3,3,10,3,0xc8d8b5);
-    p(6,6,4,6,0x8aebce); p(5,8,6,2,0xb5ffe1); p(7,5,2,1,0xedf9b7);
-    p(4,2,8,1,0xeee0b1);
-  });
-  texture('shade', p => {
-    p(3,12,11,3,0x202638); p(4,3,8,10,0x5a5278); p(2,6,12,5,0x726487);
-    p(4,2,3,3,0x8b749a); p(4,7,2,2,0xf4c19c); p(10,7,2,2,0xf4c19c);
-    p(6,11,3,1,0x332c49); p(3,12,2,3,0x726487); p(11,12,2,3,0x726487);
-  });
-  texture('guide', p => {
-    p(4,13,9,3,0x2a343d); p(3,8,11,6,0x9a7960); p(5,2,7,7,0xd4ba94);
-    p(4,1,9,3,0xb4c7b0); p(4,4,2,4,0xc9d5c1); p(11,4,2,4,0xc9d5c1);
-    p(6,6,5,4,0xf1e8ce); p(8,4,1,1,0x344a46); p(11,4,1,1,0x344a46);
-    p(13,8,1,8,0xd7b87b); p(12,9,3,3,0xf1d585);
-  });
+// Mystic Woods Free 2.1 by Game Endeavor; see public/assets/mystic/LICENSE.txt.
+import { WORLD } from './world.js';
+import { makeChamberLandscape, regionStyles, TILE_PIXELS } from './region-art.js';
+import { paintOverworldTile } from './overworld-art.js';
+import { A01_TREE } from './a01-art.js';
+export const directions=['down','up','left','right'];
+export function preloadArt(scene){
+  const sheet=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/mystic/${file}.png`,{frameWidth:w,frameHeight:h});
+  sheet('player','player',48);sheet('slime','slime',32);sheet('chest','chest_01',16);
+  sheet('terrain','plains',16);sheet('fences','fences',16);sheet('grass','grass',16);
+  const scenery=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/scenery/${file}.png`,{frameWidth:w,frameHeight:h});
+  scene.load.image('bridge',`${import.meta.env.BASE_URL}assets/bridge/pontev2.png`);
+  scene.load.image('puny',`${import.meta.env.BASE_URL}assets/puny/punyworld.png`);
+  scene.load.image('topdown',`${import.meta.env.BASE_URL}assets/topdown/overworld.png`);
+  for(const [key,file]of[['rune-door','door'],['rune-door-open','door-open'],['rune-key','key']])scene.load.image(key,`${import.meta.env.BASE_URL}assets/gate/${file}.svg`);
+  scenery('guide','mage-cyan',32);scenery('water','water',16);
+  for(let i=1;i<=4;i++)scenery(`tree${i}`,`tree${i}`,192,i<=2?256:192);
 }
-
-export function paintWorld(scene, room, chapter) {
-  const g = scene.add.graphics();
-  const square = (x,y,w,h,color,alpha=1) => { g.fillStyle(color,alpha); g.fillRect(x,y,w,h); };
-  for (let y=0;y<14;y++) for(let x=0;x<20;x++) {
-    const px=x*40,py=y*40,key=`${x},${y}`,seed=(x*13+y*7)%11;
-    square(px,py,40,40,room.ground);
-    const path=(x>=2&&x<=17&&y>=6&&y<=8)||(x>=4&&x<=6&&y>=3&&y<=11)||(x>=9&&x<=11&&y>=3&&y<=11)||(x>=15&&x<=17&&y>=10&&y<=11);
-    if(path) {square(px+1,py+1,38,38,room.floor);square(px+2,py+37,35,2,0x18272c,.13); if(seed<4)square(px+9,py+8,16,2,0xc7c3a0,.17);}
-    else {square(px+seed*2+4,py+9,3,5,0x91ab70,.18);square(px+21,py+25+seed,5,2,0xc3bb7f,.12);}
-    if(room.water.has(key)) {square(px,py,40,40,room.waterColor);square(px+5,py+11,19,2,0x8eb9bb,.25);square(px+19,py+29,15,2,0xb1d3c3,.16);}
-    if(room.walls.has(key)) {
-      if(x===7||y===9&&x>10) {square(px+1,py+4,38,35,room.wall);square(px+2,py+2,36,7,room.floor);square(px+5,py+13,12,3,0xb5b69a,.2);square(px+21,py+27,16,2,0x101a26,.3);}
-      else scene.add.image(px+20,py+15,'tree').setDisplaySize(52,56).setTint(chapter===0?0xffffff:chapter===1?0xb2b9db:chapter===2?0xb9c5a7:chapter===3?0xe5bf94:0x9fc1ca);
+export function createArt(scene){
+  scene.textures.get('topdown').add('a01-tree',0,A01_TREE.x,A01_TREE.y,A01_TREE.width,A01_TREE.height);
+  const animate=(key,texture,start,end,frameRate=8,repeat=-1)=>scene.anims.create({key,frames:scene.anims.generateFrameNumbers(texture,{start,end}),frameRate,repeat});
+  for(const direction of directions){
+    const row=direction==='up'?2:direction==='down'?0:1;
+    animate(`hero-idle-${direction}`,'player',row*6,row*6+5,6);
+    animate(`hero-run-${direction}`,'player',(row+3)*6,(row+3)*6+5,12);
+    animate(`hero-attack-${direction}`,'player',(row+6)*6,(row+6)*6+3,14,0);
+  }
+  animate('slime-idle','slime',0,3,5);animate('slime-run','slime',7,13,9);
+  animate('slime-attack','slime',14,20,10);animate('slime-death','slime',28,32,10,0);
+  animate('chest-open','chest',0,3,8,0);
+  animate('water-ripple','water',0,7,6);
+  for(let i=1;i<=4;i++)animate(`tree${i}-sway`,`tree${i}`,0,7,8);
+  scene.anims.create({key:'keeper-dance',frames:[0,1,2,3,4,5,12,13,12,5,4,3,2,1].map(frame=>({key:'guide',frame})),frameRate:7,repeat:-1});
+}
+export function paintWorld(scene,room){
+  const art=Object.fromEntries(['grass','terrain','water','puny'].map(key=>[key,scene.textures.get(key).getSourceImage()]));
+  const landscape=makeChamberLandscape(room),id='chamber-ground';
+  if(scene.textures.exists(id))scene.textures.remove(id);
+  // Author at native 16×16 resolution, then scale with nearest-neighbor sampling.
+  const texture=scene.textures.createCanvas(id,WORLD.columns*TILE_PIXELS,WORLD.rows*TILE_PIXELS),c=texture.context;
+  for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++)paintOverworldTile(c,landscape,x,y,TILE_PIXELS,art);
+  texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(WORLD.columns*40,WORLD.rows*40);
+  scene.chamberLandscape=landscape;scene.chamberArt=art;scene.chamberGround=texture.getSourceImage();
+  Object.assign(document.getElementById('game').dataset,{artArea:room.areaId,tilePixels:TILE_PIXELS,tileset:'puny-world',terrainTheme:regionStyles[room.areaId].terrain});
+  scene.waterSprites=[];
+  for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++){
+    const key=`${x},${y}`;
+    if(room.water.has(key)){
+      scene.waterSprites.push(scene.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).play('water-ripple'));
     }
   }
-  // Stone gate, warm torches, low ruins, flowers, and a reflected pool.
-  square(706,241,68,96,0x263d3b);square(713,247,54,80,room.floor);square(720,254,40,73,0x182e30);
-  square(716,241,48,12,0xa5a48b);square(704,253,10,82,0x7b887a);square(766,253,10,82,0x7b887a);
-  for(const x of [690,786]) {square(x-3,280,6,17,0x514f45);square(x-4,268,8,13,0xe5ab62);square(x-2,270,4,8,0xffe7a3);}
-  for(const [x,y] of [[2,3],[8,11],[17,3],[11,2]]) {square(x*40+7,y*40+23,10,3,0x8b9b70);square(x*40+12,y*40+16,3,9,0x768d62);square(x*40+10,y*40+14,7,5,chapter%2?0xc4a0b2:0xddbd84);}
-  return g;
+  if(room.bridge.size)scene.add.image(402,680,'bridge').setDisplaySize(272,200).setAngle(90);
+  scene.treeSprites=room.trees.map(({x,y,variant})=>{
+    const height=variant<=2?256:192;
+    return scene.add.sprite(x*40+20,y*40+28,`tree${variant}`).setOrigin(.5,variant<=2?.94:.88).setDisplaySize(134,height*.7).setTint(regionStyles[room.areaId].tree).play(`tree${variant}-sway`);
+  });
+  const x=room.exit.x*40+20,y=room.exit.y*40+20;
+  scene.doorSprite=scene.add.image(x,y,'rune-door').setDisplaySize(80,80).setOrigin(.5,.65);
+  return scene.doorSprite;
 }

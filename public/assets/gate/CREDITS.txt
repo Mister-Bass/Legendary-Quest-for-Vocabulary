@@ -1,0 +1,3 @@
+Three-key door, open doorway, and rune key: original project artwork, 2026.
+SVG images use a native 16x16 pixel grid with crisp edges and solid pixel shapes.
+No external artwork was used for these images. Included in the game and source ZIP.

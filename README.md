@@ -1,10 +1,10 @@
 # Legendary Quest for Vocabulary
 
-An original top-down vocabulary adventure built with Vite, JavaScript, and Phaser. Explore ruined gardens and archives, dispel inkshades with a lantern, solve vocabulary trials, earn rune keys, and open the next gate.
+An original top-down vocabulary adventure built with Vite, JavaScript, and Phaser. Explore scrolling gardens and archives, fight slimes with a sword, solve vocabulary trials, earn rune keys, and open the next gate.
 
 ## Level 1: Digital citizenship and online reputation
 
-Level 1 uses all 45 terms and their supplied definitions from Module_03_Vocabulary.pdf, provided by the teacher for Principles of Information Technology / CompTIA Digital Literacy v3.0, Module 3. Applied situations and all game artwork are original. The source PDF is not bundled or uploaded to the repository.
+Level 1 uses all 45 terms and their supplied definitions from Module_03_Vocabulary.pdf, provided by the teacher for Principles of Information Technology / CompTIA Digital Literacy v3.0, Module 3. Applied situations and game maps are original. The source PDF is not bundled or uploaded to the repository.
 
 The five chambers are:
 
@@ -18,24 +18,87 @@ The five chambers are:
 
 Each chamber has three numbered rune seals. Each seal presents 2–4 vocabulary questions. Questions alternate between matching a definition to a term, recognizing a concept in an applied situation, and choosing the meaning of a term. Restore all three seals to receive three rune keys, then interact with the eastern gate to continue. Complete all 45 questions and enter the final gate to win.
 
-Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Inkshades cost one heart if you step onto them; a lantern ward dispels nearby shades. Entering a new chamber restores one heart, up to five. There is no timer.
+Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Slimes patrol and chase around obstacles. At range they signal a violet cast for 0.8 seconds, then fire a magic bolt toward your previous position; at close range they signal orange before striking. Bolts travel visibly, collide with terrain, and can be dodged. A hit costs one heart, followed by 1.2 seconds of protection from further enemy damage. Slimes have three health pips and require three separate sword swings to defeat. Each swing can hit a given slime only once, even across many animation frames. Hits briefly stagger the slime. At one health, a red ring shows its 56-world-pixel death-burst radius. The third hit plays its death animation and a visible burst; a player at or inside the ring loses exactly one heart once, even during ordinary damage protection. Outside the ring, the death burst does no damage. Sword reach is 72 pixels, so the final hit can be landed safely from its outer range. Restart/checkpoint retry restores each slime to three health. Combat never awards vocabulary points. Entering a new chamber restores one heart, up to five. There is no timer.
 
-At zero hearts, Return to chamber restores five hearts and preserves learned words, completed seals, score, and chamber position. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
+Each chamber is now 40 by 28 tiles (1,600 by 1,120 world pixels), four times the original area. An 800 by 560 viewport uses a 1.5× zoom and smoothly follows the traveler within the map bounds. Arrows below the world point toward the three chests and gate. Hold movement keys or touch direction buttons for continuous movement; acceleration and deceleration soften starts/stops, diagonal speed is normalized, and solid terrain blocks both travelers and enemies.
+
+The player uses the supplied Mystic Woods idle, run, and sword-swing animations. The sword is hidden while idle. Left-click inside the game world or press Space to swing; holding either repeats attacks with a short recovery. Touch screens have a Sword button. The shield graphic and all shield controls have been removed. Dodge slime bolts by moving aside. Combat and movement pause during chest opening, questions, the Keeper conversation, journal, and win/loss screens. Losing focus releases controls; returning from a dialog requires fresh movement input. Game mouse controls do not apply to menus or answer buttons.
+
+Walking into a closed treasure chest plays its four opening frames. The actual first vocabulary question rises out of the chest, then the answer dialog opens. Closing a trial preserves answered words; reopening animates the next unanswered question. Completed chests stay open and gold-tinted, including after checkpoint retry, and cannot award duplicate points. Restart closes every chest and cancels any active question reveal.
+
+Closing a reading dialog grants 1.2 seconds of damage protection, allowing time to resume controls before a nearby paused projectile can hurt the player.
+
+The bottom-right exploration minimap starts under fog of war and reveals terrain around places the traveler visits. Unvisited terrain and undiscovered objects remain hidden. Explored terrain stays visible while you backtrack; nearby slimes appear only within the current revealed vicinity. Exploration is kept separately for each chamber and survives checkpoint retries during the page session. Restarting the adventure or reloading clears exploration.
+
+At zero hearts, Return to chamber restores five hearts and returns to the current chamber's entrance, preserving learned words, completed seals, score, and chamber. Enemies return to their starting positions. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
+
+## The Lanternlands overworld and area designations
+
+### 16×16 terrain and matching chamber scenery
+
+**A01 · Whisperwood uses the owner-selected Overworld_Tileset.png from TOP-DOWN Adventure Pack v1.0 by o_lobster.** The exact sheet was already bundled as `public/assets/topdown/overworld.png`; it is unchanged. Only A01 (columns 0–23, rows 0–17) opts into this override. Its grass, dirt paths, earthen ledges, small plants, flowers, and 2×3-cell broadleaf trees come from that sheet, using the same source rectangles in the atlas and playable region. Tree trunks retain their existing blocked cells, and every road and landmark keeps its original location. Other overworld regions and all five vocabulary chambers retain their existing scenery. The supplied player, Keeper, water animations, door cutscene, vocabulary, and controls remain in use. Credits: [TOP-DOWN Adventure Pack by o_lobster](https://o-lobster.itch.io/adventure-pack), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the bundled credit notice records frame selection, scaling, and arrangement into original maps.
+
+The free **Puny World** tileset by [Shade on itch.io](https://merchant-shade.itch.io/16x16-puny-world) now supplies native 16×16 grass, dirt paths, ledges, masonry, roofs, and stone floors. It is CC0; the unmodified sheet, source links, and credit record are bundled locally in `public/assets/puny/`. The atlas, playable overworld, and vocabulary chambers use the same tile painter. Terrain textures are authored at 16 pixels per cell and enlarged with nearest-neighbor sampling; the existing 40-pixel movement grid and camera zoom remain intact. Characters and the supplied animated trees/water retain their original frame sizes and credits.
+
+| Area | Scenery direction | Vocabulary chamber |
+| --- | --- | --- |
+| A01 · Whisperwood | Dense green woods, mossy ledges, dirt clearings | Exploration landmark |
+| A02 · Mirror Lake | Blue lake banks and pale stone terraces | Hall of Mirrors |
+| A03 · Crown Heights | Golden highland paths and rock ledges | Exploration landmark |
+| A04 · Citizens’ Commons | Village greens, timber roofs, civic paving | Citizens’ Court |
+| A05 · Lantern Crossroads | Pale citadel walls, formal gardens, moat | Exploration landmark |
+| A06 · Ember Quarry | Ochre rock terraces and warm forge paving | Forge of Ideas |
+| A07 · Footprint Fields | Dry fields, planted rows, sandy garden paths | Footprint Garden |
+| A08 · Willow Marsh | Mossy banks, wetland channels, bridge | Exploration landmark |
+| A09 · Trust Sanctuary | Cool stone, island gardens, lake water | Sanctum of Trust |
+
+Chambers remain separate vocabulary arenas with their tested objective and collision layouts; their terrain, walls, gardens, and tree colors now reflect the home region. They are not literal enlarged crops of the atlas. Existing water, tree, player, slime, Keeper, chest, and bridge assets remain. The chamber minimap samples the actual terrain texture beneath its fog. Tell the assistant, for example: “Make A06 more rocky and carry those changes into the Forge chamber; keep the vocabulary and controls.” No code editing is needed.
+
+The landscape now follows the artistic direction of the supplied classic overworld reference: dense woodland masses, warm stepped cliffs, a central white-walled citadel and moat, a western settlement, connected rivers, a wetland crossing, and a southeastern lake with a sanctuary island. Geography flows across the area boundaries; the nine IDs remain administrative editing references. This is original scenery composed with existing assets and code-painted terrain, not a traced or imported reference image. The existing player, slimes, trees, water, Keeper, chests, bridge, and all asset/credit files are retained. The atlas and playable terrain share one painter so paths, shorelines, cliffs, houses, and walls agree with collision. Static terrain uses small canvas chunks to reduce rendering work; the existing water and tree animations remain live.
+
+
+Press **O** or click **Overworld atlas** during play. Select a region to see its permanent ID, description, landmark, and chamber status. **Explore overworld** enters an original 72 × 54 tile (2,880 × 2,160 pixel) landscape with a following camera, connected roads, northern lake, southern marsh, stone ridges, courtyards, animated trees, and water. It takes inspiration from classic top-down adventure geography; the layout and names are original. All previously included assets remain in the repository and package.
+
+The areas are arranged in this north-to-south grid:
+
+| West | Center | East |
+| --- | --- | --- |
+| **A01 · Whisperwood** — forest / Listening Grove | **A02 · Mirror Lake** — lake / Hall of Mirrors (chamber 2) | **A03 · Crown Heights** — highlands / Crown Lookout |
+| **A04 · Citizens’ Commons** — meadow / Citizens’ Court (chamber 3) | **A05 · Lantern Crossroads** — central roads / Lantern Citadel | **A06 · Ember Quarry** — stone terraces / Forge of Ideas (chamber 4) |
+| **A07 · Footprint Fields** — starting garden / Footprint Garden (chamber 1) | **A08 · Willow Marsh** — wetland / Willow Crossing | **A09 · Trust Sanctuary** — sanctuary / Sanctum of Trust (chamber 5) |
+
+Hold arrows/WASD or the touch direction buttons to explore. Walk into an available marked chamber entrance, or press E/Interact nearby, to enter it. Finish chambers in order to unlock the next entrance; exploring does not bypass vocabulary trials. The overworld is peaceful; combat stays in the existing chambers. Open the atlas and choose **Return to quest** to resume the current chamber at the exact position you left. Entering a different unlocked chamber starts at that chamber's checkpoint and resets its enemies, while preserving hearts, score, learned terms, and completed chests. Revisiting an already unlocked chamber never restores an extra heart. Your overworld position and revealed terrain persist until restart/reload. The atlas shows the complete geography for planning; the bottom-right minimap reveals only traveled areas. The atlas pauses movement and combat.
+
+**No code editing is needed to request an area change.** Select its designation in the atlas, then tell the assistant what to change, for example:
+
+> In A01 (Whisperwood), add a hidden vocabulary chest behind a winding tree path. Keep the player, slime, water, and tree assets. Test it and update the pull request for my approval.
+
+> In A08 (Willow Marsh), widen the river and add another north–south bridge. Leave A07 unchanged.
+
+> Rename A03 to Scholar’s Peak and put a new vocabulary challenge there using my next word list. Keep the stable ID A03.
+
+Area IDs stay fixed when names or layouts change. The atlas is a selection/reference interface, not a terrain painting editor. The assistant makes requested changes in a pull request. This release adds exploration locations, not extra vocabulary beyond the existing 45 terms. Regions A01, A03, A05, and A08 are exploration landmarks ready for future content.
+
+For maintainers, `src/overworld.js` owns the area registry, deterministic geography, passability, and atlas drawing; `src/overworld-art.js` paints the shared pixel scenery; `src/overworld-scene.js` renders exploration with the existing sprite assets; `src/atlas.js` manages the accessible atlas dialog and selection. Existing vocabulary/chamber files remain the content source. The overworld is included automatically in the source/playable ZIP and Cloudflare Pages build.
 
 ## Controls
 
+The eastern exit is an original 16×16 pixel door with three empty key slots. Earn all three chamber keys, then touch the door or press E beside it. A short pixel cutscene inserts the three keys one by one, releases the lock, and opens the doorway before advancing. The final chamber plays the same sequence before the win screen. Movement, attacks, enemies, and projectiles pause during the cutscene; Escape cannot skip the locks. **Restart adventure** (or R) cancels the animation and resets the adventure safely. The images and credits are bundled locally in `public/assets/gate/`; no external artwork or service is required.
+
 | Action | Keyboard | Touch / mouse |
 | --- | --- | --- |
-| Move | Arrow keys or WASD | Direction buttons under the game |
-| Interact with adjacent seal, Keeper, or gate | E or Space | Interact button |
-| Dispel inkshades within two grid cells | J or Z | Lantern ward button |
+| Move continuously | Hold arrow keys or WASD | Hold direction buttons under the game |
+| Open a chest's vocabulary trial | Walk into the chest with arrows or WASD | Move toward the chest with direction buttons |
+| Interact with chest, Keeper, or gate | Walk into it; E remains a nearby alternative | Move into it; Interact button also works |
+| Draw/swing sword / repeat while held | Space or left mouse button inside the world | Sword button (hold to repeat) |
 | Answer a vocabulary question | 1–4 | Answer buttons |
+| Open overworld atlas / close atlas | O / Escape | Overworld atlas / close button |
 | Open word journal | M | Open word journal button |
 | Close a trial, guide, or journal | Escape | Close button |
 | Start / return after losing | Enter | Begin / Return button |
 | Reset the whole adventure | R | Restart adventure button |
 
-Stone walls, trees, water, and monuments block movement. Stand next to a monument to interact with it. The Keeper beside the starting position explains the rules. The journal stores the definitions of words answered correctly. Puzzle dialogs trap focus and support normal keyboard navigation. The canvas world is visual; this is not a fully nonvisual game.
+Walk into chests, the Keeper, and gates to interact automatically. An unlocked gate advances to the next chamber on contact; a locked gate explains which keys are missing. The traveler stays beside a chest or the Keeper while a dialog is open. Closing a trial preserves answered words. Step away and touch the object again to resume, or use E/Interact beside it; dialogs do not repeatedly reopen while you remain in contact. Completed chests remain open and cannot award duplicate points. Space is now reserved for the sword. Fences, water, and monuments block movement. The journal stores learned definitions. Puzzle dialogs trap focus and support normal keyboard navigation. The canvas world is visual; this is not a fully nonvisual game.
 
 ## Request changes using plain English
 
@@ -45,7 +108,7 @@ You do not need to write or edit code. Open this repository in your coding assis
 
 > Make the clues harder and add more context questions. Keep gentle feedback after mistakes. Test the complete level and create a pull request.
 
-> Replace the lantern ward with a shield, add a new chamber, or give students more hearts. Update the instructions and tests for me.
+> Add a new chamber or give students more hearts. Keep sword combat. Update the instructions and tests for me.
 
 The assistant should extract and check your list, implement the game, run the checks, provide screenshots or a preview, and create a PR. Review it before approving a merge. Passing CI alone does not authorize the assistant to merge or publish.
 
@@ -54,12 +117,35 @@ The assistant should extract and check your list, implement the game, run the ch
 - src/vocabulary.js: all 45 source terms and definitions, in the PDF’s order.
 - src/lesson.js: chamber groupings, applied situations, and question construction.
 - src/world.js: passable terrain, monuments, gates, and chamber palettes.
-- src/art.js: original procedural pixel artwork and scenery.
+- src/art.js: local sprite loading, animations, scenery, and original Keeper artwork.
+- public/assets/mystic/: owner-supplied sprites, terrain, attribution, and original license.
 - src/adventure.js: Phaser scene, movement, trials, hearts, gates, journal, and game states.
+- src/action-world.js: continuous movement, collision, enemy patrol/chase/attacks, sword combat, follow camera, and direction hints.
+- src/minimap.js: per-chamber exploration, fog of war, and the bottom-right canvas minimap.
 - src/adventure.css and index.html: responsive shell and accessible native controls/dialogs.
 - tests/adventure.spec.js: browser tests using actual keyboard and button input. Read-only DOM state supports assertions; there are no test-only game mutation shortcuts.
 
-All 45 terms are assigned to exactly one chamber. Game art is generated locally in Phaser without external downloads. No original Zelda characters, maps, music, names, or artwork are included.
+All 45 terms are assigned to exactly one chamber. Artwork loads from this site's own assets; gameplay does not depend on Drive or third-party image hosts. No original Zelda characters, maps, music, names, or artwork are included.
+
+## Artwork credits
+
+Mystic Woods Free 2.1 by [Game Endeavor](https://game-endeavor.itch.io/mystic-woods), supplied by the owner. Uses player.png (48×48 frames), slime.png (32×32), chest_01.png (16×16), and grass/plains/fence terrain from the supplied tilesets folder. All 45 vocabulary terms belong to Level 1 across its five chambers, which now share this artwork. Pixel frames are selected, flipped, and scaled in original maps. The player's own sword-swing frames replace the old generated sword. The gate and interface are original project artwork. The Keeper, water, and trees use the additional owner-supplied packs credited below.
+
+This free pack permits non-commercial use and restricts redistribution. The owner confirmed permission to include the supplied files in this project's public repository and downloadable ZIP on October 15, 2026. That confirmation does not change the creator's license or grant downstream users rights to extract/reuse the pack. The original license and attribution are retained in public/assets/mystic/LICENSE.txt and CREDITS.txt and in both playable and source ZIP folders. Old TOP-DOWN pack files are retained with their separate CC BY 4.0 notice for historical compatibility but are no longer loaded by the game.
+
+### Water, dancing Keeper, and scattered trees
+
+The ponds use all eight 16×16 frames of **Myth of Pixel – Water Temple** water by [Atari Boy](https://atari-boy.itch.io/myth-of-pixel-pack-dungeon-asset-water-temple), looping at 6 fps. The Keeper uses **Mage-Cyan.png from Puny Characters** by [Shade](https://opengameart.org/content/puny-characters), CC0, with stepping and arm-raise poses arranged into a 7 fps dance. The dance is decorative; contact and E still open the Keeper's advice.
+
+Each chamber has 13 scattered trees with four varieties from **Tiny Swords Free Pack** by [Pixel Frog](https://pixelfrog-assets.itch.io/tiny-swords), swaying through eight frames. Trunk cells block the traveler, enemies, and projectiles and appear on explored minimap terrain. Positions are deterministic, away from the main dirt paths and interactions; all objectives remain reachable. Restart/retry redraw the same grove. Water still blocks walking.
+
+All additional files load locally from public/assets/scenery/. CREDITS.txt documents authors, source links, selected frames, and terms. Tiny Swords and Water Temple permit game use but restrict redistribution of assets. The owner confirmed permission to include these new files in the public repository and downloadable ZIP on October 15, 2026. This is not a blanket downstream license to extract/reuse them. The water page also displays CC0 metadata, but this project retains its more restrictive custom terms. Credit links are visible in the footer.
+
+### Starting pond bridge
+
+The first chamber now has a north–south stone bridge over the nearby pond at column 10, rows 15–18. Walk onto it from either bank; surrounding water remains impassable. The minimap shows explored bridge tiles in tan. Other chambers retain their pond layouts.
+
+Artwork: [16x16 Bridge by Deco](https://opengameart.org/content/16x16-bridge-0), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The unmodified pontev2.png is rendered at 4× pixel scale and rotated 90° across the original starting pond. Attribution/source/license links are retained in public/assets/bridge/CREDITS.txt, the game footer, and source/playable ZIP folders. No endorsement is implied.
 
 ## Build and checks
 
@@ -72,7 +158,7 @@ Node 24 is recommended. The assistant or developer runs:
     npm test
     npm run package
 
-The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, loading, movement and collisions, gates, guide dialogs, numbered answers, mistakes and loss, checkpoint recovery, journal, restart, touch controls, lantern wards, and a full 45-word playthrough through all five chambers.
+The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, asset loading, movement/collision, scrolling camera, contact interactions and gates, modal/projectile pause, mistakes/loss, checkpoint recovery, journal, restart, mobile controls, mouse/Space sword controls, removed shield controls, slime projectiles and damage, chest opening and rising questions, fog exploration/reset, and a full 45-word contact playthrough across five chambers.
 
 GitHub Actions runs Build and browser tests for every PR, main update, merge queue, and manual run. It builds, runs the full suite in Chromium, Firefox, and WebKit, and generates a ZIP. In the run’s Artifacts section, download legendary-quest-package. It contains legendary-quest-for-vocabulary.zip with playable/ (built game) and source/ (reusable project). GitHub may wrap that ZIP in another ZIP. Game artifacts last 30 days; browser reports last 14 days.
 
