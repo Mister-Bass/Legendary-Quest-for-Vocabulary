@@ -1,0 +1,12 @@
+Puny World 16x16 Tileset by Shade (merchant-shade)
+License: CC0 1.0 Universal / public domain dedication.
+https://creativecommons.org/publicdomain/zero/1.0/
+Creator's itch.io page: https://merchant-shade.itch.io/16x16-puny-world
+Creator's OpenGameArt distribution: https://opengameart.org/content/16x16-puny-world-tileset
+Downloaded October 16, 2026 from the creator's distribution:
+https://opengameart.org/sites/default/files/punyworld-overworld-tileset_0.png
+Stored as punyworld.png, unmodified (432x1040 pixels; 16x16 cells).
+The creator lists CC0 and permits game use and modification on both pages.
+Runtime use: grass, dirt paths, ledges, pale masonry, roof pieces, and stone floors.
+Some tiles receive runtime color glazes. Map layouts and assembly are original.
+The original characters, trees, water animation, chests, and bridge retain their separate credits.
