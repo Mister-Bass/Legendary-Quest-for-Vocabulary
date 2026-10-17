@@ -1,10 +1,12 @@
 import { groundTile, stamp } from './region-art.js';
+import { usesA01Tiles, paintA01Tile, A01_TREE } from './a01-art.js';
 // Original pixel scenery, painted identically in the atlas and the playable world.
 // Existing grass/path/water/tree sprites remain the texture sources.
 const colors={grass:'#73a955',forest:'#34663c',sand:'#b9a365',highland:'#a8985c',marsh:'#669663',stone:'#9da88a'};
 const key=(x,y)=>`${x},${y}`;
 
 export function paintOverworldTile(context,map,x,y,size,art){
+  if(art?.topdown&&usesA01Tiles(map,x,y)){paintA01Tile(context,map,x,y,size,art);return;}
   const c=context,k=key(x,y),kind=map.terrain.get(k)||'grass',n=(x*37+y*19)%17;
   c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;
   c.fillStyle=colors[kind];c.fillRect(0,0,16,16);
@@ -96,7 +98,8 @@ export function paintAtlasDetails(c,map,sx,sy,art){
     cc.putImageData(pixels,0,0);art.forestTree=canopy;
   }
   for(const t of map.trees){
-    if(art&&t.forest)c.drawImage(art.forestTree,(t.x-2)*sx,(t.y-3.5)*sy,5*sx,5*sy);
+    if(art?.topdown&&usesA01Tiles(map,t.x,t.y))c.drawImage(art.topdown,A01_TREE.x,A01_TREE.y,A01_TREE.width,A01_TREE.height,(t.x-.5)*sx,(t.y-2)*sy,2*sx,3*sy);
+    else if(art&&t.forest)c.drawImage(art.forestTree,(t.x-2)*sx,(t.y-3.5)*sy,5*sx,5*sy);
     else if(art)c.drawImage(art[`tree${t.variant}`],0,0,192,t.variant<=2?256:192,(t.x-1)*sx,(t.y-2.2)*sy,3*sx,(t.variant<=2?4:3)*sy);
     else{c.fillStyle='#264f32';c.fillRect((t.x-.5)*sx,(t.y-1)*sy,2*sx,2*sy);}
   }

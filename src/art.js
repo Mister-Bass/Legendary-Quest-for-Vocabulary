@@ -2,6 +2,7 @@
 import { WORLD } from './world.js';
 import { makeChamberLandscape, regionStyles, TILE_PIXELS } from './region-art.js';
 import { paintOverworldTile } from './overworld-art.js';
+import { A01_TREE } from './a01-art.js';
 export const directions=['down','up','left','right'];
 export function preloadArt(scene){
   const sheet=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/mystic/${file}.png`,{frameWidth:w,frameHeight:h});
@@ -10,11 +11,13 @@ export function preloadArt(scene){
   const scenery=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/scenery/${file}.png`,{frameWidth:w,frameHeight:h});
   scene.load.image('bridge',`${import.meta.env.BASE_URL}assets/bridge/pontev2.png`);
   scene.load.image('puny',`${import.meta.env.BASE_URL}assets/puny/punyworld.png`);
+  scene.load.image('topdown',`${import.meta.env.BASE_URL}assets/topdown/overworld.png`);
   for(const [key,file]of[['rune-door','door'],['rune-door-open','door-open'],['rune-key','key']])scene.load.image(key,`${import.meta.env.BASE_URL}assets/gate/${file}.svg`);
   scenery('guide','mage-cyan',32);scenery('water','water',16);
   for(let i=1;i<=4;i++)scenery(`tree${i}`,`tree${i}`,192,i<=2?256:192);
 }
 export function createArt(scene){
+  scene.textures.get('topdown').add('a01-tree',0,A01_TREE.x,A01_TREE.y,A01_TREE.width,A01_TREE.height);
   const animate=(key,texture,start,end,frameRate=8,repeat=-1)=>scene.anims.create({key,frames:scene.anims.generateFrameNumbers(texture,{start,end}),frameRate,repeat});
   for(const direction of directions){
     const row=direction==='up'?2:direction==='down'?0:1;

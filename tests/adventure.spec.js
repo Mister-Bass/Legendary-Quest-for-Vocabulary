@@ -5,6 +5,7 @@ import { WORLD, makeRoom, isWalkable, distance } from '../src/world.js';
 import { areas, makeOverworld, overworldWalkable, entranceFor } from '../src/overworld.js';
 import { chapterAreaIds, regionStyles, makeChamberLandscape, TILE_PIXELS } from '../src/region-art.js';
 import { gateFrame, GATE_DURATION } from '../src/gate.js';
+import { usesA01Tiles } from '../src/a01-art.js';
 
 test.setTimeout(360000);
 const game=page=>page.locator('#game');
@@ -363,6 +364,9 @@ test('the starting pond bridge runs north-south and crosses both ways while adja
 
 test('overworld geography has nine stable designations and reachable landmarks',()=>{
   const map=makeOverworld(),start=entranceFor(0),queue=[start],seen=new Set([`${start.x},${start.y}`]);
+  expect(map.tilesets).toEqual({A01:'topdown'});
+  for(const a of areas)expect(usesA01Tiles(map,a.x,a.y)).toBe(a.id==='A01');
+  for(let chapter=0;chapter<5;chapter++)expect(usesA01Tiles(makeChamberLandscape(makeRoom(chapter,5)),12,9)).toBe(false);
   expect(areas.map(a=>a.id)).toEqual(['A01','A02','A03','A04','A05','A06','A07','A08','A09']);
   expect(areas.filter(a=>a.chapter!==undefined).map(a=>a.chapter).sort()).toEqual([0,1,2,3,4]);
   for(let i=0;i<queue.length;i++)for(const [dx,dy]of[[0,1],[0,-1],[1,0],[-1,0]]){
@@ -391,6 +395,12 @@ test('atlas selects areas, pauses combat, and preserves vocabulary progress',asy
   await page.keyboard.press('o');await expect(page.locator('#atlas')).toBeVisible();
   await expect(game(page)).toHaveAttribute('data-mode','atlas');
   await expect(page.locator('#area-buttons button')).toHaveCount(9);
+  await page.getByRole('button',{name:'A01 · Whisperwood',exact:true}).click();
+  await expect(page.locator('#area-description')).toContainText('TOP-DOWN Adventure Pack');
+  // Sample the actual rendered grove path; its center must use the supplied sheet's brown pixel.
+  expect(await page.locator('#atlas-map').evaluate(c=>Array.from(c.getContext('2d').getImageData(125,95,1,1).data))).toEqual([142,104,72,255]);
+  expect(await page.locator('#atlas-map').evaluate(c=>Array.from(c.getContext('2d').getImageData(145,65,1,1).data))).toEqual([89,127,30,255]);
+  await page.screenshot({path:test.info().outputPath('a01-owner-tileset-atlas.png')});
   await page.getByRole('button',{name:'A03 · Crown Heights',exact:true}).click();
   await expect(page.locator('#area-request')).toContainText('In A03 (Crown Heights)');
   await expect(page.locator('#area-title')).toHaveText('A03 · Crown Heights');

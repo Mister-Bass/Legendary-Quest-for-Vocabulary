@@ -43,6 +43,7 @@ const branch=[[49,39],[44,42],[38,43],[29,43],[26,42]];
 
 export function makeOverworld(){
   const map={roads,paths,gardens:new Set(),water:new Set(),walls:new Set(),bridge:new Set(),trees:[],terrain:new Map(),cliffs:new Set(),fortress:new Set(),fields:new Set(),flowers:new Set(),buildings:new Map()};
+  map.tilesets={A01:'topdown'};
   const height=(x,y)=>{
     if(x>=25&&y<16+Math.floor(Math.sin(x*.35)*2))return 1+(y<10+Math.floor(Math.sin(x*.28)*2)?1:0)+(y<4?1:0);
     if(x>53&&y>19&&y<36)return x>65?2:1;

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { areas, areaAt, entranceFor, makeOverworld, overworldWalkable, drawAtlas } from './overworld.js';
 import { paintOverworldTile } from './overworld-art.js';
+import { usesA01Tiles } from './a01-art.js';
 
 const vectors={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const $=id=>document.getElementById(id);
@@ -10,7 +11,7 @@ export class OverworldScene extends Phaser.Scene {
   init({adventure}){this.adventure=adventure;this.keys=adventure.overworldInput;this.vx=0;this.vy=0;this.facing='down';this.contact=null;this.lastCell='';}
   create(){
     this.map=makeOverworld();
-    const art=Object.fromEntries(['grass','terrain','water','puny'].map(key=>[key,this.textures.get(key).getSourceImage()]));
+    const art=Object.fromEntries(['grass','terrain','water','puny','topdown'].map(key=>[key,this.textures.get(key).getSourceImage()]));
     this.art=art;
     // Bake static scenery into small chunks. Only trees and water need per-frame animation.
     const chunkKeys=[];
@@ -29,6 +30,9 @@ export class OverworldScene extends Phaser.Scene {
     }
     this.add.image(36*40+2,43*40,'bridge').setDisplaySize(272,200).setAngle(90).setDepth(-2);
     this.map.trees.forEach(t=>{
+      if(usesA01Tiles(this.map,t.x,t.y)){
+        this.add.image(t.x*40+20,(t.y+1)*40,'topdown','a01-tree').setOrigin(.5,1).setDisplaySize(80,120).setDepth(t.y*40+28);return;
+      }
       const size=t.forest?200:134,height=t.forest?200:(t.variant<=2?256:192)*.7;
       const sprite=this.add.sprite(t.x*40+20,t.y*40+28,`tree${t.variant}`).setOrigin(.5,t.variant<=2?.94:.88).setDisplaySize(size,height).setDepth(t.y*40+28).play(`tree${t.variant}-sway`);
       if(t.forest)sprite.setTint(0x5096a0);

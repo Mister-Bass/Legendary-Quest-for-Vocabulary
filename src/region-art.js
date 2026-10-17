@@ -1,7 +1,7 @@
 // Shade's Puny World: native 16×16 cells, CC0. Coordinates refer to the unmodified sheet.
 export const TILE_PIXELS=16;
 export const regionStyles={
-  A01:{terrain:'forest',ground:'#456a38',wash:'#244d32',wall:[3,5],floor:[0,0],tree:0x70a89a,detail:'Dense woodland, mossy ledges, and winding dirt clearings'},
+  A01:{terrain:'forest',ground:'#456a38',wash:'#244d32',wall:[3,5],floor:[0,0],tree:0x70a89a,detail:'TOP-DOWN Adventure Pack woodland: grass, winding dirt paths, earthen ledges, flowers, and broadleaf trees'},
   A02:{terrain:'stone',ground:'#a1ae96',wash:'#92bfd1',wall:[19,27],floor:[20,28],tree:0xb5d5d5,detail:'Lake-blue banks and pale stone terraces around the Hall of Mirrors'},
   A03:{terrain:'highland',ground:'#aa975e',wash:'#b49662',wall:[3,5],floor:[14,1],tree:0xd6ba8a,detail:'Golden highland paths, rock ledges, and sparse evergreens'},
   A04:{terrain:'grass',ground:'#7c9e50',wash:'#759447',wall:[22,27],floor:[20,28],tree:0xb4cc9b,detail:'Village greens, timber boundaries, and paved civic courtyards'},
