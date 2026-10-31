@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests', fullyParallel: true, forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: [['list'], ['html', { open: 'never' }], ...(process.env.CI ? [['github']] : [])],
   use: { baseURL: 'http://127.0.0.1:4183', trace: { mode:'retain-on-failure', screenshots:false, snapshots:true, sources:true } },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

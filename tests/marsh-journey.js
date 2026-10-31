@@ -42,7 +42,8 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
     await page.mouse.move(box.x+Math.max(5,Math.min(795,sx))/800*box.width,box.y+Math.max(5,Math.min(555,sy))/560*box.height);
     await page.keyboard.press(index===2?'b':'f');await page.waitForTimeout(400);
   }
-  await expect.poll(async()=>JSON.parse((await state(page)).enemies).find(e=>e.id===id).active,{timeout:5000}).toBe(false);
+  const hunt=await state(page);
+  await expect.poll(async()=>JSON.parse((await state(page)).enemies).find(e=>e.id===id).active,{timeout:5000,message:JSON.stringify({lantern:index,mode:hunt.mode,hero:[hunt.px,hunt.py],flame:hunt.flameSeconds,wisp:JSON.parse(hunt.enemies).find(e=>e.id===id)})}).toBe(false);
   let s=await state(page),drop=JSON.parse(s.flameDrops)[0];
   if(Number(s.flameSeconds)===0){
     expect(drop,'Wisp dropped a flame').toBeTruthy();const room=makeMarshRoom(),objects=[room.guide,room.exit,room.heart,...room.seals],candidates=[];

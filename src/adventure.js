@@ -22,6 +22,10 @@ class Adventure extends Phaser.Scene {
     this.marshProgress=marshProgress();
     this.startChapter=new URLSearchParams(location.search).get('area')==='A02'?1:0;
     this.gateCutscene=new GateCutscene(this);
+    // Camera follow updates during rendering, after the simulation telemetry.
+    this.renderedCameraMetadata=()=>{if(this.room?.marsh&&!this.scene.isActive('Overworld')){const c=this.cameras.main;Object.assign($('game').dataset,{cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1)});}};
+    this.events.on(Phaser.Scenes.Events.RENDER,this.renderedCameraMetadata);
+    this.events.once('shutdown',()=>this.events.off(Phaser.Scenes.Events.RENDER,this.renderedCameraMetadata));
     this.exploration=new Map();this.unlocked=this.startChapter;this.overworldExplored=new Set();this.overworldPosition=null;
     this.state = { mode:'title', chapter:this.startChapter, ...makeRoom(this.startChapter,5).spawn, hearts:5, score:0, learned:new Set(), sealed:new Set() };
     this.loadRoom();
