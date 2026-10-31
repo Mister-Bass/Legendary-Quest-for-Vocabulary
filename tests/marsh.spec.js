@@ -23,6 +23,7 @@ test('marsh pads sink after two seconds, rescue the player, and regrow',()=>{
   const m=new MarshModel(makeMarshRoom()),pad=m.room.pads[0];Object.assign(m.hero,at(pad));advance(m,1.8);expect(m.falls).toBe(0);
   advance(m,.3);expect(m.falls).toBe(1);expect(m.flameUntil).toBe(0);expect(m.padTimers.get(cell(pad.x,pad.y)).sunkUntil).toBeGreaterThan(m.clock);
   advance(m,4.1);expect(m.padTimers.has(cell(pad.x,pad.y))).toBe(false);
+  const edge=new MarshModel(makeMarshRoom()),pair=edge.room.pads.find(p=>edge.room.bridge.has(cell(p.x+1,p.y)));Object.assign(edge.hero,{x:(pair.x+1)*40+2,y:pair.y*40+20});edge.padTimers.set(cell(pair.x,pair.y),{deadline:0,sunkUntil:0});edge.tick(.02);expect(edge.falls).toBe(1);expect(edge.hero.x).toBe(edge.safe.x);expect(edge.hero.y).toBe(edge.safe.y);
 });
 test('marsh mud slows movement; facing shields and rolls avoid mud balls',()=>{
   const r=makeMarshRoom(),m=new MarshModel(r);Object.assign(m.hero,at({x:5,y:25}));advance(m,.1,{up:true});expect(m.speed).toBe(95);

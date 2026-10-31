@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { vocabulary } from '../src/lesson.js';
 import { makeRoom,isWalkable,distance } from '../src/world.js';
-import { kindleMarsh } from './marsh-journey.js';
+import { kindleMarsh,waitForMarshPads } from './marsh-journey.js';
 const game=page=>page.locator('#game');
 const state=page=>game(page).evaluate(el=>({...el.dataset}));
 async function start(page){
@@ -28,10 +28,12 @@ async function walkMarshPath(page,path,chapter){
   // straight segment. Keep moving across sinking pads while correcting drift.
   const held=new Set();
   const position=()=>game(page).evaluate(el=>({mode:el.dataset.mode,chapter:el.dataset.chapter,px:Number(el.dataset.px),py:Number(el.dataset.py),falls:el.dataset.falls}));
+  const initialFalls=(await position()).falls;
   try{for(const point of path){
     const target={px:point.x*40+20,py:point.y*40+20},started=Date.now();
     for(;;){
       const s=await position();if(s.mode!=='playing'||s.chapter!==chapter)return;
+      if(s.falls!==initialFalls)throw Object.assign(Error('A sinking pad rescued the traveler; replan from the safe bank.'),{marshFall:true});
       const dx=target.px-s.px,dy=target.py-s.py;if(Math.hypot(dx,dy)<=12)break;
       if(Date.now()-started>6000)throw Error(`Marsh steering stalled at ${s.px},${s.py} toward ${target.px},${target.py}; falls=${s.falls}`);
       const next=new Set();if(Math.abs(dx)>5)next.add(dx>0?'ArrowRight':'ArrowLeft');if(Math.abs(dy)>5)next.add(dy>0?'ArrowDown':'ArrowUp');
@@ -42,7 +44,7 @@ async function walkMarshPath(page,path,chapter){
   }}finally{for(const key of held)await page.keyboard.up(key);}
   await settle(page);
 }
-async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
+async function walkTo(page,target,{exact=false,avoidEnemies=true,rescues=0}={}){
   const s=await state(page),room=makeRoom(Number(s.chapter),5),origin={x:Math.floor(Number(s.px)/40),y:Math.floor(Number(s.py)/40)};
   const objects=[room.guide,room.exit,...room.seals,...(room.heart?[room.heart]:[])],chapter=s.chapter;
   const q=[{...origin,path:[]}],seen=new Set();let path;
@@ -63,7 +65,13 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
   }
   if(!path)throw Error(`No path to ${JSON.stringify(target)}`);
   // Hold keys along straight segments instead of simulating frame-sized key taps.
-  if(room.marsh){await walkMarshPath(page,path,chapter);return;}
+  if(room.marsh){
+    try{await walkMarshPath(page,path,chapter);return;}
+    catch(error){
+      if(!error.marshFall||rescues>=2||Number(s.flameSeconds)>0)throw error;
+      await waitForMarshPads(page,state);return walkTo(page,target,{exact,avoidEnemies,rescues:rescues+1});
+    }
+  }
   let previous=origin;
   for(let i=0;i<path.length;){
     const at=await state(page);
@@ -113,13 +121,15 @@ async function correct(page){
   await page.locator('#answers button').filter({has:page.getByText(answer,{exact:true})}).click();
 }
 async function finishTrial(page,index){
-  for(let attempt=0;attempt<3;attempt++){
+  for(let attempt=0;attempt<4;attempt++){
     try{await openTrial(page,index);while((await state(page)).mode==='puzzle')await correct(page);return;}
     catch(error){
       // The full quest can arrive with fewer hearts than the isolated practice run.
       // Recover through the actual checkpoint UI; never inject progress or health.
-      if((await state(page)).mode!=='lost'||attempt===2)throw error;
-      await page.getByRole('button',{name:'Return to chamber'}).click();
+      const current=await state(page);if(attempt===3)throw error;
+      if(current.mode==='lost')await page.getByRole('button',{name:'Return to chamber'}).click();
+      else if(current.chapter==='1'&&(error.marshFall||error.marshFlameExpired))await waitForMarshPads(page,state);
+      else throw error;
     }
   }
 }

@@ -29,7 +29,7 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   // then exercises a genuine ten-second bank-and-pad run using timed rolls.
   for(let attempt=0;attempt<16;attempt++){
     await clearMelee();
-    const s=await state(page),enemy=JSON.parse(s.enemies).find(e=>e.id===id);if(!enemy.active)break;
+    const s=await state(page);if(s.mode!=='playing')throw Error(`The marsh encounter requires checkpoint recovery: ${s.mode}`);const enemy=JSON.parse(s.enemies).find(e=>e.id===id);if(!enemy.active)break;
     if(Math.hypot(enemy.x-Number(s.px),enemy.y-Number(s.py))>180){
       const r=makeMarshRoom(),objects=[r.guide,r.exit,r.heart,...r.seals],near=[];
       for(let y=2;y<30;y++)for(let x=2;x<30;x++)if(marshWalkable(r,x,y)&&!r.water.has(`${x},${y}`)&&!objects.some(p=>Math.hypot(p.x-x,p.y-y)<2)&&Math.hypot(x*40+20-enemy.x,y*40+20-enemy.y)<130)near.push({x,y});
@@ -61,18 +61,20 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   if(index===1)await go(26,6);
   if(index===2){await go(4,Math.floor(Number((await state(page)).py)/40));await dash('py',1020);await dash('px',660);}
   const target=[{x:6,y:4},{x:25,y:4},{x:15,y:14}][index];await walkTo(page,target,{avoidEnemies:false});
+  const arrival=await state(page);if(arrival.mode==='playing'&&Number(arrival.flameSeconds)<=0)throw Object.assign(Error('The carried Wisp Flame expired; collect another through normal play.'),{marshFlameExpired:true});
   if((await state(page)).mode==='playing')await contact(page,target,()=>state(page).then(s=>s.mode==='opening'||s.mode==='puzzle'));
   await expect(page.locator('#game')).toHaveAttribute('data-mode','puzzle');
 }
 
 export async function waitForMarshPads(page,state){
   await page.locator('#game canvas').scrollIntoViewIfNeeded();await page.keyboard.down('q');
-  try{for(let i=0;i<85;i++){
+  const deadline=Date.now()+30000;
+  try{while(Date.now()<deadline){
     const s=await state(page);if(s.mode!=='playing')break;if(JSON.parse(s.pads).length===0)break;
     const bolts=JSON.parse(s.projectiles).sort((a,b)=>Math.hypot(a.x-Number(s.px),a.y-Number(s.py))-Math.hypot(b.x-Number(s.px),b.y-Number(s.py)));
     if(bolts.length){const p=bolts[0],box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),x=(p.x-Number(s.cameraX)-400)*z+400,y=(p.y-Number(s.cameraY)-280)*z+280;await page.mouse.move(box.x+Math.max(5,Math.min(795,x))/800*box.width,box.y+Math.max(5,Math.min(555,y))/560*box.height);}
     await page.waitForTimeout(80);
-  }}finally{await page.keyboard.up('q');}
+  }if((await state(page)).mode==='playing')await expect(page.locator('#game')).toHaveAttribute('data-pads','[]');}finally{await page.keyboard.up('q');}
 }
 
 export async function guardMarshExit(page,state,walk){

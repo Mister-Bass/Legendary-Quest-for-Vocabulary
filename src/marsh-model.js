@@ -59,7 +59,11 @@ export class MarshModel{
     if(this.room.bridge.has(k)&&!this.padTimers.has(k))this.padTimers.set(k,{deadline:this.clock+(this.boss.active?.9:PAD_SECONDS),sunkUntil:0});
     const safeCell={x:(Math.floor(h.x/40)+.5)*40,y:(Math.floor(h.y/40)+.5)*40};
     if(!this.room.water.has(k)&&!this.solid(safeCell.x,safeCell.y))this.safe=safeCell;
-    if(this.padTimers.get(k)?.sunkUntil>this.clock){h.x=this.safe.x;h.y=this.safe.y;this.flameUntil=0;this.falls++;this.hurt('The lily pad sank! You return to the last safe bank and lose one heart.');}
+    // A pad can sink while only the edge of the hero's feet overlaps it.
+    // Rescue the whole collision footprint so that movement cannot get trapped
+    // between a live pad and a newly submerged neighboring pad.
+    const submerged=[-8,8].some(ox=>[-8,8].some(oy=>this.padTimers.get(cell(Math.floor((h.x+ox)/40),Math.floor((h.y+oy)/40)))?.sunkUntil>this.clock));
+    if(submerged){h.x=this.safe.x;h.y=this.safe.y;this.flameUntil=0;this.falls++;this.hurt('The lily pad sank! You return to the last safe bank and lose one heart.');}
     this.drops=this.drops.filter(d=>{if(d.until<=this.clock)return false;if(dist(d,h)<32){this.flameUntil=this.clock+FLAME_SECONDS;this.emit('message',{message:'Wisp Flame carried: 10 seconds. Run to an unlit lantern!'});return false;}return true;});
     if(this.clock-this.attackAt<.28){for(const e of [...this.enemies])this.strike(e);this.hitBoss();}
     for(const e of this.enemies){
