@@ -56,7 +56,12 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
         const dx=x*40+20-enemy.x,dy=enemy.y-(y*40+20);
         if(dx>=25&&dx<=145&&dy>=40&&dy<=140&&marshWalkable(r,x,y)&&!r.water.has(`${x},${y}`)&&!objects.some(p=>Math.hypot(p.x-x,p.y-y)<1.5))candidates.push({x,y,score:Math.hypot(dx-80,dy-80)});
       }
-      candidates.sort((a,b)=>a.score-b.score);expect(candidates.length).toBeGreaterThan(0);
+      if(!candidates.length){
+        // At the northern wall there is no place to stand behind the Wisp.
+        // Retreat through normal controls and let it drift back toward its home.
+        await go(5,13);await page.waitForTimeout(4500);continue;
+      }
+      candidates.sort((a,b)=>a.score-b.score);
       await walkTo(page,candidates[0],{exact:true,avoidEnemies:false,attack:false,guard:true});await page.waitForTimeout(200);
     }
     expect(JSON.parse((await state(page)).enemies).find(e=>e.id===0).y).toBeGreaterThanOrEqual(930);

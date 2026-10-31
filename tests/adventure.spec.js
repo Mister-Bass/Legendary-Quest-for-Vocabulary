@@ -147,11 +147,11 @@ test('all 45 contact trials unlock the scrolling chambers and win; replay resets
     expect((await state(page)).px).toBe(before.px);expect((await state(page)).enemies).toBe(before.enemies);
     await expect(film).toHaveAttribute('data-inserted','2');
     await expect(film).toHaveAttribute('data-inserted','3');
-    await expect(film).toHaveAttribute('data-phase','unlocking');
+    await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('unlocking');
     const slots=await page.locator('#gate-film').evaluate(canvas=>[53,65,74].map(x=>Array.from(canvas.getContext('2d').getImageData(x,34,1,1).data).slice(0,3)));
     expect(slots).toEqual([[242,203,112],[157,218,224],[208,195,251]]);
     if(chapter===0)await page.screenshot({path:test.info().outputPath('three-keys-inserted.png')});
-    await expect(film).toHaveAttribute('data-phase','open');
+    await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('open');
     if(chapter===0)await page.screenshot({path:test.info().outputPath('pixel-door-open.png')});
     if(chapter<4)await expect(game(page)).toHaveAttribute('data-chapter',String(chapter+1));
   }
