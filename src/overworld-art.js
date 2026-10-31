@@ -1,11 +1,17 @@
 import { groundTile, stamp } from './region-art.js';
 import { usesA01Tiles, paintA01Tile, A01_TREE } from './a01-art.js';
+import { paintMarshTile } from './marsh-art.js';
 // Original pixel scenery, painted identically in the atlas and the playable world.
 // Existing grass/path/water/tree sprites remain the texture sources.
 const colors={grass:'#73a955',forest:'#34663c',sand:'#b9a365',highland:'#a8985c',marsh:'#669663',stone:'#9da88a'};
 const key=(x,y)=>`${x},${y}`;
 
 export function paintOverworldTile(context,map,x,y,size,art){
+  if(map.marshPreview&&art?.marshTree&&x>=24&&x<48&&y<18){
+    paintMarshTile(context,map.marshTerrain,x,y,size,{tree:art.marshTree});
+    for(const [tx,ty,key]of[[28,2,'marshLantern'],[43,2,'marshLantern'],[36,8,'marshLantern'],[36,1,'marshDoor']])if(x===tx&&y===ty)context.drawImage(art[key],x*size,y*size,size,size);
+    return;
+  }
   if(art?.topdown&&usesA01Tiles(map,x,y)){paintA01Tile(context,map,x,y,size,art);return;}
   const c=context,k=key(x,y),kind=map.terrain.get(k)||'grass',n=(x*37+y*19)%17;
   c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;

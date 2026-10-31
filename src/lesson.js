@@ -2,7 +2,7 @@ import { vocabulary } from './vocabulary.js';
 
 export const chapters = [
   { name: 'The Footprint Garden', subtitle: 'Every step leaves a trace.', terms: [17, 0, 34, 29, 10, 25, 32, 36, 37] },
-  { name: 'The Hall of Mirrors', subtitle: 'Question what the mirrors show you.', terms: [28, 30, 15, 6, 42, 5, 9, 19, 4, 22] },
+  { name: 'Lantern Marsh', subtitle: 'Carry the flame. Restore the three guardian lanterns.', terms: [28, 30, 15, 6, 42, 5, 9, 19, 4, 22] },
   { name: 'The Citizens’ Court', subtitle: 'Choose the kind of traveler you will be.', terms: [16, 18, 20, 7, 31, 14, 1] },
   { name: 'The Forge of Ideas', subtitle: 'Honor the makers who came before.', terms: [24, 11, 12, 2, 13, 21, 39, 38, 41, 26, 35, 43] },
   { name: 'The Sanctum of Trust', subtitle: 'Restore the three promises of the archive.', terms: [8, 23, 3, 27, 44, 33, 40] },

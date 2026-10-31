@@ -5,6 +5,7 @@ export class Atlas {
   constructor(adventure){
     this.adventure=adventure;this.map=makeOverworld();this.selected='A07';
     this.art=Object.fromEntries(['grass','terrain','water','puny','topdown','tree1','tree2','tree3','tree4'].map(key=>[key,adventure.textures.get(key).getSourceImage()]));
+    for(const [key,texture]of[['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
     $('overworld-toggle').addEventListener('click',()=>this.toggle());
     $('close-atlas').addEventListener('click',()=>this.close());
     $('atlas').addEventListener('cancel',event=>{event.preventDefault();this.close();});

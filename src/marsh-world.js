@@ -1,0 +1,90 @@
+import { MarshModel } from './marsh-model.js';
+import { at,cell } from './marsh-map.js';
+import { Minimap } from './minimap.js';
+export class MarshWorld{
+  constructor(scene){
+    this.scene=scene;this.hero=scene.hero;this.room=scene.room;this.model=new MarshModel(this.room,scene.marshProgress);this.model.hero.x=this.hero.x;this.model.hero.y=this.hero.y;
+    this.clock=0;this.attackAt=-10;this.facing='up';this.invulnerableUntil=1;this.vx=0;this.vy=0;this.keys=new Map();this.taps=new Map();this.sprites=new Map();this.contacts=new Set();this.mouseAim=null;
+    this.effects=scene.add.graphics();this.bossSprite=scene.add.image(this.model.boss.x,this.model.boss.y,'marsh-toad').setDisplaySize(128,128).setOrigin(.5,.55);
+    this.bossLabel=scene.add.text(this.model.boss.x,this.model.boss.y-85,'GRANDFATHER CROAK',{fontFamily:'monospace',fontSize:12,color:'#e4e9b6',backgroundColor:'#203f32',padding:{x:5,y:3}}).setOrigin(.5);
+    this.minimap=new Minimap(scene,scene.exploration.get(1)||new Set());scene.exploration.set(1,this.minimap.explored);
+    scene.cameras.main.setBounds(0,0,1280,1280).setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);
+    this.initializing=true;this.sync();this.initializing=false;this.minimap.update(0,true);
+  }
+  press(action,id){this.keys.set(id,action);if(['up','down','left','right'].includes(action))this.taps.set(action,this.clock+.08);if(action==='attack')this.attack();if(action==='roll')this.model.roll();if(action==='throw'||action==='bomb')this.model.throwItem(action==='bomb');}
+  release(id){this.keys.delete(id);}
+  stop(){this.keys.clear();this.taps.clear();this.vx=0;this.vy=0;if(this.model){this.model.shield=false;this.model.speed=0;this.model.aim=null;}this.mouseAim=null;}
+  attack(){this.model.attack();this.attackAt=this.model.attackAt;}
+  aim(x,y){const dx=x-this.hero.x,dy=y-this.hero.y;this.facing=Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down';this.model.hero.facing=this.facing;this.model.aim={x,y};}
+  interact(){
+    const m=this.model,h=m.hero;
+    const lamp=this.room.seals.findIndex(p=>Math.hypot(h.x-at(p).x,h.y-at(p).y)<66);
+    if(lamp>=0){m.interactLantern(lamp);this.events();return true;}
+    if(Math.hypot(h.x-at(this.room.heart).x,h.y-at(this.room.heart).y)<58){m.openHeart();this.events();return true;}
+    return false;
+  }
+  update(delta){
+    if(this.scene.state.mode!=='playing'){this.stop();this.telemetry();return;}
+    const elapsed=Math.min(.25,delta/1000),steps=Math.ceil(elapsed/(1/60));
+    for(let i=0;i<steps;i++){
+      const active=new Set(this.keys.values());for(const [key,until]of this.taps)if(until>this.clock)active.add(key);
+      this.model.invulnerable=Math.max(this.model.invulnerable,this.invulnerableUntil);
+      this.model.tick(elapsed/steps,Object.fromEntries([...active].map(k=>[k,true])));
+      this.clock=this.model.clock;this.attackAt=this.model.attackAt;this.invulnerableUntil=this.model.invulnerable;this.hero.setPosition(this.model.hero.x,this.model.hero.y);this.facing=this.model.hero.facing;
+      Object.assign(this.scene.state,{x:(this.hero.x-20)/40,y:(this.hero.y-20)/40});
+      this.events();if(this.scene.state.mode!=='playing')break;
+      for(const [id,p]of [...this.room.seals.map((p,i)=>['lamp'+i,p]),['heart',this.room.heart],['gate',this.room.exit],['guide',this.room.guide]]){
+        const d=Math.hypot(this.hero.x-at(p).x,this.hero.y-at(p).y);
+        if(d>65)this.contacts.delete(id);
+        if(d<42&&!this.contacts.has(id)){this.contacts.add(id);if(id==='gate'||id==='guide'){this.scene.interact();this.scene.render();}else this.interact();}
+      }
+      if(this.scene.state.mode!=='playing')break;
+    }
+    this.hero.setFlipX(this.facing==='left').play(`hero-${this.clock-this.attackAt<.28?'attack':this.model.speed?'run':'idle'}-${this.facing}`,true);
+    this.sync();this.minimap.update(this.clock);this.telemetry();
+  }
+  events(){
+    for(const e of this.model.events.splice(0)){
+      if(e.type==='hurt'){this.scene.hurt(e.message);this.scene.render();}
+      if(e.type==='message')this.scene.feedback(e.message);
+      if(e.type==='lantern')this.scene.openTrial(e.index);
+      if(e.type==='heart'){this.scene.state.hearts=Math.min(5,this.scene.state.hearts+1);this.scene.heartChest.play('chest-open');this.scene.feedback('Heart Piece found (1 of 4). One heart restored. Grandfather Croak awakens!');this.scene.render();}
+      if(e.type==='slam')this.scene.cameras.main.shake(130,.002);
+      if(e.type==='blast'){const g=this.scene.add.graphics({x:e.x,y:e.y});g.fillStyle(0xffbc76,.45).fillCircle(0,0,38);g.lineStyle(3,0xffdf9e).strokeCircle(0,0,38);this.scene.worldLayer.add(g);this.scene.tweens.add({targets:g,alpha:0,duration:350,onComplete:()=>g.destroy()});}
+    }
+  }
+  sync(){
+    const m=this.model;this.scene.shades=[];
+    for(const e of m.enemies){
+      if(!this.sprites.has(e.id)){const texture=e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg';const s=this.scene.add.image(e.x,e.y,texture).setDisplaySize(e.type==='small-slurg'?26:44,e.type==='small-slurg'?26:44);if(!this.initializing)this.scene.worldLayer.add(s);this.sprites.set(e.id,s);}
+      const hop=(e.type==='slurg'||e.type==='small-slurg')&&this.clock%1.1<.35?Math.sin(this.clock%1.1/.35*Math.PI)*12:0;
+      const sprite=this.sprites.get(e.id);sprite.setPosition(e.x,e.y+(e.type==='wisp'?Math.sin(this.clock*4+e.id)*5:-hop)).setVisible(e.active&&!e.hidden).setAlpha(e.type==='octorok'&&e.next-this.clock>1.4?.35:1).setTint(e.type==='octorok'&&e.next-this.clock<.4?0xffc994:0xffffff);
+      this.scene.shades.push({...e,sprite});
+    }
+    this.bossSprite.setVisible(m.boss.active).setTint(m.boss.phase==='stunned'?0xf7dca0:0xffffff);
+    this.bossLabel.setVisible(m.boss.active);
+    const g=this.effects;g.clear();
+    for(const p of this.room.pads){const timer=m.padTimers.get(cell(p.x,p.y));if(!timer)continue;
+      g.fillStyle(timer.sunkUntil>this.clock?0x244e68:0xa1c46a,.9).fillCircle(p.x*40+20,p.y*40+20,18);
+      if(!timer.sunkUntil){g.lineStyle(2,0xe5c172).strokeCircle(p.x*40+20,p.y*40+20,Math.max(3,(timer.deadline-this.clock)/2*17));}
+    }
+    for(const d of m.drops){g.fillStyle(0xffcc76,.3).fillCircle(d.x,d.y,18);g.fillStyle(0xfff0ab).fillRect(d.x-4,d.y-9,8,15);}
+    for(const p of m.bolts)g.fillStyle(0x9a7050).fillCircle(p.x,p.y,6);
+    for(const p of m.items)g.fillStyle(p.bomb?0x424c60:0xb3b9ad).fillRect(p.x-5,p.y-5,10,10);
+    if(m.flameUntil>this.clock){g.fillStyle(0xffcc76,.25).fillCircle(this.hero.x,this.hero.y-18,24);g.fillStyle(0xffec9f).fillRect(this.hero.x-3,this.hero.y-29,6,12);}
+    if(m.shield){const dir={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[this.facing];g.lineStyle(5,0x9bbfc5).strokeCircle(this.hero.x+dir[0]*18,this.hero.y+dir[1]*18,13);}
+    const b=m.boss;if(b.active){
+      if(b.phase==='warning'||b.phase==='tongue')g.lineStyle(b.phase==='tongue'?9:2,b.phase==='tongue'?0xd6a0a2:0xe6c585,.7).lineBetween(b.x,b.y,b.aim.x,b.aim.y);
+      for(let i=0;i<6;i++)g.fillStyle(i<b.hp?0xa8d57b:0x284d38).fillRect(b.x-33+i*11,b.y-55,8,5);
+    }
+    // Low, translucent mist drifts over the water without concealing the pads.
+    for(let i=0;i<5;i++)g.fillStyle(0xb7d2c3,.035).fillEllipse(360+i*125+Math.sin(this.clock*.1+i)*30,380+i%3*180,220,55);
+    this.scene.stationSprites.forEach((s,i)=>s.setTexture(m.progress.lit[i]?'marsh-lantern-lit':'marsh-lantern'));
+  }
+  telemetry(){
+    const m=this.model,s=this.scene.state,c=this.scene.cameras.main;
+    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.waterSprites[0]?.frame.name,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
+    document.getElementById('wayfinder').textContent=`Lanterns ${m.progress.lit.filter(Boolean).length}/3 · Wisp Flame ${Math.max(0,m.flameUntil-m.clock).toFixed(1)}s · Heart Piece ${m.progress.heartTaken?'1/4':'0/4'}`;
+    document.getElementById('combat-state').textContent='Space Sword · Q/Right-click Shield · Shift Roll · F Throw · B Bomb';
+  }
+}

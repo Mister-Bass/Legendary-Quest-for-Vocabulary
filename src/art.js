@@ -3,6 +3,7 @@ import { WORLD } from './world.js';
 import { makeChamberLandscape, regionStyles, TILE_PIXELS } from './region-art.js';
 import { paintOverworldTile } from './overworld-art.js';
 import { A01_TREE } from './a01-art.js';
+import { createMarshArt,paintMarshWorld } from './marsh-art.js';
 export const directions=['down','up','left','right'];
 export function preloadArt(scene){
   const sheet=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/mystic/${file}.png`,{frameWidth:w,frameHeight:h});
@@ -17,6 +18,7 @@ export function preloadArt(scene){
   for(let i=1;i<=4;i++)scenery(`tree${i}`,`tree${i}`,192,i<=2?256:192);
 }
 export function createArt(scene){
+  createMarshArt(scene);
   scene.textures.get('topdown').add('a01-tree',0,A01_TREE.x,A01_TREE.y,A01_TREE.width,A01_TREE.height);
   const animate=(key,texture,start,end,frameRate=8,repeat=-1)=>scene.anims.create({key,frames:scene.anims.generateFrameNumbers(texture,{start,end}),frameRate,repeat});
   for(const direction of directions){
@@ -33,6 +35,7 @@ export function createArt(scene){
   scene.anims.create({key:'keeper-dance',frames:[0,1,2,3,4,5,12,13,12,5,4,3,2,1].map(frame=>({key:'guide',frame})),frameRate:7,repeat:-1});
 }
 export function paintWorld(scene,room){
+  if(room.marsh)return paintMarshWorld(scene,room);
   const art=Object.fromEntries(['grass','terrain','water','puny'].map(key=>[key,scene.textures.get(key).getSourceImage()]));
   const landscape=makeChamberLandscape(room),id='chamber-ground';
   if(scene.textures.exists(id))scene.textures.remove(id);
@@ -42,6 +45,7 @@ export function paintWorld(scene,room){
   texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(WORLD.columns*40,WORLD.rows*40);
   scene.chamberLandscape=landscape;scene.chamberArt=art;scene.chamberGround=texture.getSourceImage();
   Object.assign(document.getElementById('game').dataset,{artArea:room.areaId,tilePixels:TILE_PIXELS,tileset:'puny-world',terrainTheme:regionStyles[room.areaId].terrain});
+  document.getElementById('game').dataset.marsh='false';
   scene.waterSprites=[];
   for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++){
     const key=`${x},${y}`;

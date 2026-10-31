@@ -11,18 +11,18 @@ The five chambers are:
 | Chamber | Vocabulary focus | Terms |
 | --- | --- | --- |
 | The Footprint Garden | Footprints, identity, metadata, and tracking | 9 |
-| The Hall of Mirrors | Media literacy, misleading content, and biases | 10 |
+| Lantern Marsh | Media literacy, misleading content, and biases | 10 |
 | The Citizens’ Court | Participation, ethics, accessibility, and online conduct | 7 |
 | The Forge of Ideas | Copyright, intellectual property, licensing, and attribution | 12 |
 | The Sanctum of Trust | Security principles, malware, VPNs, and software rights | 7 |
 
 Each chamber has three numbered rune seals. Each seal presents 2–4 vocabulary questions. Questions alternate between matching a definition to a term, recognizing a concept in an applied situation, and choosing the meaning of a term. Restore all three seals to receive three rune keys, then interact with the eastern gate to continue. Complete all 45 questions and enter the final gate to win.
 
-Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Slimes patrol and chase around obstacles. At range they signal a violet cast for 0.8 seconds, then fire a magic bolt toward your previous position; at close range they signal orange before striking. Bolts travel visibly, collide with terrain, and can be dodged. A hit costs one heart, followed by 1.2 seconds of protection from further enemy damage. Slimes have three health pips and require three separate sword swings to defeat. Each swing can hit a given slime only once, even across many animation frames. Hits briefly stagger the slime. At one health, a red ring shows its 56-world-pixel death-burst radius. The third hit plays its death animation and a visible burst; a player at or inside the ring loses exactly one heart once, even during ordinary damage protection. Outside the ring, the death burst does no damage. Sword reach is 72 pixels, so the final hit can be landed safely from its outer range. Restart/checkpoint retry restores each slime to three health. Combat never awards vocabulary points. Entering a new chamber restores one heart, up to five. There is no timer.
+Correct answers earn 25 insight; the maximum is 1,125. Wrong answers cost one heart and show the supplied definition as a learning hint. The same word never awards points twice. Slimes patrol and chase around obstacles. At range they signal a violet cast for 0.8 seconds, then fire a magic bolt toward your previous position; at close range they signal orange before striking. Bolts travel visibly, collide with terrain, and can be dodged. A hit costs one heart, followed by 1.2 seconds of protection from further enemy damage. Slimes have three health pips and require three separate sword swings to defeat. Each swing can hit a given slime only once, even across many animation frames. Hits briefly stagger the slime. At one health, a red ring shows its 56-world-pixel death-burst radius. The third hit plays its death animation and a visible burst; a player at or inside the ring loses exactly one heart once, even during ordinary damage protection. Outside the ring, the death burst does no damage. Sword reach is 72 pixels, so the final hit can be landed safely from its outer range. Restart/checkpoint retry restores each slime to three health. Combat never awards vocabulary points. Entering a new chamber restores one heart, up to five. There is no overall time limit; Lantern Marsh has short flame and lily-pad timers that pause while reading.
 
-Each chamber is now 40 by 28 tiles (1,600 by 1,120 world pixels), four times the original area. An 800 by 560 viewport uses a 1.5× zoom and smoothly follows the traveler within the map bounds. Arrows below the world point toward the three chests and gate. Hold movement keys or touch direction buttons for continuous movement; acceleration and deceleration soften starts/stops, diagonal speed is normalized, and solid terrain blocks both travelers and enemies.
+The four archive chambers are 40 by 28 tiles (1,600 by 1,120 world pixels), four times the original area. An 800 by 560 viewport uses a 1.5× zoom and smoothly follows the traveler within the map bounds. Arrows below the world point toward the three chests and gate. Hold movement keys or touch direction buttons for continuous movement; acceleration and deceleration soften starts/stops, diagonal speed is normalized, and solid terrain blocks both travelers and enemies.
 
-The player uses the supplied Mystic Woods idle, run, and sword-swing animations. The sword is hidden while idle. Left-click inside the game world or press Space to swing; holding either repeats attacks with a short recovery. Touch screens have a Sword button. The shield graphic and all shield controls have been removed. Dodge slime bolts by moving aside. Combat and movement pause during chest opening, questions, the Keeper conversation, journal, and win/loss screens. Losing focus releases controls; returning from a dialog requires fresh movement input. Game mouse controls do not apply to menus or answer buttons.
+The player uses the supplied Mystic Woods idle, run, and sword-swing animations. The sword is hidden while idle. Left-click inside the game world or press Space to swing; holding either repeats attacks with a short recovery. Touch screens have a Sword button. The four archive chambers use dodging rather than a shield. Lantern Marsh adds a shield, roll, and thrown items as described below. Dodge archive slime bolts by moving aside. Combat and movement pause during chest opening, questions, the Keeper conversation, journal, and win/loss screens. Losing focus releases controls; returning from a dialog requires fresh movement input. Game mouse controls do not apply to menus or answer buttons.
 
 Walking into a closed treasure chest plays its four opening frames. The actual first vocabulary question rises out of the chest, then the answer dialog opens. Closing a trial preserves answered words; reopening animates the next unanswered question. Completed chests stay open and gold-tinted, including after checkpoint retry, and cannot award duplicate points. Restart closes every chest and cancels any active question reveal.
 
@@ -32,18 +32,41 @@ The bottom-right exploration minimap starts under fog of war and reveals terrain
 
 At zero hearts, Return to chamber restores five hearts and returns to the current chamber's entrance, preserving learned words, completed seals, score, and chamber. Enemies return to their starting positions. Restart adventure resets the entire level. Progress is kept for the current page session; reloading or closing the page resets it. No accounts, student records, analytics, or server storage are used.
 
+## A02 · Lantern Marsh
+
+The marsh is a 32×32 map of native 16-pixel terrain cells, rendered in a scrolling 1,280×1,280 world at 1.1× zoom.
+
+The second area and second vocabulary chamber follow the owner's marsh reference: a southern stone entrance, two Slurg mud patches, narrow banks with bushes/boulders, a deep central pond, an island, a winding lily-pad crossing, and a northern purple shrine flanked by pillars. A02 keeps its permanent editing ID. Its overworld entrance now sits on the south bank; the atlas projects the same geography while keeping the wider world's roads connected. The overworld stays peaceful; the timed puzzle and enemies are inside the chamber.
+
+Defeat a pale **Gloamwisp** and walk into its Wisp Flame. The carried flame lasts **10 seconds**. Touch a guardian lantern while carrying it to kindle the lantern, then finish that lantern's existing vocabulary group to light it fully. The two bank lanterns prepare you for the island run. A Wisp flees your sword, so use a tree or boulder to corner it near the crossing. A thrown stone can also defeat it. Wisps relight after six seconds, so flames are renewable. A kindled lantern keeps its ember if you close a question or retry the checkpoint. All ten original media-literacy terms remain, and the complete adventure still contains 45 words.
+
+Lily-pad cells sink **two seconds after first contact**, rescue you to the last safe bank/island, extinguish carried fire, and can cost a heart. They regrow four seconds later. Mud and Octorok mud balls slow movement. Opening vocabulary, journal, atlas, or **Marsh map** pauses simulation—including fire, pad, and enemy timers—so reading never consumes your crossing time.
+
+| Marsh action | Keyboard / mouse | Touch |
+| --- | --- | --- |
+| Sword | Space / left-click | Existing Sword button |
+| Shield toward incoming mud | Hold Q / hold right-click | Hold Shield |
+| Roll and briefly avoid hits | Shift | Roll |
+| Throw a renewable stone | F (mouse aims when over the game) | Throw stone |
+| Throw a renewable bomb | B | Bomb |
+| Plan the entire level | Marsh map button | Marsh map |
+
+Three red **Mire Octoroks** surface and fire mud balls. The two purple **Slurgs** emerge from mud, hop, and split into two smaller slimes on a hit. Two pale Gloamwisps supply the flames. The island chest grants a **Heart Piece (1/4)** and restores one heart, once per run. This one piece does not add a full maximum heart. Opening it wakes **Grandfather Croak**, whose slams shorten pad time to 0.9 seconds. Throw a stone or bomb **while its tongue is extended** to stun it, then strike its exposed belly. Six belly hits defeat it and restore normal pad timing. The chest/mini-boss are an optional risk; the shrine requires the three lit vocabulary lanterns. Progress, kindled/lit lanterns, the collected Heart Piece, and a defeated boss survive checkpoint retry and revisits. R/restart resets everything.
+
+For a direct review/practice run, append `?area=A02` to the game URL. It clearly labels itself **AREA PRACTICE**, begins in the marsh, and does not award the opening chamber's words or points. Use the ordinary URL for the full adventure. All art for new marsh scenery/creatures is original 16-pixel code art in `src/marsh-art.js`; the existing owner-supplied player, Keeper, chest, and water remain in use. `src/marsh-map.js` owns geography, `src/marsh-model.js` owns pause-safe simulation, and `src/marsh-world.js` connects it to Phaser/input. Request changes in plain English, for example: “In A02, move the western Wisp closer to the south bank and keep the ten vocabulary terms.”
+
 ## The Lanternlands overworld and area designations
 
 ### 16×16 terrain and matching chamber scenery
 
-**A01 · Whisperwood uses the owner-selected Overworld_Tileset.png from TOP-DOWN Adventure Pack v1.0 by o_lobster.** The exact sheet was already bundled as `public/assets/topdown/overworld.png`; it is unchanged. Only A01 (columns 0–23, rows 0–17) opts into this override. Its grass, dirt paths, earthen ledges, small plants, flowers, and 2×3-cell broadleaf trees come from that sheet, using the same source rectangles in the atlas and playable region. Tree trunks retain their existing blocked cells, and every road and landmark keeps its original location. Other overworld regions and all five vocabulary chambers retain their existing scenery. The supplied player, Keeper, water animations, door cutscene, vocabulary, and controls remain in use. Credits: [TOP-DOWN Adventure Pack by o_lobster](https://o-lobster.itch.io/adventure-pack), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the bundled credit notice records frame selection, scaling, and arrangement into original maps.
+**A01 · Whisperwood uses the owner-selected Overworld_Tileset.png from TOP-DOWN Adventure Pack v1.0 by o_lobster.** The exact sheet was already bundled as `public/assets/topdown/overworld.png`; it is unchanged. Only A01 (columns 0–23, rows 0–17) opts into this override. Its grass, dirt paths, earthen ledges, small plants, flowers, and 2×3-cell broadleaf trees come from that sheet, using the same source rectangles in the atlas and playable region. Tree trunks retain their existing blocked cells, and every road and landmark keeps its original location. Other regions retain their scenery except A02, whose marsh redesign is described above. The supplied player, Keeper, water animations, door cutscene, vocabulary, and controls remain in use. Credits: [TOP-DOWN Adventure Pack by o_lobster](https://o-lobster.itch.io/adventure-pack), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the bundled credit notice records frame selection, scaling, and arrangement into original maps.
 
 The free **Puny World** tileset by [Shade on itch.io](https://merchant-shade.itch.io/16x16-puny-world) now supplies native 16×16 grass, dirt paths, ledges, masonry, roofs, and stone floors. It is CC0; the unmodified sheet, source links, and credit record are bundled locally in `public/assets/puny/`. The atlas, playable overworld, and vocabulary chambers use the same tile painter. Terrain textures are authored at 16 pixels per cell and enlarged with nearest-neighbor sampling; the existing 40-pixel movement grid and camera zoom remain intact. Characters and the supplied animated trees/water retain their original frame sizes and credits.
 
 | Area | Scenery direction | Vocabulary chamber |
 | --- | --- | --- |
 | A01 · Whisperwood | Dense green woods, mossy ledges, dirt clearings | Exploration landmark |
-| A02 · Mirror Lake | Blue lake banks and pale stone terraces | Hall of Mirrors |
+| A02 · Lantern Marsh | Misty pond, muddy banks, lily pads, purple shrine | Lantern Marsh |
 | A03 · Crown Heights | Golden highland paths and rock ledges | Exploration landmark |
 | A04 · Citizens’ Commons | Village greens, timber roofs, civic paving | Citizens’ Court |
 | A05 · Lantern Crossroads | Pale citadel walls, formal gardens, moat | Exploration landmark |
@@ -63,7 +86,7 @@ The areas are arranged in this north-to-south grid:
 
 | West | Center | East |
 | --- | --- | --- |
-| **A01 · Whisperwood** — forest / Listening Grove | **A02 · Mirror Lake** — lake / Hall of Mirrors (chamber 2) | **A03 · Crown Heights** — highlands / Crown Lookout |
+| **A01 · Whisperwood** — forest / Listening Grove | **A02 · Lantern Marsh** — bog / Lantern Marsh (chamber 2) | **A03 · Crown Heights** — highlands / Crown Lookout |
 | **A04 · Citizens’ Commons** — meadow / Citizens’ Court (chamber 3) | **A05 · Lantern Crossroads** — central roads / Lantern Citadel | **A06 · Ember Quarry** — stone terraces / Forge of Ideas (chamber 4) |
 | **A07 · Footprint Fields** — starting garden / Footprint Garden (chamber 1) | **A08 · Willow Marsh** — wetland / Willow Crossing | **A09 · Trust Sanctuary** — sanctuary / Sanctum of Trust (chamber 5) |
 
@@ -125,7 +148,7 @@ The assistant should extract and check your list, implement the game, run the ch
 - src/adventure.css and index.html: responsive shell and accessible native controls/dialogs.
 - tests/adventure.spec.js: browser tests using actual keyboard and button input. Read-only DOM state supports assertions; there are no test-only game mutation shortcuts.
 
-All 45 terms are assigned to exactly one chamber. Artwork loads from this site's own assets; gameplay does not depend on Drive or third-party image hosts. No original Zelda characters, maps, music, names, or artwork are included.
+All 45 terms are assigned to exactly one chamber. Artwork loads from this site's own assets; gameplay does not depend on Drive or third-party image hosts. The traveler retains the owner-supplied sprite. Marsh layouts and new creature graphics are original project artwork, with no imported Zelda graphics or music.
 
 ## Artwork credits
 
@@ -158,7 +181,7 @@ Node 24 is recommended. The assistant or developer runs:
     npm test
     npm run package
 
-The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, asset loading, movement/collision, scrolling camera, contact interactions and gates, modal/projectile pause, mistakes/loss, checkpoint recovery, journal, restart, mobile controls, mouse/Space sword controls, removed shield controls, slime projectiles and damage, chest opening and rising questions, fog exploration/reset, and a full 45-word contact playthrough across five chambers.
+The production build is dist. Tests run against Vite’s production preview server. Coverage includes vocabulary completeness, asset loading, movement/collision, scrolling camera, contact interactions and gates, modal/projectile pause, mistakes/loss, checkpoint recovery, journal, restart, mobile controls, mouse/Space sword controls, removed shield controls, slime projectiles and damage, chest opening and rising questions, fog exploration/reset, and a full 45-word contact playthrough across five chambers. Marsh coverage adds renewable/expiring Wisp Flames, sinking/regrowing pads, mud, shields/rolls, splitting Slurgs, Croak’s weakness window, real-input lantern restoration, and an island chest/boss fight with restart.
 
 GitHub Actions runs Build and browser tests for every PR, main update, merge queue, and manual run. It builds, runs the full suite in Chromium, Firefox, and WebKit, and generates a ZIP. In the run’s Artifacts section, download legendary-quest-package. It contains legendary-quest-for-vocabulary.zip with playable/ (built game) and source/ (reusable project). GitHub may wrap that ZIP in another ZIP. Game artifacts last 30 days; browser reports last 14 days.
 
