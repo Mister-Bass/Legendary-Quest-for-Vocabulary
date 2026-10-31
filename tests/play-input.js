@@ -23,13 +23,13 @@ async function moveAxis(page,axis,target,nearGoal=null){
   await settle(page);
   // Contact can open a trial during the final segment, especially at lower frame rates.
 }
-async function walkMarshPath(page,path,chapter,origin){
+async function walkMarshPath(page,path,chapter,origin,attack,guard){
   // Sprint along straight runs; shield-walk at corners and against incoming mud.
   // Every action below is normal keyboard/mouse input; game state is read only.
   const held=new Set(),turns=[];let previous=origin,blocking=false;
   for(let i=0;i<path.length;i++){const p=path[i],dx=p.x-previous.x,dy=p.y-previous.y,next=path[i+1];if(!next||next.x-p.x!==dx||next.y-p.y!==dy)turns.push({...p,horizontal:dx!==0});previous=p;}
   await page.locator('#game canvas').scrollIntoViewIfNeeded();const box=await page.locator('#game canvas').boundingBox();
-  await page.keyboard.up('q');await page.keyboard.down('Space');
+  await page.keyboard.up('q');if(attack)await page.keyboard.down('Space');else await page.keyboard.up('Space');
   const position=()=>game(page).evaluate(el=>({mode:el.dataset.mode,chapter:el.dataset.chapter,px:Number(el.dataset.px),py:Number(el.dataset.py),falls:el.dataset.falls,cameraX:Number(el.dataset.cameraX),cameraY:Number(el.dataset.cameraY),zoom:Number(el.dataset.zoom),bolts:JSON.parse(el.dataset.projectiles||'[]')}));
   const initialFalls=(await position()).falls;
   try{for(const point of turns){
@@ -41,7 +41,7 @@ async function walkMarshPath(page,path,chapter,origin){
       if(!last||Math.hypot(s.px-last.px,s.py-last.py)>3){last=s;progressed=Date.now();}
       if(Date.now()-progressed>4000||Date.now()-started>60000){const diagnostic=await game(page).evaluate(el=>({visibility:document.visibilityState,focused:document.hasFocus(),position:{x:el.dataset.px,y:el.dataset.py,speed:el.dataset.speed}}));throw Error(`Marsh steering stalled at ${s.px},${s.py} toward ${target.px},${target.py}; falls=${s.falls}; ${JSON.stringify(diagnostic)}`);}
       const incoming=s.bolts.filter(p=>p.vx*(s.px-p.x)+p.vy*(s.py-p.y)>0&&Math.hypot(p.x-s.px,p.y-s.py)<260).sort((a,b)=>Math.hypot(a.x-s.px,a.y-s.py)-Math.hypot(b.x-s.px,b.y-s.py));
-      const precision=Math.hypot(dx,dy)<=45||Math.abs(point.horizontal?dy:dx)>10||incoming.length>0;if(precision!==blocking){blocking=precision;if(blocking)await page.keyboard.down('q');else await page.keyboard.up('q');}
+      const precision=guard||Math.hypot(dx,dy)<=45||Math.abs(point.horizontal?dy:dx)>10||incoming.length>0;if(precision!==blocking){blocking=precision;if(blocking)await page.keyboard.down('q');else await page.keyboard.up('q');}
       if(incoming.length){const p=incoming[0],x=(p.x-s.cameraX-400)*s.zoom+400,y=(p.y-s.cameraY-280)*s.zoom+280;await page.mouse.move(box.x+Math.max(5,Math.min(795,x))/800*box.width,box.y+Math.max(5,Math.min(555,y))/560*box.height);}
       const next=new Set();if(Math.abs(dx)>5)next.add(dx>0?'ArrowRight':'ArrowLeft');if(Math.abs(dy)>5)next.add(dy>0?'ArrowDown':'ArrowUp');
       for(const key of [...held])if(!next.has(key)){await page.keyboard.up(key);held.delete(key);}
@@ -51,7 +51,7 @@ async function walkMarshPath(page,path,chapter,origin){
   }}finally{for(const key of held)await page.keyboard.up(key);await page.keyboard.up('Space');await page.keyboard.up('q');}
   await settle(page);
 }
-async function walkTo(page,target,{exact=false,avoidEnemies=true,rescues=0}={}){
+async function walkTo(page,target,{exact=false,avoidEnemies=true,rescues=0,attack=true,guard=false}={}){
   const s=await state(page),room=makeRoom(Number(s.chapter),5),origin={x:Math.floor(Number(s.px)/40),y:Math.floor(Number(s.py)/40)};
   const objects=[room.guide,room.exit,...room.seals,...(room.heart?[room.heart]:[])],chapter=s.chapter;
   const q=[{...origin,path:[]}],seen=new Set();let path;
@@ -73,10 +73,10 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true,rescues=0}={}){
   if(!path)throw Error(`No path to ${JSON.stringify(target)}`);
   // Hold keys along straight segments instead of simulating frame-sized key taps.
   if(room.marsh){
-    try{await walkMarshPath(page,path,chapter,origin);return;}
+    try{await walkMarshPath(page,path,chapter,origin,attack,guard);return;}
     catch(error){
       if(!error.marshFall||rescues>=2||Number(s.flameSeconds)>0)throw error;
-      await waitForMarshPads(page,state);return walkTo(page,target,{exact,avoidEnemies,rescues:rescues+1});
+      await waitForMarshPads(page,state);return walkTo(page,target,{exact,avoidEnemies,rescues:rescues+1,attack,guard});
     }
   }
   let previous=origin;

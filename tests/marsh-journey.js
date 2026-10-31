@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { makeMarshRoom,marshWalkable } from '../src/marsh-map.js';
 // Real input route: defeat a Wisp, pick up its drop, and carry it to the lantern.
 export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
-  const go=async(x,y)=>walkTo(page,{x,y},{exact:true,avoidEnemies:false});
+  const go=async(x,y)=>walkTo(page,{x,y},{exact:true,avoidEnemies:false,attack:index!==2});
   const dash=async(axis,target)=>{
     const from=Number((await state(page))[axis]),sign=Math.sign(target-from),key=axis==='px'?(sign>0?'ArrowRight':'ArrowLeft'):(sign>0?'ArrowDown':'ArrowUp'),laneAxis=axis==='px'?'py':'px',lane=axis==='px'?1020:180;let last=0,side=null;
     await page.keyboard.down(key);
@@ -45,8 +45,21 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   }
   const id=index===1?1:0;
   if(index===2){
-    // Bring the Wisp to the southern boulder, staying north of its flame.
-    await go(5,21);await go(4,21);await go(4,23);
+    // Keep the sword sheathed until the Wisp has been herded south.
+    await expect.poll(async()=>JSON.parse((await state(page)).enemies).find(e=>e.id===0).active,{timeout:20000}).toBe(true);
+    const r=makeMarshRoom(),objects=[r.guide,r.exit,r.heart,...r.seals];
+    for(let step=0;step<40;step++){
+      const enemy=JSON.parse((await state(page)).enemies).find(e=>e.id===0);if(enemy.y>=930)break;
+      // Stay northeast of the Wisp and advance slowly, so terrain cannot leave it behind.
+      const candidates=[];
+      for(let y=2;y<29;y++)for(let x=2;x<29;x++){
+        const dx=x*40+20-enemy.x,dy=enemy.y-(y*40+20);
+        if(dx>=25&&dx<=145&&dy>=40&&dy<=140&&marshWalkable(r,x,y)&&!r.water.has(`${x},${y}`)&&!objects.some(p=>Math.hypot(p.x-x,p.y-y)<1.5))candidates.push({x,y,score:Math.hypot(dx-80,dy-80)});
+      }
+      candidates.sort((a,b)=>a.score-b.score);expect(candidates.length).toBeGreaterThan(0);
+      await walkTo(page,candidates[0],{exact:true,avoidEnemies:false,attack:false,guard:true});await page.waitForTimeout(200);
+    }
+    expect(JSON.parse((await state(page)).enemies).find(e=>e.id===0).y).toBeGreaterThanOrEqual(930);
   }
   // Corner the western Wisp near the crossing, then carry its ten-second flame.
   for(let attempt=0;attempt<16;attempt++){
@@ -84,7 +97,7 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   if(index===1)await go(26,6);
   if(index===2){await go(4,Math.floor(Number((await state(page)).py)/40));await dash('py',1020);await dash('px',660);}
   const target=[{x:6,y:4},{x:25,y:4},{x:15,y:14}][index];await walkTo(page,target,{avoidEnemies:false});
-  const arrival=await state(page);if(arrival.mode==='playing'&&Number(arrival.flameSeconds)<=0)throw Object.assign(Error('The carried Wisp Flame expired; collect another through normal play.'),{marshFlameExpired:true});
+  const arrival=await state(page);if(arrival.mode==='playing'&&Number(arrival.flameSeconds)<=0)throw Object.assign(Error(`The carried Wisp Flame expired after pickup at ${drop?.x},${drop?.y}; arrival ${arrival.px},${arrival.py}. Collect another through normal play.`),{marshFlameExpired:true});
   if((await state(page)).mode==='playing')await contact(page,target,()=>state(page).then(s=>s.mode==='opening'||s.mode==='puzzle'));
   await expect(page.locator('#game')).toHaveAttribute('data-mode','puzzle');
 }
