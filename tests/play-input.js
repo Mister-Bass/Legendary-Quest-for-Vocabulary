@@ -41,7 +41,7 @@ async function walkMarshPath(page,path,chapter,origin){
       if(!last||Math.hypot(s.px-last.px,s.py-last.py)>3){last=s;progressed=Date.now();}
       if(Date.now()-progressed>4000||Date.now()-started>60000){const diagnostic=await game(page).evaluate(el=>({visibility:document.visibilityState,focused:document.hasFocus(),position:{x:el.dataset.px,y:el.dataset.py,speed:el.dataset.speed}}));throw Error(`Marsh steering stalled at ${s.px},${s.py} toward ${target.px},${target.py}; falls=${s.falls}; ${JSON.stringify(diagnostic)}`);}
       const incoming=s.bolts.filter(p=>p.vx*(s.px-p.x)+p.vy*(s.py-p.y)>0&&Math.hypot(p.x-s.px,p.y-s.py)<260).sort((a,b)=>Math.hypot(a.x-s.px,a.y-s.py)-Math.hypot(b.x-s.px,b.y-s.py));
-      const precision=Math.hypot(dx,dy)<=70||Math.abs(point.horizontal?dy:dx)>10||incoming.length>0;if(precision!==blocking){blocking=precision;if(blocking)await page.keyboard.down('q');else await page.keyboard.up('q');}
+      const precision=Math.hypot(dx,dy)<=45||Math.abs(point.horizontal?dy:dx)>10||incoming.length>0;if(precision!==blocking){blocking=precision;if(blocking)await page.keyboard.down('q');else await page.keyboard.up('q');}
       if(incoming.length){const p=incoming[0],x=(p.x-s.cameraX-400)*s.zoom+400,y=(p.y-s.cameraY-280)*s.zoom+280;await page.mouse.move(box.x+Math.max(5,Math.min(795,x))/800*box.width,box.y+Math.max(5,Math.min(555,y))/560*box.height);}
       const next=new Set();if(Math.abs(dx)>5)next.add(dx>0?'ArrowRight':'ArrowLeft');if(Math.abs(dy)>5)next.add(dy>0?'ArrowDown':'ArrowUp');
       for(const key of [...held])if(!next.has(key)){await page.keyboard.up(key);held.delete(key);}

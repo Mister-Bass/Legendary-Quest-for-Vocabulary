@@ -39,8 +39,9 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   };
   if(index===2){
     // Clear the mud-ball crossfire through ordinary combat before the timed run.
-    await go(26,26);await go(16,26);await clearMelee();await defeatCaster(3);await defeatCaster(4);
-    await go(26,6);await go(15,6);await defeatCaster(2);await go(5,6);
+    await go(26,6);await go(15,6);await defeatCaster(2);
+    await go(26,6);await go(26,20);await defeatCaster(4);
+    await go(26,6);await go(5,6);await go(5,20);await defeatCaster(3);await go(5,6);
   }
   const id=index===1?1:0;
   if(index===2){
