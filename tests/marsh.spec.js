@@ -49,6 +49,14 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   await page.keyboard.down('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','true');await page.keyboard.up('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','false');
   await page.keyboard.press('Shift');await expect(page.locator('#game')).toHaveAttribute('data-rolls','1');
   await page.getByRole('button',{name:'Marsh map',exact:true}).click();await expect(page.locator('#marsh-map')).toBeVisible();
+  // Compare a clear grass cell with the supplied sheet, not a generated stand-in.
+  expect(await page.locator('#marsh-layout').evaluate(async canvas=>{
+    const image=new Image();image.src='/assets/forest/top-down-forest-tileset.png';await image.decode();
+    const sample=document.createElement('canvas');sample.width=sample.height=16;
+    const c=sample.getContext('2d');c.drawImage(image,128,32,16,16,0,0,16,16);
+    const expected=c.getImageData(0,0,16,16).data,actual=canvas.getContext('2d').getImageData(10*16,26*16,16,16).data;
+    return expected.every((value,i)=>value===actual[i]);
+  })).toBe(true);
   await page.locator('#marsh-layout').screenshot({path:test.info().outputPath('lantern-marsh-layout.png')});
   const seconds=await page.locator('#game').getAttribute('data-flame-seconds');await page.waitForTimeout(500);expect(await page.locator('#game').getAttribute('data-flame-seconds')).toBe(seconds);
   await page.getByRole('button',{name:'Close marsh map'}).click();await page.keyboard.press('Space');await expect(page.locator('#game')).toHaveAttribute('data-mode','playing');await expect(page.locator('#marsh-map')).not.toBeVisible();await page.locator('#game canvas').scrollIntoViewIfNeeded();await page.screenshot({path:test.info().outputPath('lantern-marsh-play.png'),fullPage:true});

@@ -104,7 +104,7 @@ export function makeOverworld(){
     }
   }
   // Project the marsh's actual layout into A02; roads keep neighboring regions connected.
-  const marsh=makeMarshRoom();map.marshPreview=true;map.marshTerrain={water:map.water,walls:map.walls,bridge:map.bridge,mud:new Set(),stone:new Set(),rocks:[],pillars:[]};
+  const marsh=makeMarshRoom();map.marshPreview=true;map.marshTerrain={forestBounds:{x:24,y:0,width:24,height:18},water:map.water,walls:map.walls,bridge:map.bridge,mud:new Set(),stone:new Set(),rocks:[],pillars:[]};
   map.trees=map.trees.filter(t=>!(t.x>=24&&t.x<48&&t.y<18));
   for(let y=0;y<18;y++)for(let x=24;x<48;x++){
     const k=key(x,y),u=Math.min(31,Math.floor((x-24+.5)*32/24)),v=Math.min(31,Math.floor((y+.5)*32/18)),mk=cell(u,v);

@@ -13,7 +13,7 @@ export class OverworldScene extends Phaser.Scene {
     this.map=makeOverworld();
     const art=Object.fromEntries(['grass','terrain','water','puny','topdown'].map(key=>[key,this.textures.get(key).getSourceImage()]));
     this.art=art;
-    for(const [key,texture]of[['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])art[key]=this.textures.get(texture).getSourceImage();
+    for(const [key,texture]of[['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])art[key]=this.textures.get(texture).getSourceImage();
     // Bake static scenery into small chunks. Only trees and water need per-frame animation.
     const chunkKeys=[];
     for(let cy=0;cy<54;cy+=12)for(let cx=0;cx<72;cx+=12){
