@@ -49,13 +49,20 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   await page.keyboard.down('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','true');await page.keyboard.up('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','false');
   await page.keyboard.press('Shift');await expect(page.locator('#game')).toHaveAttribute('data-rolls','1');
   await page.getByRole('button',{name:'Marsh map',exact:true}).click();await expect(page.locator('#marsh-map')).toBeVisible();
-  // Compare a clear grass cell with the supplied sheet, not a generated stand-in.
+  // Compare clear terrain cells with the supplied images, including mud alpha.
   expect(await page.locator('#marsh-layout').evaluate(async canvas=>{
-    const image=new Image();image.src='/assets/forest/top-down-forest-tileset.png';await image.decode();
-    const sample=document.createElement('canvas');sample.width=sample.height=16;
-    const c=sample.getContext('2d');c.drawImage(image,128,32,16,16,0,0,16,16);
-    const expected=c.getImageData(0,0,16,16).data,actual=canvas.getContext('2d').getImageData(10*16,26*16,16,16).data;
-    return expected.every((value,i)=>value===actual[i]);
+    for(const [file,rect,tile,base]of[
+      ['forest/top-down-forest-tileset.png',[128,32,16,16],[10,26],null],
+      ['marsh/wet-mud-tile.png',[72,72,112,112],[4,9],'#755e2c']
+    ]){
+      const image=new Image();image.src='/assets/'+file;await image.decode();
+      const sample=document.createElement('canvas');sample.width=sample.height=16;
+      const c=sample.getContext('2d');c.imageSmoothingEnabled=false;
+      if(base){c.fillStyle=base;c.fillRect(0,0,16,16);}c.drawImage(image,...rect,0,0,16,16);
+      const expected=c.getImageData(0,0,16,16).data,actual=canvas.getContext('2d').getImageData(tile[0]*16,tile[1]*16,16,16).data;
+      if(!expected.every((value,i)=>value===actual[i]))return false;
+    }
+    return true;
   })).toBe(true);
   await page.locator('#marsh-layout').screenshot({path:test.info().outputPath('lantern-marsh-layout.png')});
   const seconds=await page.locator('#game').getAttribute('data-flame-seconds');await page.waitForTimeout(500);expect(await page.locator('#game').getAttribute('data-flame-seconds')).toBe(seconds);

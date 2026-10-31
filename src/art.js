@@ -10,6 +10,7 @@ export function preloadArt(scene){
   sheet('player','player',48);sheet('slime','slime',32);sheet('chest','chest_01',16);
   sheet('terrain','plains',16);sheet('fences','fences',16);sheet('grass','grass',16);
   const scenery=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/scenery/${file}.png`,{frameWidth:w,frameHeight:h});
+  scene.load.image('marsh-mud',`${import.meta.env.BASE_URL}assets/marsh/wet-mud-tile.png`);
   scene.load.image('marsh-forest',`${import.meta.env.BASE_URL}assets/forest/top-down-forest-tileset.png`);
   scene.load.image('bridge',`${import.meta.env.BASE_URL}assets/bridge/pontev2.png`);
   scene.load.image('puny',`${import.meta.env.BASE_URL}assets/puny/punyworld.png`);

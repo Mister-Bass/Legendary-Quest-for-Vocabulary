@@ -29,7 +29,7 @@ export function createMarshArt(scene){
 export function paintMarshTile(c,room,x,y,size=16,art=null){
   const k=cell(x,y),n=(x*19+y*37)%13;c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;
   if(art?.grass)c.drawImage(art.grass,0,0,16,16);else{c.fillStyle='#187454';c.fillRect(0,0,16,16);}
-  if(room.mud.has(k)){c.fillStyle='#71543e';c.fillRect(0,0,16,16);c.fillStyle='#846248';c.fillRect(3,5,2,2);c.fillRect(11,11,3,1);}
+  if(room.mud.has(k))paintMud(c,room,x,y,art?.mud);
   if(room.stone.has(k)){c.fillStyle='#8f958d';c.fillRect(0,0,16,16);c.fillStyle='#aeb1a2';c.fillRect(1,1,6,12);c.fillRect(9,1,6,6);c.fillRect(9,9,6,5);c.fillStyle='#737e76';c.fillRect(0,15,16,1);}
   if(room.water.has(k)){c.fillStyle='#22506c';c.fillRect(0,0,16,16);c.fillStyle='#488399';c.fillRect(n%7+2,5,6,1);c.fillRect(3,12,4,1);}
   if(room.bridge.has(k))paintPad(c,false);
@@ -55,13 +55,51 @@ function paintForestEdge(c,room,x,y,tree){
   else{col=u%3;row=v%3;}
   c.drawImage(tree,col*16,row*16,16,16,0,0,16,16);
 }
-function marshTerrainArt(scene){return {tree:scene.textures.get('marsh-tree').getSourceImage(),grass:scene.textures.get('marsh-grass').getSourceImage()};}
+function marshTerrainArt(scene){return {tree:scene.textures.get('marsh-tree').getSourceImage(),grass:scene.textures.get('marsh-grass').getSourceImage(),mud:scene.textures.get('marsh-mud').getSourceImage()};}
+// Sample the supplied mud interior so transparent padding and square tile rims
+// do not repeat inside each connected patch. Only exposed shores receive a rim.
+function paintMud(c,room,x,y,image){
+  c.fillStyle='#755e2c';c.fillRect(0,0,16,16);
+  if(image)c.drawImage(image,72,72,112,112,0,0,16,16);
+  const top=!room.mud.has(cell(x,y-1)),bottom=!room.mud.has(cell(x,y+1)),left=!room.mud.has(cell(x-1,y)),right=!room.mud.has(cell(x+1,y));
+  c.fillStyle='#39351d';
+  for(let i=0;i<16;i++){
+    const dip=(i+((x+y)%3))%7<3?1:0;
+    if(top)c.fillRect(i,0,1,1+dip);if(bottom)c.fillRect(i,15-dip,1,1+dip);
+    if(left)c.fillRect(0,i,1+dip,1);if(right)c.fillRect(15-dip,i,1+dip,1);
+  }
+  c.fillStyle='#ac914d';
+  if(top)c.fillRect(4,2,6,1);if(left)c.fillRect(2,5,1,5);
+  c.fillStyle='#514020';if(bottom)c.fillRect(4,13,8,1);if(right)c.fillRect(13,4,1,8);
+}
+// Pixel bubbles expand and pop out of phase. This clock pauses with gameplay.
+export function paintMarshOoze(g,room,clock){
+  g.clear();
+  for(const k of room.mud){
+    const [x,y]=k.split(',').map(Number);if((x*3+y*5)%4!==0)continue;
+    const phase=Math.floor((clock+(x*7+y*11)%23*.17)*3)%9;
+    const px=x*40+10+(x*7%16),py=y*40+12+(y*5%14);
+    // Broad dark pools and broken highlights read as a thick wet surface.
+    g.fillStyle(0x3b321f,.45).fillRect(px-12.5,py,25,7.5).fillRect(px-7.5,py-2.5,15,12.5);
+    g.fillStyle(0xc0a15b,.5).fillRect(px-7.5,py-2.5,10,2.5);
+    if(phase<5){
+      const r=phase<2?5:7.5;
+      g.fillStyle(0x49391e).fillRect(px-r-2.5,py-r,r*2+5,r*2);
+      g.fillStyle(0x8c7437).fillRect(px-r,py-r-2.5,r*2,r*2);
+      g.fillStyle(0xc0a15b,.8).fillRect(px-r,py-r-2.5,r,2.5);
+    }else if(phase<7){
+      g.fillStyle(0x4f4122,.8).fillRect(px-7.5,py,15,2.5);
+      g.fillStyle(0xb09a58,.6).fillRect(px-5,py-2.5,5,2.5);
+    }
+  }
+}
 export function paintPad(c,sinking){c.fillStyle=sinking?'#4a7d54':'#80b75a';c.beginPath();c.moveTo(8,1);c.lineTo(14,4);c.lineTo(8,8);c.lineTo(14,12);c.lineTo(9,15);c.lineTo(3,13);c.lineTo(1,8);c.lineTo(3,3);c.closePath();c.fill();c.fillStyle='#a1ca70';c.fillRect(4,4,4,1);}
 export function paintMarshWorld(scene,room){
   const id='chamber-ground';if(scene.textures.exists(id))scene.textures.remove(id);
   const texture=scene.textures.createCanvas(id,512,512),c=texture.context,art=marshTerrainArt(scene);
   for(let y=0;y<32;y++)for(let x=0;x<32;x++)paintMarshTile(c,room,x,y,16,art);
   texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(1280,1280);scene.chamberGround=texture.getSourceImage();scene.waterSprites=[];scene.treeSprites=[];
+  scene.mudEffects=scene.add.graphics();
   for(const k of room.water){if(room.bridge.has(k))continue;const [x,y]=k.split(',').map(Number);scene.waterSprites.push(scene.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).setAlpha(.24).setTint(0x6bafbf).play('water-ripple'));}
   scene.doorSprite=scene.add.image(620,100,'marsh-door').setDisplaySize(100,100).setOrigin(.5,.65);
   scene.heartChest=scene.add.sprite(room.heart.x*40+20,room.heart.y*40+20,'chest').setDisplaySize(40,40).setFrame(scene.marshProgress.heartTaken?3:0);

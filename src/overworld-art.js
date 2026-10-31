@@ -8,7 +8,7 @@ const key=(x,y)=>`${x},${y}`;
 
 export function paintOverworldTile(context,map,x,y,size,art){
   if(map.marshPreview&&art?.marshTree&&x>=24&&x<48&&y<18){
-    paintMarshTile(context,map.marshTerrain,x,y,size,{tree:art.marshTree,grass:art.marshGrass});
+    paintMarshTile(context,map.marshTerrain,x,y,size,{tree:art.marshTree,grass:art.marshGrass,mud:art.marshMud});
     for(const [tx,ty,key]of[[28,2,'marshLantern'],[43,2,'marshLantern'],[36,8,'marshLantern'],[36,1,'marshDoor']])if(x===tx&&y===ty)context.drawImage(art[key],x*size,y*size,size,size);
     return;
   }

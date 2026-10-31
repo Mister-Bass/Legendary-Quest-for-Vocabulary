@@ -1,3 +1,4 @@
+import { paintMarshOoze } from './marsh-art.js';
 import { MarshModel } from './marsh-model.js';
 import { at,cell } from './marsh-map.js';
 import { Minimap } from './minimap.js';
@@ -56,6 +57,7 @@ export class MarshWorld{
   }
   sync(){
     const m=this.model;this.scene.shades=[];
+    paintMarshOoze(this.scene.mudEffects,this.room,this.clock);
     for(const e of m.enemies){
       if(!this.sprites.has(e.id)){const texture=e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg';const s=this.scene.add.image(e.x,e.y,texture).setDisplaySize(e.type==='small-slurg'?26:44,e.type==='small-slurg'?26:44);if(!this.initializing)this.scene.worldLayer.add(s);this.sprites.set(e.id,s);}
       const hop=(e.type==='slurg'||e.type==='small-slurg')&&this.clock%1.1<.35?Math.sin(this.clock%1.1/.35*Math.PI)*12:0;
