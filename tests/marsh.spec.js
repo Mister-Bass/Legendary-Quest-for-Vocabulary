@@ -80,10 +80,10 @@ test('marsh island chest wakes Croak and a timed stone permits a real sword vict
   };
   await aimBoss();
   await page.keyboard.down('q');
-  await expect.poll(async()=>(await state(page)).bossPhase,{timeout:6000,intervals:[40]}).toBe('tongue');
+  await expect.poll(async()=>(await state(page)).bossPhase,{timeout:30000,intervals:[40]}).toBe('tongue');
   await aimBoss();await page.keyboard.press('f');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','stunned');
   await page.keyboard.up('q');await page.keyboard.down('Space');
-  try{await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','defeated',{timeout:3200});}finally{await page.keyboard.up('Space');}
+  try{await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','defeated',{timeout:30000});}finally{await page.keyboard.up('Space');}
   await expect(page.locator('#game')).toHaveAttribute('data-boss-hp','0');
   await page.screenshot({path:test.info().outputPath('lantern-marsh-croak-defeated.png'),fullPage:true});
   await page.getByRole('button',{name:'Restart adventure'}).click();

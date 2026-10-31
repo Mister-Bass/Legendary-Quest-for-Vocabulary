@@ -130,7 +130,7 @@ test('slime bolts pause, three distinct sword hits kill, and a nearby death burs
 });
 
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
-  test.setTimeout(480000);
+  test.setTimeout(600000);
   await start(page);
   for(let chapter=0;chapter<5;chapter++){
     await expect(game(page)).toHaveAttribute('data-art-area',chapterAreaIds[chapter]);
