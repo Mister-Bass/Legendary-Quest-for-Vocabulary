@@ -49,7 +49,7 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   await page.getByRole('button',{name:'Marsh map',exact:true}).click();await expect(page.locator('#marsh-map')).toBeVisible();
   await page.locator('#marsh-layout').screenshot({path:test.info().outputPath('lantern-marsh-layout.png')});
   const seconds=await page.locator('#game').getAttribute('data-flame-seconds');await page.waitForTimeout(500);expect(await page.locator('#game').getAttribute('data-flame-seconds')).toBe(seconds);
-  await page.getByRole('button',{name:'Close marsh map'}).click();await page.locator('#game canvas').scrollIntoViewIfNeeded();await page.screenshot({path:test.info().outputPath('lantern-marsh-play.png'),fullPage:true});
+  await page.getByRole('button',{name:'Close marsh map'}).click();await page.keyboard.press('Space');await expect(page.locator('#game')).toHaveAttribute('data-mode','playing');await expect(page.locator('#marsh-map')).not.toBeVisible();await page.locator('#game canvas').scrollIntoViewIfNeeded();await page.screenshot({path:test.info().outputPath('lantern-marsh-play.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});const box=await page.locator('#marsh-controls').boundingBox();expect(box.width).toBeLessThanOrEqual(390);
   expect(errors).toEqual([]);
 });

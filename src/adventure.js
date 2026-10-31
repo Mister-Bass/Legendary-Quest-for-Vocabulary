@@ -153,7 +153,7 @@ class Adventure extends Phaser.Scene {
       else this.reset();
       $('play').blur();
     } else if(action==='close') {
-      if(s.mode==='marsh-map'){$('marsh-map').close();s.mode='playing';this.action.invulnerableUntil=Math.max(this.action.invulnerableUntil,this.action.clock+1.2);}
+      if(s.mode==='marsh-map'){$('marsh-map').close();document.activeElement?.blur();s.mode='playing';this.action.invulnerableUntil=Math.max(this.action.invulnerableUntil,this.action.clock+1.2);}
       const reading=['puzzle','guide','journal'].includes(s.mode);
       if(s.mode==='puzzle'||s.mode==='guide'){$('puzzle').close();s.mode='playing';}
       if(s.mode==='journal'){$('journal').close();s.mode=this.journalReturn;}
