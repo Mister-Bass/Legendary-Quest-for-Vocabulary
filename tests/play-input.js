@@ -23,6 +23,18 @@ async function moveAxis(page,axis,target,nearGoal=null){
   await settle(page);
   // Contact can open a trial during the final segment, especially at lower frame rates.
 }
+async function centerMarsh(page,point){
+  // Correct real key-release drift before turning through narrow cell corridors.
+  // Shield walking gives small enough steps; no game state is written by tests.
+  const before=await state(page);if(before.mode!=='playing'||['px','py'].every(axis=>Math.abs(point[axis]-Number(before[axis]))<=7))return;
+  const guarding=before.shield==='true';if(!guarding)await page.keyboard.down('q');
+  try{for(const axis of ['px','py'])for(let i=0;i<4;i++){
+    const s=await state(page);if(s.mode!=='playing')return;
+    const error=point[axis]-Number(s[axis]);if(Math.abs(error)<=7)break;
+    const key=axis==='px'?(error>0?'ArrowRight':'ArrowLeft'):(error>0?'ArrowDown':'ArrowUp');
+    await page.keyboard.press(key,{delay:Math.min(180,Math.max(15,(Math.abs(error)-4)/101.75*1000))});await page.waitForTimeout(90);
+  }}finally{if(!guarding){await page.keyboard.up('q');await page.waitForTimeout(70);}}
+}
 async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
   const s=await state(page),room=makeRoom(Number(s.chapter),5),origin={x:Math.floor(Number(s.px)/40),y:Math.floor(Number(s.py)/40)};
   const objects=[room.guide,room.exit,...room.seals,...(room.heart?[room.heart]:[])],chapter=s.chapter;
@@ -43,6 +55,7 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
   }
   if(!path)throw Error(`No path to ${JSON.stringify(target)}`);
   // Hold keys along straight segments instead of simulating frame-sized key taps.
+  if(room.marsh)await centerMarsh(page,{px:origin.x*40+20,py:origin.y*40+20});
   let previous=origin;
   for(let i=0;i<path.length;){
     const at=await state(page);
@@ -50,6 +63,7 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
     const dx=path[i].x-previous.x,dy=path[i].y-previous.y;let end=i;
     while(end+1<path.length&&path[end+1].x-path[end].x===dx&&path[end+1].y-path[end].y===dy)end++;
     await moveAxis(page,dx?'px':'py',(dx?path[end].x:path[end].y)*40+20,exact?null:{x:target.x*40+20,y:target.y*40+20});
+    if(room.marsh)await centerMarsh(page,{px:path[end].x*40+20,py:path[end].y*40+20});
     previous=path[end];i=end+1;
   }
 }

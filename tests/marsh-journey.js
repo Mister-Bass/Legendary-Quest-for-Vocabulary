@@ -13,7 +13,7 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   if(index===1)await go(26,6);
   if(index===2)await go(5,6);
   const aimAt=async(target,s)=>{
-    await page.locator('#game canvas').scrollIntoViewIfNeeded();const box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom);
+    await page.locator('#game canvas').scrollIntoViewIfNeeded();s=await state(page);const box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom);
     const x=(target.x-Number(s.cameraX)-400)*z+400,y=(target.y-Number(s.cameraY)-280)*z+280;
     await page.mouse.move(box.x+Math.max(5,Math.min(795,x))/800*box.width,box.y+Math.max(5,Math.min(555,y))/560*box.height);
   };
@@ -25,13 +25,8 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
     }}finally{await page.keyboard.up('Space');}
   };
   const id=index===1?1:0;
-  if(index===2){
-    // Chase this Wisp into the lower bank's boulder before striking it. Its drop
-    // is then close enough to the pad crossing for the intended ten-second run.
-    await page.keyboard.down('Space');
-    try{await moveAxis(page,'py',860);await moveAxis(page,'px',180);await moveAxis(page,'py',1020);}
-    finally{await page.keyboard.up('Space');}
-  }
+  // Approach the western Wisp from outside its threat radius. The island trial
+  // then exercises a genuine ten-second bank-and-pad run using timed rolls.
   for(let attempt=0;attempt<16;attempt++){
     await clearMelee();
     const s=await state(page),enemy=JSON.parse(s.enemies).find(e=>e.id===id);if(!enemy.active)break;
@@ -42,8 +37,8 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
       expect(near.length).toBeGreaterThan(0);await go(near[0].x,near[0].y);continue;
     }
     await page.locator('#game canvas').scrollIntoViewIfNeeded();
-    const box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom);
-    const sx=(enemy.x-Number(s.cameraX)-400)*z+400,sy=(enemy.y-Number(s.cameraY)-280)*z+280;
+    const camera=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(camera.zoom);
+    const sx=(enemy.x-Number(camera.cameraX)-400)*z+400,sy=(enemy.y-Number(camera.cameraY)-280)*z+280;
     await page.mouse.move(box.x+Math.max(5,Math.min(795,sx))/800*box.width,box.y+Math.max(5,Math.min(555,sy))/560*box.height);
     await page.keyboard.press(index===2?'b':'f');await page.waitForTimeout(400);
   }

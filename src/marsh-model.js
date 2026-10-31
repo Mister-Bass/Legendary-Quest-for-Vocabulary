@@ -66,7 +66,7 @@ export class MarshModel{
       if(!e.active){if(e.type==='wisp'&&this.clock>=e.respawn){e.active=true;e.hp=1;e.x=e.home.x;e.y=e.home.y;}continue;}
       const d=dist(e,h),ex=h.x-e.x,ey=h.y-e.y;
       if(e.type==='wisp'){
-        if(d<300){this.move(e,-ex/Math.max(1,d)*210*dt,-ey/Math.max(1,d)*210*dt);}else{const target={x:e.home.x+Math.sin(this.clock*.8+e.id)*20,y:e.home.y},back=dist(e,target);if(back>2)this.move(e,(target.x-e.x)/back*30*dt,(target.y-e.y)/back*30*dt);}
+        if(d<150){this.move(e,-ex/Math.max(1,d)*210*dt,-ey/Math.max(1,d)*210*dt);}else{const target={x:e.home.x+Math.sin(this.clock*.8+e.id)*20,y:e.home.y},back=dist(e,target);if(back>2)this.move(e,(target.x-e.x)/back*30*dt,(target.y-e.y)/back*30*dt);}
       }else if(e.type==='octorok'){
         if(this.clock>e.next&&d<440){this.bolts.push({x:e.x,y:e.y,vx:ex/Math.max(1,d)*170,vy:ey/Math.max(1,d)*170,until:this.clock+5});e.next=this.clock+2.8;}
       }else{

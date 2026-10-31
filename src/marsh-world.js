@@ -36,7 +36,8 @@ export class MarshWorld{
       for(const [id,p]of [...this.room.seals.map((p,i)=>['lamp'+i,p]),['heart',this.room.heart],['gate',this.room.exit],['guide',this.room.guide]]){
         const d=Math.hypot(this.hero.x-at(p).x,this.hero.y-at(p).y);
         if(d>65)this.contacts.delete(id);
-        if(d<42&&!this.contacts.has(id)){this.contacts.add(id);if(id==='gate'||id==='guide'){this.scene.interact();this.scene.render();}else this.interact();}
+        const lampIndex=id.startsWith('lamp')?Number(id.slice(4)):-1,readyFlame=lampIndex>=0&&!this.model.progress.primed[lampIndex]&&!this.model.progress.lit[lampIndex]&&this.model.flameUntil>this.clock;
+        if(d<42&&(!this.contacts.has(id)||readyFlame)){this.contacts.add(id);if(id==='gate'||id==='guide'){this.scene.interact();this.scene.render();}else this.interact();}
       }
       if(this.scene.state.mode!=='playing')break;
     }

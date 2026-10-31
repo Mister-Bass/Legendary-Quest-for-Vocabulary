@@ -3,7 +3,7 @@ export default defineConfig({
   testDir: './tests', fullyParallel: true, forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
-  use: { baseURL: 'http://127.0.0.1:4183', trace: 'retain-on-failure' },
+  use: { baseURL: 'http://127.0.0.1:4183', trace: { mode:'retain-on-failure', screenshots:false, snapshots:true, sources:true } },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

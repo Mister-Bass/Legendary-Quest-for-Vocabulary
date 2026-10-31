@@ -12,6 +12,7 @@ test('marsh layout preserves all bank and island routes around deep water',()=>{
   expect(marshWalkable(r,15,10)).toBe(false);
 });
 test('marsh Wisp Flames expire, respawn, and are required once per vocabulary lantern',()=>{
+  const nearby=new MarshModel(makeMarshRoom()),pale=nearby.enemies[0];Object.assign(nearby.hero,{x:pale.x,y:pale.y-240});advance(nearby,.2);expect(Math.abs(pale.y-pale.home.y)).toBeLessThan(10);nearby.hero.y=pale.y-80;const before=pale.y;advance(nearby,.1);expect(pale.y).toBeGreaterThan(before);
   const m=new MarshModel(makeMarshRoom());m.interactLantern(0);expect(m.progress.primed[0]).toBe(false);
   const w=m.enemies[0];m.hero.x=w.x;m.hero.y=w.y;m.defeat(w);advance(m,.02);expect(m.flameUntil-m.clock).toBeCloseTo(10,1);
   m.interactLantern(0);expect(m.progress.primed[0]).toBe(true);expect(m.progress.lit[0]).toBe(false);expect(m.flameUntil).toBe(0);
@@ -54,7 +55,7 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   expect(errors).toEqual([]);
 });
 test('marsh real-input mission restores all ten words and three lanterns',async({page})=>{
-  test.setTimeout(360000);await page.goto('/?area=A02');await page.getByRole('button',{name:'Begin adventure'}).click();
+  test.setTimeout(360000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
   for(let i=0;i<3;i++){await finishTrial(page,i);await expect(page.locator('#game')).toHaveAttribute('data-keys',String(i+1));}
   await expect(page.locator('#game')).toHaveAttribute('data-learned','10');await expect(page.locator('#game')).toHaveAttribute('data-lanterns','[true,true,true]');
   await page.screenshot({path:test.info().outputPath('lantern-marsh-island-restored.png')});
@@ -65,18 +66,21 @@ test('marsh real-input mission restores all ten words and three lanterns',async(
 
 
 test('marsh island chest wakes Croak and a timed stone permits a real sword victory',async({page})=>{
-  test.setTimeout(180000);await page.goto('/?area=A02');await page.getByRole('button',{name:'Begin adventure'}).click();
+  test.setTimeout(180000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
   const room=makeMarshRoom();await walkTo(page,{x:16,y:26},{exact:true,avoidEnemies:false});
   await walkTo(page,room.heart,{avoidEnemies:false});
   if((await state(page)).heartPiece!=='true')await contact(page,room.heart,async()=>(await state(page)).heartPiece==='true');
   await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','true');
   await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false});
   await page.locator('#game canvas').scrollIntoViewIfNeeded();
-  const s=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),boss=at(room.boss);
-  await page.mouse.move(box.x+((boss.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((boss.y-Number(s.cameraY)-280)*z+280)/560*box.height);
+  const aimBoss=async()=>{
+    const s=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),boss=at(room.boss);
+    await page.mouse.move(box.x+((boss.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((boss.y-Number(s.cameraY)-280)*z+280)/560*box.height);
+  };
+  await aimBoss();
   await page.keyboard.down('q');
   await expect.poll(async()=>(await state(page)).bossPhase,{timeout:6000,intervals:[40]}).toBe('tongue');
-  await page.keyboard.press('f');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','stunned');
+  await aimBoss();await page.keyboard.press('f');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','stunned');
   await page.keyboard.up('q');await page.keyboard.down('Space');
   try{await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','defeated',{timeout:3200});}finally{await page.keyboard.up('Space');}
   await expect(page.locator('#game')).toHaveAttribute('data-boss-hp','0');
