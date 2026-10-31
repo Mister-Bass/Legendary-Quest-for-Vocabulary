@@ -24,7 +24,8 @@ async function moveAxis(page,axis,target,nearGoal=null){
   // Contact can open a trial during the final segment, especially at lower frame rates.
 }
 async function walkMarshPath(page,path,chapter,origin,attack,guard){
-  // Sprint along straight runs; shield-walk at corners and against incoming mud.
+  // Hold movement on straight runs; use bounded movement taps at corners.
+  // Shield only against incoming mud or when deliberately herding a Wisp.
   // Every action below is normal keyboard/mouse input; game state is read only.
   const held=new Set(),turns=[];let previous=origin,blocking=false;
   for(let i=0;i<path.length;i++){const p=path[i],dx=p.x-previous.x,dy=p.y-previous.y,next=path[i+1];if(!next||next.x-p.x!==dx||next.y-p.y!==dy)turns.push({...p,horizontal:dx!==0});previous=p;}
@@ -41,11 +42,19 @@ async function walkMarshPath(page,path,chapter,origin,attack,guard){
       if(!last||Math.hypot(s.px-last.px,s.py-last.py)>3){last=s;progressed=Date.now();}
       if(Date.now()-progressed>4000||Date.now()-started>60000){const diagnostic=await game(page).evaluate(el=>({visibility:document.visibilityState,focused:document.hasFocus(),position:{x:el.dataset.px,y:el.dataset.py,speed:el.dataset.speed}}));throw Error(`Marsh steering stalled at ${s.px},${s.py} toward ${target.px},${target.py}; falls=${s.falls}; ${JSON.stringify(diagnostic)}`);}
       const incoming=s.bolts.filter(p=>p.vx*(s.px-p.x)+p.vy*(s.py-p.y)>0&&Math.hypot(p.x-s.px,p.y-s.py)<260).sort((a,b)=>Math.hypot(a.x-s.px,a.y-s.py)-Math.hypot(b.x-s.px,b.y-s.py));
-      const precision=guard||Math.hypot(dx,dy)<=45||Math.abs(point.horizontal?dy:dx)>10||incoming.length>0;if(precision!==blocking){blocking=precision;if(blocking)await page.keyboard.down('q');else await page.keyboard.up('q');}
+      const guarded=guard||incoming.length>0;if(guarded!==blocking){blocking=guarded;if(blocking)await page.keyboard.down('q');else await page.keyboard.up('q');}
       if(incoming.length){const p=incoming[0],x=(p.x-s.cameraX-400)*s.zoom+400,y=(p.y-s.cameraY-280)*s.zoom+280;await page.mouse.move(box.x+Math.max(5,Math.min(795,x))/800*box.width,box.y+Math.max(5,Math.min(555,y))/560*box.height);}
       const next=new Set();if(Math.abs(dx)>5)next.add(dx>0?'ArrowRight':'ArrowLeft');if(Math.abs(dy)>5)next.add(dy>0?'ArrowDown':'ArrowUp');
-      for(const key of [...held])if(!next.has(key)){await page.keyboard.up(key);held.delete(key);}
-      for(const key of next)if(!held.has(key)){await page.keyboard.down(key);held.add(key);}
+      const precise=!guard&&(Math.hypot(dx,dy)<=60||Math.abs(point.horizontal?dy:dx)>10);
+      if(precise){
+        for(const key of held)await page.keyboard.up(key);held.clear();
+        // The game retains direction taps for 80 ms: at normal speed each pulse
+        // advances less than 19 pixels even when rendering a slow frame.
+        for(const key of next)await page.keyboard.press(key);
+      }else{
+        for(const key of [...held])if(!next.has(key)){await page.keyboard.up(key);held.delete(key);}
+        for(const key of next)if(!held.has(key)){await page.keyboard.down(key);held.add(key);}
+      }
       await page.waitForTimeout(35);
     }
   }}finally{for(const key of held)await page.keyboard.up(key);await page.keyboard.up('Space');await page.keyboard.up('q');}
