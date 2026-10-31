@@ -29,7 +29,8 @@ async function walkMarshPath(page,path,chapter,origin,attack,guard){
   // step; guarded herding retains its finer tolerance at shield-walking speed.
   // Every action below is normal keyboard/mouse input; game state is read only.
   const held=new Set(),turns=[],room=makeRoom(Number(chapter),5);let previous=origin,blocking=false;
-  const clearFootprint=(x,y)=>[-8,8].every(ox=>[-8,8].every(oy=>isWalkable(room,Math.floor((x+ox)/40),Math.floor((y+oy)/40))));
+  const solidObjects=[room.guide,room.exit,...room.seals,...(room.heart?[room.heart]:[])];
+  const clearFootprint=(x,y)=>[-8,8].every(ox=>[-8,8].every(oy=>isWalkable(room,Math.floor((x+ox)/40),Math.floor((y+oy)/40))))&&!solidObjects.some(p=>Math.abs(x-(p.x*40+20))<20&&Math.abs(y-(p.y*40+20))<20);
   for(let i=0;i<path.length;i++){const p=path[i],dx=p.x-previous.x,dy=p.y-previous.y,next=path[i+1];if(!next||next.x-p.x!==dx||next.y-p.y!==dy)turns.push({...p,horizontal:dx!==0});previous=p;}
   await page.locator('#game canvas').scrollIntoViewIfNeeded();const box=await page.locator('#game canvas').boundingBox();
   await page.keyboard.up('q');if(attack)await page.keyboard.down('Space');else await page.keyboard.up('Space');
@@ -50,7 +51,8 @@ async function walkMarshPath(page,path,chapter,origin,attack,guard){
       if(guard){if(Math.abs(dx)>5)next.add(dx>0?'ArrowRight':'ArrowLeft');if(Math.abs(dy)>5)next.add(dy>0?'ArrowDown':'ArrowUp');}
       else{
         const main=point.horizontal?dx:dy,cross=point.horizontal?dy:dx,step=Math.sign(main)*Math.min(47,Math.abs(main));
-        const blocked=!clearFootprint(s.px+(point.horizontal?step:0),s.py+(point.horizontal?0:step));
+        const samples=Math.max(1,Math.ceil(Math.abs(step)/8));
+        const blocked=Array.from({length:samples},(_,i)=>step*(i+1)/samples).some(offset=>!clearFootprint(s.px+(point.horizontal?offset:0),s.py+(point.horizontal?0:offset)));
         if(Math.abs(main)>24)next.add(point.horizontal?(main>0?'ArrowRight':'ArrowLeft'):(main>0?'ArrowDown':'ArrowUp'));
         // Stay on one axis instead of zigzagging around its centerline. Align
         // only where the actual map footprint narrows before the next turn.
