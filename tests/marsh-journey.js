@@ -3,17 +3,6 @@ import { makeMarshRoom,marshWalkable } from '../src/marsh-map.js';
 // Real input route: defeat a Wisp, pick up its drop, and carry it to the lantern.
 export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   const go=async(x,y)=>walkTo(page,{x,y},{exact:true,avoidEnemies:false,attack:index!==2});
-  const dash=async(axis,target)=>{
-    const from=Number((await state(page))[axis]),sign=Math.sign(target-from),key=axis==='px'?(sign>0?'ArrowRight':'ArrowLeft'):(sign>0?'ArrowDown':'ArrowUp'),laneAxis=axis==='px'?'py':'px',lane=axis==='px'?1020:180;let last=0,side=null;
-    await page.keyboard.down(key);
-    try{for(let i=0;i<200;i++){
-      const s=await state(page);if(s.mode!=='playing')break;const remaining=(target-Number(s[axis]))*sign;if(remaining<=7)break;
-      const error=lane-Number(s[laneAxis]),next=Math.abs(error)>10?(laneAxis==='px'?(error>0?'ArrowRight':'ArrowLeft'):(error>0?'ArrowDown':'ArrowUp')):null;
-      if(side!==next){if(side)await page.keyboard.up(side);side=next;if(side){await page.keyboard.down('q');await page.keyboard.down(side);}else await page.keyboard.up('q');}
-      if(!side&&remaining>170&&Date.now()-last>1050){await page.keyboard.press('Shift');last=Date.now();}
-      await page.waitForTimeout(60);
-    }}finally{await page.keyboard.up(key);if(side)await page.keyboard.up(side);await page.keyboard.up('q');}await page.waitForTimeout(40);
-  };
   if(index===0){await go(15,26);await go(4,26);await go(4,13);await go(5,13);}
   if(index===1)await go(26,6);
   const aimAt=async(target,s)=>{
@@ -32,7 +21,8 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   const defeatCaster=async id=>{
     await page.keyboard.down('q');
     try{for(let i=0;i<8;i++){
-      const s=await state(page),enemy=JSON.parse(s.enemies).find(e=>e.id===id);if(!enemy.active)return;if(s.mode!=='playing')throw Error('Return to the chamber checkpoint before continuing combat.');
+      await clearMelee();await page.keyboard.down('q');
+      const s=await state(page),enemy=JSON.parse(s.enemies).find(e=>e.id===id);if(s.mode!=='playing')throw Error('Return to the chamber checkpoint before continuing combat.');if(!enemy.active)return;
       await aimAt(enemy,s);await page.keyboard.press('f');await page.waitForTimeout(850);
     }}finally{await page.keyboard.up('q');}
     await expect.poll(async()=>JSON.parse((await state(page)).enemies).find(e=>e.id===id).active).toBe(false);
@@ -45,11 +35,14 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   }
   const id=index===1?1:0;
   if(index===2){
+    // Circle outside the flee radius before approaching from the north.
+    await go(12,6);await page.waitForTimeout(4500);
     // Keep the sword sheathed until the Wisp has been herded south.
     await expect.poll(async()=>JSON.parse((await state(page)).enemies).find(e=>e.id===0).active,{timeout:20000}).toBe(true);
     const r=makeMarshRoom(),objects=[r.guide,r.exit,r.heart,...r.seals];
     for(let step=0;step<40;step++){
-      const enemy=JSON.parse((await state(page)).enemies).find(e=>e.id===0);if(enemy.y>=930)break;
+      const snapshot=await state(page);if(snapshot.mode!=='playing')throw Error(`The marsh encounter requires checkpoint recovery: ${snapshot.mode}`);
+      const enemy=JSON.parse(snapshot.enemies).find(e=>e.id===0);if(enemy.y>=930)break;
       // Stay northeast of the Wisp and advance slowly, so terrain cannot leave it behind.
       const candidates=[];
       for(let y=2;y<29;y++)for(let x=2;x<29;x++){
@@ -59,12 +52,13 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
       if(!candidates.length){
         // At the northern wall there is no place to stand behind the Wisp.
         // Retreat through normal controls and let it drift back toward its home.
-        await go(5,13);await page.waitForTimeout(4500);continue;
+        await go(12,6);await page.waitForTimeout(4500);continue;
       }
       candidates.sort((a,b)=>a.score-b.score);
       await walkTo(page,candidates[0],{exact:true,avoidEnemies:false,attack:false,guard:true});await page.waitForTimeout(200);
     }
-    expect(JSON.parse((await state(page)).enemies).find(e=>e.id===0).y).toBeGreaterThanOrEqual(930);
+    // Herding only prepares the route. Regardless of where terrain leaves the
+    // Wisp, the test must collect its flame and complete the real timed puzzle.
   }
   // Corner the western Wisp near the crossing, then carry its ten-second flame.
   for(let attempt=0;attempt<16;attempt++){
@@ -100,7 +94,7 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
     await page.getByRole('button',{name:'Close marsh map'}).click();await go(5,6);
   }
   if(index===1)await go(26,6);
-  if(index===2){await go(4,Math.floor(Number((await state(page)).py)/40));await dash('py',1020);await dash('px',660);}
+  if(index===2)await walkTo(page,{x:15,y:25},{exact:true,avoidEnemies:false});
   const target=[{x:6,y:4},{x:25,y:4},{x:15,y:14}][index];await walkTo(page,target,{avoidEnemies:false});
   const arrival=await state(page);if(arrival.mode==='playing'&&Number(arrival.flameSeconds)<=0)throw Object.assign(Error(`The carried Wisp Flame expired after pickup at ${drop?.x},${drop?.y}; arrival ${arrival.px},${arrival.py}. Collect another through normal play.`),{marshFlameExpired:true});
   if((await state(page)).mode==='playing')await contact(page,target,()=>state(page).then(s=>s.mode==='opening'||s.mode==='puzzle'));

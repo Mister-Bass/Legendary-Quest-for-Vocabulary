@@ -56,8 +56,24 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   expect(errors).toEqual([]);
 });
 test('marsh real-input mission restores all ten words and three lanterns',async({page})=>{
-  test.setTimeout(360000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
-  for(let i=0;i<3;i++){await finishTrial(page,i);await expect(page.locator('#game')).toHaveAttribute('data-keys',String(i+1));}
+  test.setTimeout(360000);
+  if(process.env.GAME_TEST_PROGRESS){
+    const timer=setInterval(async()=>{try{
+      const s=await state(page),enemies=JSON.parse(s.enemies||'[]');
+      console.log('Marsh progress',JSON.stringify({mode:s.mode,keys:s.keys,words:s.learned,position:[s.px,s.py],flame:s.flameSeconds,pads:s.pads,health:await page.locator('#hearts').getAttribute('aria-label'),wisp:enemies.find(e=>e.id===0),threats:enemies.filter(e=>e.active&&e.type!=='wisp').map(e=>({id:e.id,type:e.type,x:e.x,y:e.y}))}));
+    }catch{}},10000);timer.unref();page.once('close',()=>clearInterval(timer));
+    page.on('pageerror',error=>console.error('Game error',error.stack));
+  }
+  await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
+  let cpuSession;
+  for(let i=0;i<3;i++){
+    if(i===2&&process.env.GAME_TEST_CPU_RATE&&test.info().project.name==='chromium'){
+      cpuSession=await page.context().newCDPSession(page);
+      await cpuSession.send('Emulation.setCPUThrottlingRate',{rate:Number(process.env.GAME_TEST_CPU_RATE)});
+    }
+    await finishTrial(page,i);await expect(page.locator('#game')).toHaveAttribute('data-keys',String(i+1));
+  }
+  if(cpuSession)await cpuSession.send('Emulation.setCPUThrottlingRate',{rate:1});
   await expect(page.locator('#game')).toHaveAttribute('data-learned','10');await expect(page.locator('#game')).toHaveAttribute('data-lanterns','[true,true,true]');
   await page.screenshot({path:test.info().outputPath('lantern-marsh-island-restored.png')});
   await waitForMarshPads(page,state);
@@ -72,7 +88,7 @@ test('marsh island chest wakes Croak and a timed stone permits a real sword vict
   await walkTo(page,room.heart,{avoidEnemies:false});
   if((await state(page)).heartPiece!=='true')await contact(page,room.heart,async()=>(await state(page)).heartPiece==='true');
   await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','true');
-  await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false});
+  await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,guard:true});
   await page.locator('#game canvas').scrollIntoViewIfNeeded();
   const aimBoss=async()=>{
     const s=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),boss=at(room.boss);

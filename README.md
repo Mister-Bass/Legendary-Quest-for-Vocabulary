@@ -185,6 +185,8 @@ The production build is dist. Tests run against Vite’s production preview serv
 
 GitHub Actions runs Build and browser tests for every PR, main update, merge queue, and manual run. It builds, runs the full suite in Chromium, Firefox, and WebKit, and generates a ZIP. In the run’s Artifacts section, download legendary-quest-package. It contains legendary-quest-for-vocabulary.zip with playable/ (built game) and source/ (reusable project). GitHub may wrap that ZIP in another ZIP. Game artifacts last 30 days; browser reports last 14 days.
 
+Optional assistant diagnostics: `GAME_TEST_PROGRESS=1` logs read-only marsh progress. `GAME_TEST_CPU_RATE=8` slows Chromium during the island approach to exercise movement under CPU pressure.
+
 ## Cloudflare Pages and approval
 
 The existing Cloudflare GitHub connection uses these settings:
