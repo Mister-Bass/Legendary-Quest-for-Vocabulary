@@ -14,6 +14,7 @@ export function preloadArt(scene){
   const scenery=(key,file,w,h=w)=>scene.load.spritesheet(key,`${import.meta.env.BASE_URL}assets/scenery/${file}.png`,{frameWidth:w,frameHeight:h});
   for(const n of POND_TILES)scene.load.image('pond-'+n,`${import.meta.env.BASE_URL}assets/kenney-pond/rpgTile${String(n).padStart(3,'0')}.png`);
   for(const name of MARSH_PLANTS)scene.load.image('marsh-plant-'+name,`${import.meta.env.BASE_URL}assets/marsh-plants/${name}.png`);
+  scene.load.image('octorot-source',`${import.meta.env.BASE_URL}assets/octorot/octorot.png`);
   scene.load.image('marsh-mud',`${import.meta.env.BASE_URL}assets/marsh/wet-mud-tile.png`);
   scene.load.image('marsh-forest',`${import.meta.env.BASE_URL}assets/forest/top-down-forest-tileset.png`);
   scene.load.image('bridge',`${import.meta.env.BASE_URL}assets/bridge/pontev2.png`);

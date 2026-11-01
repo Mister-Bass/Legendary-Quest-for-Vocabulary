@@ -1,0 +1,7 @@
+Octorot sprite strip
+
+Supplied by the repository owner for A02 water enemies on 2026-10-31.
+Creator and license were not provided with this file.
+No additional asset reuse license is asserted by this project.
+The original PNG is preserved unchanged. The game separates eight poses
+and keys the edge-connected navy/gray background at runtime.

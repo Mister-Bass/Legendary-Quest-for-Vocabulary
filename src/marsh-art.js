@@ -1,3 +1,4 @@
+import { createOctorotArt } from './octorot-art.js';
 import { pondImages,pondTile,PondLife } from './marsh-water.js';
 import { marshPlantImages,paintMarshSceneryCell } from './marsh-scenery.js';
 import { cell,makeMarshRoom } from './marsh-map.js';
@@ -13,7 +14,7 @@ export function createMarshArt(scene){
   texture('marsh-lantern',c=>{rect(c,'#435653',6,7,4,9);rect(c,'#252e32',3,2,10,9);rect(c,'#b28a48',4,1,8,2);rect(c,'#806744',5,4,6,5);rect(c,'#d5ab58',6,4,3,3);});
   texture('marsh-lantern-lit',c=>{rect(c,'#435653',6,7,4,9);rect(c,'#493f32',3,2,10,9);rect(c,'#e9b452',4,1,8,2);rect(c,'#ffda75',5,3,6,6);rect(c,'#fff4b0',7,3,2,4);});
   texture('marsh-wisp',c=>{rect(c,'#657e85',5,5,7,9);rect(c,'#a5c7c2',4,4,8,8);rect(c,'#e8f1d6',6,2,4,7);rect(c,'#fff3aa',7,5,2,4);rect(c,'#455364',6,10,1,1);rect(c,'#455364',10,10,1,1);});
-  texture('marsh-octorok',c=>{rect(c,'#643e3d',2,10,12,4);rect(c,'#a43f3f',3,5,10,7);rect(c,'#df6456',5,3,6,7);rect(c,'#ffe4c3',5,6,2,2);rect(c,'#ffe4c3',10,6,2,2);rect(c,'#482f31',6,10,4,3);rect(c,'#e8a477',7,11,2,1);});
+  createOctorotArt(scene);
   texture('marsh-slurg',c=>{rect(c,'#3c2b55',2,9,12,5);rect(c,'#7f4a9a',3,6,10,7);rect(c,'#ac72bb',5,4,6,6);rect(c,'#eee3b3',5,9,2,2);rect(c,'#eee3b3',10,9,2,2);});
   texture('marsh-toad',c=>{rect(c,'#264c31',1,5,14,10);rect(c,'#497839',2,3,12,10);rect(c,'#8dab54',4,6,8,7);rect(c,'#577d36',2,1,4,5);rect(c,'#577d36',10,1,4,5);rect(c,'#f1d879',3,2,2,2);rect(c,'#f1d879',11,2,2,2);rect(c,'#283d28',4,9,8,1);rect(c,'#d7ce88',5,11,6,3);});
   texture('marsh-door',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#37254e',4,3,8,12);rect(c,'#67458c',5,4,6,11);rect(c,'#ab83c0',7,5,2,9);for(const x of [4,8,11])rect(c,'#251e38',x,7,1,3);});
@@ -23,7 +24,7 @@ export function createMarshArt(scene){
   for(const p of room.seals)c.drawImage(scene.textures.get('marsh-lantern').getSourceImage(),p.x*16,p.y*16,16,16);
   c.drawImage(scene.textures.get('marsh-door').getSourceImage(),15*16,1*16,32,32);
   c.drawImage(scene.textures.get('chest').getSourceImage(),0,0,16,16,room.heart.x*16,room.heart.y*16,16,16);
-  for(const e of room.shades)c.drawImage(scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg').getSourceImage(),e.x*16,e.y*16,16,16);
+  for(const e of room.shades){const texture=scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg'),f=texture.get(e.type==='octorok'?3:'__BASE');c.drawImage(f.source.image,f.cutX,f.cutY,f.cutWidth,f.cutHeight,e.x*16,e.y*16,16,16);}
   c.drawImage(scene.textures.get('marsh-toad').getSourceImage(),room.boss.x*16-8,room.boss.y*16-8,32,32);
   c.fillStyle='#9ac96e';c.beginPath();c.moveTo(248,464);c.lineTo(240,480);c.lineTo(256,480);c.closePath();c.fill();
   preview.refresh();
