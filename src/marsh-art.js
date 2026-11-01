@@ -14,6 +14,7 @@ export function createMarshArt(scene){
   texture('marsh-grass',c=>c.drawImage(forest,128,32,16,16,0,0,16,16));
   const tree=scene.textures.createCanvas('marsh-tree',48,64);
   tree.context.drawImage(forest,160,48,48,64,0,0,48,64);tree.refresh();
+  texture('marsh-pad',c=>paintPad(c,false));
   createLanternArt(scene);
   createWispArt(scene);
   createOctorotArt(scene);
@@ -37,7 +38,7 @@ export function paintMarshTile(c,room,x,y,size=16,art=null){
   if(room.mud.has(k))paintMud(c,room,x,y,art?.mud);
   if(room.stone.has(k)){c.fillStyle='#8f958d';c.fillRect(0,0,16,16);c.fillStyle='#aeb1a2';c.fillRect(1,1,6,12);c.fillRect(9,1,6,6);c.fillRect(9,9,6,5);c.fillStyle='#737e76';c.fillRect(0,15,16,1);}
   if(room.water.has(k)){const image=art?.pond?.[pondTile(room,x,y)];if(image)c.drawImage(image,0,0,image.width,image.height,0,0,16,16);else{c.fillStyle='#6abdc5';c.fillRect(0,0,16,16);}}
-  if(room.bridge.has(k))paintPad(c,false);
+  if(room.bridge.has(k)&&!art?.hidePads)paintPad(c,false);
   if(room.walls.has(k)){
     if(art?.props&&room.scenery?.some(p=>p.x===x&&p.y===y)&&(room.bushes?.some(p=>p.x===x&&p.y===y)||room.rocks.some(p=>p.x===x&&p.y===y))){/* supplied prop painted below */}
     else if(room.pillars?.some(p=>p.x===x&&p.y===y)){c.fillStyle='#53636a';c.fillRect(2,13,12,3);c.fillStyle='#959e9b';c.fillRect(4,3,8,10);c.fillStyle='#c0c5b5';c.fillRect(5,4,2,8);c.fillStyle='#aeb8ab';c.fillRect(2,1,12,3);}
@@ -103,11 +104,12 @@ export function paintMarshOoze(g,room,clock){
 export function paintPad(c,sinking){c.fillStyle=sinking?'#4a7d54':'#80b75a';c.beginPath();c.moveTo(8,1);c.lineTo(14,4);c.lineTo(8,8);c.lineTo(14,12);c.lineTo(9,15);c.lineTo(3,13);c.lineTo(1,8);c.lineTo(3,3);c.closePath();c.fill();c.fillStyle='#a1ca70';c.fillRect(4,4,4,1);}
 export function paintMarshWorld(scene,room){
   const id='chamber-ground';if(scene.textures.exists(id))scene.textures.remove(id);
-  const texture=scene.textures.createCanvas(id,512,512),c=texture.context,art=marshTerrainArt(scene);
+  const texture=scene.textures.createCanvas(id,512,512),c=texture.context,art={...marshTerrainArt(scene),hidePads:true};
   for(let y=0;y<32;y++)for(let x=0;x<32;x++)paintMarshTile(c,room,x,y,16,art);
   texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(1280,1280);scene.chamberGround=texture.getSourceImage();scene.waterSprites=[];scene.treeSprites=[];
   scene.mudEffects=scene.add.graphics();
   scene.pondEffects=scene.add.graphics();scene.pondLife=new PondLife(room);
+  scene.padSprites=new Map(room.pads.map(p=>[cell(p.x,p.y),scene.add.image(p.x*40+20,p.y*40+20,'marsh-pad').setDisplaySize(40,40)]));
   scene.lanternGlow=scene.add.graphics();scene.wispGlow=scene.add.graphics();
   scene.doorSprite=scene.add.image(620,100,'marsh-door').setDisplaySize(100,100).setOrigin(.5,.65);
   scene.heartChest=scene.add.sprite(room.heart.x*40+20,room.heart.y*40+20,'chest').setDisplaySize(40,40).setFrame(scene.marshProgress.heartTaken?3:0);

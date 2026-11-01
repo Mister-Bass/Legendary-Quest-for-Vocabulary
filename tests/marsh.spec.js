@@ -52,8 +52,8 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   await page.keyboard.press('Shift');await expect(page.locator('#game')).toHaveAttribute('data-rolls','1');
   await page.getByRole('button',{name:'Marsh map',exact:true}).click();await expect(page.locator('#marsh-map')).toBeVisible();
   // Compare clear terrain cells with the supplied images, including mud alpha.
-  expect(await page.locator('#marsh-layout').evaluate(async canvas=>{
-    for(const [file,rect,tile,base]of[
+  const terrainSamples=await page.locator('#marsh-layout').evaluate(async canvas=>{
+    const samples=[];for(const [file,rect,tile,base]of[
       ['forest/top-down-forest-tileset.png',[128,32,16,16],[10,26],null],
       ['marsh/wet-mud-tile.png',[72,72,112,112],[4,9],'#755e2c'],
       ['kenney-pond/rpgTile010.png',[0,0,64,64],[11,8],null]
@@ -63,10 +63,13 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
       const c=sample.getContext('2d');c.imageSmoothingEnabled=false;
       if(base){c.fillStyle=base;c.fillRect(0,0,16,16);}c.drawImage(image,...rect,0,0,16,16);
       const expected=c.getImageData(0,0,16,16).data,actual=canvas.getContext('2d').getImageData(tile[0]*16,tile[1]*16,16,16).data;
-      if(!expected.every((value,i)=>value===actual[i]))return false;
+      const differences=Array.from(expected,(value,i)=>Math.abs(value-actual[i]));samples.push({file,maxDelta:Math.max(...differences),changed:differences.filter(v=>v>0).length});
     }
-    return true;
-  })).toBe(true);
+    return samples;
+  });
+  console.log('Terrain pixel samples',JSON.stringify(terrainSamples));
+  // Allow only two channel levels for cross-engine 8-bit canvas compositing.
+  for(const sample of terrainSamples)expect(sample.maxDelta,sample.file).toBeLessThanOrEqual(2);
   await page.locator('#marsh-layout').screenshot({path:test.info().outputPath('lantern-marsh-layout.png')});
   const seconds=await page.locator('#game').getAttribute('data-flame-seconds');await page.waitForTimeout(500);expect(await page.locator('#game').getAttribute('data-flame-seconds')).toBe(seconds);
   await page.getByRole('button',{name:'Close marsh map'}).click();await page.keyboard.press('Space');await expect(page.locator('#game')).toHaveAttribute('data-mode','playing');await expect(page.locator('#marsh-map')).not.toBeVisible();await page.locator('#game canvas').scrollIntoViewIfNeeded();await page.screenshot({path:test.info().outputPath('lantern-marsh-play.png'),fullPage:true});

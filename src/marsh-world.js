@@ -79,9 +79,17 @@ export class MarshWorld{
     }
     drawFrogEncounter(this);
     const g=this.effects;g.clear();
-    for(const p of this.room.pads){const timer=m.padTimers.get(cell(p.x,p.y));if(!timer)continue;
-      g.fillStyle(timer.sunkUntil>this.clock?0x244e68:0xa1c46a,.9).fillCircle(p.x*40+20,p.y*40+20,18);
-      if(!timer.sunkUntil){g.lineStyle(2,0xe5c172).strokeCircle(p.x*40+20,p.y*40+20,Math.max(3,(timer.deadline-this.clock)/2*17));}
+    this.padRipples=0;
+    for(const p of this.room.pads){
+      const key=cell(p.x,p.y),timer=m.padTimers.get(key),sunk=!!timer&&timer.sunkUntil>this.clock;
+      this.scene.padSprites.get(key).setVisible(!sunk);
+      if(!sunk)continue;
+      const age=this.clock-(timer.sunkAt??timer.sunkUntil-4);
+      if(age>=0&&age<1.2){
+        const radius=5+age*14,alpha=.65*(1-age/1.2);
+        g.lineStyle(2,0xe1f5dd,alpha).strokeEllipse(p.x*40+20,p.y*40+20,radius*2,radius);
+        this.padRipples++;
+      }
     }
     for(const d of m.drops){g.fillStyle(0xffcc76,.3).fillCircle(d.x,d.y,18);g.fillStyle(0xfff0ab).fillRect(d.x-4,d.y-9,8,15);}
     for(const p of m.bolts)g.fillStyle(0x9a7050).fillCircle(p.x,p.y,6);
@@ -103,7 +111,7 @@ export class MarshWorld{
   }
   telemetry(){
     const m=this.model,s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
+    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),visiblePads:[...this.scene.padSprites.values()].filter(s=>s.visible).length,padRipples:this.padRipples||0,arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
     document.getElementById('wayfinder').textContent=`Lanterns ${m.progress.lit.filter(Boolean).length}/3 · Wisp Flame ${Math.max(0,m.flameUntil-m.clock).toFixed(1)}s · Heart Piece ${m.progress.heartTaken?'1/4':'0/4'}`;
     document.getElementById('combat-state').textContent='Space Sword · Q/Right-click Shield · Shift Roll · F Throw · B Bomb';
   }

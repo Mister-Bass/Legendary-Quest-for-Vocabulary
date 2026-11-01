@@ -75,7 +75,7 @@ export class MarshModel{
     const muddy=this.room.mud.has(cell(Math.floor(h.x/40),Math.floor(h.y/40))),speed=rolling?340:(muddy||this.slowUntil>this.clock?95:185)*(shield?.55:1);
     this.speed=m||rolling?speed:0;this.shield=shield;this.move(h,dx*speed*dt,dy*speed*dt);
     const k=cell(Math.floor(h.x/40),Math.floor(h.y/40));
-    for(const [key,p]of this.padTimers){if(p.deadline<=this.clock&&!p.sunkUntil)p.sunkUntil=this.clock+4;if(p.sunkUntil&&p.sunkUntil<=this.clock)this.padTimers.delete(key);}
+    for(const [key,p]of this.padTimers){if(p.deadline<=this.clock&&!p.sunkUntil){p.sunkAt=this.clock;p.sunkUntil=this.clock+4;}if(p.sunkUntil&&p.sunkUntil<=this.clock)this.padTimers.delete(key);}
     if(this.room.bridge.has(k)&&!this.padTimers.has(k))this.padTimers.set(k,{deadline:this.clock+(this.boss.active?.9:PAD_SECONDS),sunkUntil:0});
     const safeCell={x:(Math.floor(h.x/40)+.5)*40,y:(Math.floor(h.y/40)+.5)*40};
     if(!this.room.water.has(k)&&!this.solid(safeCell.x,safeCell.y))this.safe=safeCell;

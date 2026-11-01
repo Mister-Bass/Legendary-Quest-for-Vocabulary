@@ -334,7 +334,10 @@ test('overworld scrolls, reveals fog, blocks water, and returns to the same ques
   await expect(game(page)).toHaveAttribute('data-mode','overworld');
   await expect(game(page)).toHaveAttribute('data-area','A07');
   const initial=await state(page);
-  await hold(page,'d',2700);
+  // Reach an open shoreline column by position, independent of rendering speed.
+  await page.keyboard.down('d');
+  try{await expect.poll(async()=>Number((await state(page)).overworldX),{timeout:10000,intervals:[30]}).toBeGreaterThan(1140);}finally{await page.keyboard.up('d');}
+  await settle(page);
   await expect(game(page)).toHaveAttribute('data-area','A08');
   const moved=await state(page);
   expect(Number(moved.overworldCameraX)).toBeGreaterThan(Number(initial.overworldCameraX)+200);
