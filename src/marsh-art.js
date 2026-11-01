@@ -4,7 +4,7 @@ import { createOctorotArt } from './octorot-art.js';
 import { pondImages,pondTile,PondLife } from './marsh-water.js';
 import { marshPlantImages,paintMarshSceneryCell } from './marsh-scenery.js';
 import { cell,makeMarshRoom } from './marsh-map.js';
-// Supplied forest terrain and original 16-pixel creatures; see assets/forest/CREDITS.txt.
+// Supplied forest terrain and original pixel creatures; see assets/forest/CREDITS.txt.
 export function createMarshArt(scene){
   const texture=(key,paint)=>{if(scene.textures.exists(key))return;const t=scene.textures.createCanvas(key,16,16);paint(t.context);t.refresh();};
   const rect=(c,color,x,y,w,h)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
