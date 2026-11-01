@@ -1,3 +1,4 @@
+import { lanternTexture,paintLanternGlow } from './lantern-art.js';
 import { octorotPose } from './octorot-art.js';
 import { paintMarshOoze } from './marsh-art.js';
 import { MarshModel } from './marsh-model.js';
@@ -85,7 +86,8 @@ export class MarshWorld{
     }
     // Low, translucent mist drifts over the water without concealing the pads.
     for(let i=0;i<5;i++)g.fillStyle(0xb7d2c3,.035).fillEllipse(360+i*125+Math.sin(this.clock*.1+i)*30,380+i%3*180,220,55);
-    this.scene.stationSprites.forEach((s,i)=>s.setTexture(m.progress.lit[i]?'marsh-lantern-lit':'marsh-lantern'));
+    paintLanternGlow(this.scene.lanternGlow,this.room.seals,m.progress.lit,this.clock);
+    this.scene.stationSprites.forEach((s,i)=>s.setTexture(lanternTexture(m.progress.lit[i],this.clock,i)));
   }
   telemetry(){
     const m=this.model,s=this.scene.state,c=this.scene.cameras.main;

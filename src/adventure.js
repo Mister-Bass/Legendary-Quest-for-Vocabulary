@@ -89,7 +89,7 @@ class Adventure extends Phaser.Scene {
     this.stationSprites=this.room.seals.map((point,index)=>{
       const {x,y}=tilePosition(point);
       const lit=this.state.sealed.has(`${this.state.chapter}:${index}`);
-      const sprite=this.room.marsh?this.add.sprite(x,y-2,lit?'marsh-lantern-lit':'marsh-lantern').setDisplaySize(48,48):this.add.sprite(x,y-2,'chest').setDisplaySize(40,40).setFrame(lit?3:0);
+      const sprite=this.room.marsh?this.add.sprite(x,y-2,lit?'marsh-lantern-lit':'marsh-lantern').setDisplaySize(80,80).setOrigin(.5,.875):this.add.sprite(x,y-2,'chest').setDisplaySize(40,40).setFrame(lit?3:0);
       this.add.text(x,y+25,['I','II','III'][index],{fontFamily:'Georgia',fontSize:14,color:'#e8d7a6'}).setOrigin(.5);
       return sprite;
     });
