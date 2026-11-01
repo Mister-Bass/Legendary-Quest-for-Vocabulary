@@ -1,3 +1,4 @@
+import { paintEffect } from './effect-art.js';
 import { drawFrogEncounter } from './frog-art.js';
 import { wispTexture,paintWispAura } from './wisp-art.js';
 import { lanternTexture,paintLanternGlow } from './lantern-art.js';
@@ -91,11 +92,11 @@ export class MarshWorld{
         this.padRipples++;
       }
     }
-    for(const d of m.drops){g.fillStyle(0xffcc76,.3).fillCircle(d.x,d.y,18);g.fillStyle(0xfff0ab).fillRect(d.x-4,d.y-9,8,15);}
-    for(const p of m.bolts)g.fillStyle(0x9a7050).fillCircle(p.x,p.y,6);
-    for(const p of m.items)g.fillStyle(p.bomb?0x424c60:0xb3b9ad).fillRect(p.x-5,p.y-5,10,10);
-    if(m.flameUntil>this.clock){g.fillStyle(0xffcc76,.25).fillCircle(this.hero.x,this.hero.y-18,24);g.fillStyle(0xffec9f).fillRect(this.hero.x-3,this.hero.y-29,6,12);}
-    if(m.shield){const dir={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[this.facing];g.lineStyle(5,0x9bbfc5).strokeCircle(this.hero.x+dir[0]*18,this.hero.y+dir[1]*18,13);}
+    for(const d of m.drops){g.fillStyle(0xffcc76,.3).fillCircle(d.x,d.y,18);paintEffect(g,'flame',d.x,d.y,32);}
+    for(const p of m.bolts)paintEffect(g,'mud-ball',p.x,p.y,20);
+    for(const p of m.items)paintEffect(g,p.bomb?'bomb':'stone',p.x,p.y,20);
+    if(m.flameUntil>this.clock){g.fillStyle(0xffcc76,.25).fillCircle(this.hero.x,this.hero.y-18,24);paintEffect(g,'flame',this.hero.x,this.hero.y-25,26);}
+    if(m.shield){const dir={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[this.facing];paintEffect(g,'shield',this.hero.x+dir[0]*18,this.hero.y+dir[1]*18,34);}
     const b=m.boss;if(b.active){
       if(b.phase==='warning'||b.phase==='tongue'){
         const tongue=bossTongue(b,this.clock);

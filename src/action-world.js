@@ -161,7 +161,7 @@ export class ActionWorld {
   }
   fire(enemy){
     const dx=enemy.aim.x-enemy.sprite.x,dy=enemy.aim.y-enemy.sprite.y,d=Math.max(1,Math.hypot(dx,dy));
-    const sprite=this.scene.add.circle(enemy.sprite.x+dx/d*21,enemy.sprite.y+dy/d*21,6,0x67c9a1).setStrokeStyle(2,0xc3f8be);
+    const sprite=this.scene.add.image(enemy.sprite.x+dx/d*21,enemy.sprite.y+dy/d*21,'effect-slime-bolt').setDisplaySize(20,20);
     this.scene.worldLayer.add(sprite);this.projectiles.push({sprite,vx:dx/d*140,vy:dy/d*140,until:this.clock+3.5});this.shots++;
   }
   updateProjectiles(dt){

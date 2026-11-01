@@ -1,3 +1,4 @@
+import { paintEffect } from './effect-art.js';
 // Kenney RPG Tiles Vector, CC0. See public/assets/kenney-pond/License.txt.
 export const POND_TILES=[10,11,12,13,14,28,29,30,31,32,44,45,46];
 const key=(x,y)=>`${x},${y}`;
@@ -49,8 +50,7 @@ export class PondLife{
       const p=this.sites[((this.fishJumps-1)*37)%this.sites.length],t=age/1.6,dx=(t-.5)*28,x=p.x+dx,y=p.y-Math.sin(t*Math.PI)*40;
       g.fillStyle(0x286e83,.2).fillEllipse(x,p.y+5,20,6);
       if(t<.98){
-        g.fillStyle(0xd68d58).fillTriangle(x-7,y,x-15,y-5,x-15,y+5).fillEllipse(x,y,19,9);
-        g.fillStyle(0xffddb0).fillRect(x-4,y+1,10,2.5);g.fillStyle(0x234753).fillRect(x+5,y-2,2.5,2.5);
+        paintEffect(g,'fish',x,y,32);
       }
       if(t<.18||t>.75){const r=t<.18?5+t*30:8+(t-.75)*60;g.lineStyle(2,0xedffef,.65).strokeEllipse(x,p.y+2,r*2,r);}
       this.activeFish=1;

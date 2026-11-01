@@ -12,7 +12,7 @@ test.setTimeout(360000);
 import {game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial} from './play-input.js';
 
 test('all 45 terms and expanded chamber objectives are complete and reachable',()=>{
-  expect(TILE_PIXELS).toBe(16);expect(Object.keys(regionStyles)).toEqual(areas.map(a=>a.id));
+  expect(TILE_PIXELS).toBe(32);expect(Object.keys(regionStyles)).toEqual(areas.map(a=>a.id));
   for(let chapter=0;chapter<5;chapter++){
     const room=makeRoom(chapter,5),landscape=makeChamberLandscape(room);
     expect(room.areaId).toBe(entranceFor(chapter).id);
@@ -41,7 +41,7 @@ test('loads the game, local assets, and attribution without errors',async({page}
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
   await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(13);
-  expect(tiles).toHaveLength(1);await expect(game(page)).toHaveAttribute('data-tile-pixels','16');
+  expect(tiles).toHaveLength(1);await expect(game(page)).toHaveAttribute('data-tile-pixels','32');
   expect(await (await page.request.get('/assets/puny/CREDITS.txt')).text()).toContain('CC0');
   await expect(page.getByRole('link',{name:'Mystic Woods by Game Endeavor'})).toBeVisible();
   expect(await (await page.request.get('/assets/mystic/CREDITS.txt')).text()).toContain('Non-commercial');
@@ -149,7 +149,7 @@ test('all 45 contact trials unlock the scrolling chambers and win; replay resets
     await expect(film).toHaveAttribute('data-inserted','2');
     await expect(film).toHaveAttribute('data-inserted','3');
     await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('unlocking');
-    const slots=await page.locator('#gate-film').evaluate(canvas=>[53,65,74].map(x=>Array.from(canvas.getContext('2d').getImageData(x,34,1,1).data).slice(0,3)));
+    const slots=await page.locator('#gate-film').evaluate(canvas=>[53,65,74].map(x=>Array.from(canvas.getContext('2d').getImageData(x*2,68,1,1).data).slice(0,3)));
     expect(slots).toEqual([[242,203,112],[157,218,224],[208,195,251]]);
     if(chapter===0)await page.screenshot({path:test.info().outputPath('three-keys-inserted.png')});
     await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('open');

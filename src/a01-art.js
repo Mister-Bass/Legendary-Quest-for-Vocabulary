@@ -15,7 +15,7 @@ export function paintA01Tile(c,map,x,y,size,art){
   }else if((x*7+y*11)%11===0)stamp(c,art.topdown,2,3);
   if(map.cliffs.has(k))stamp(c,art.topdown,!x?0:1,!y?0:!x?1:2);
   if(map.water.has(k)){
-    c.fillStyle='#315b94';c.fillRect(0,0,16,16);c.drawImage(art.water,0,0,16,16,0,0,16,16);
+    c.fillStyle='#315b94';c.fillRect(0,0,16,16);c.drawImage(art.water,0,0,32,32,0,0,16,16);
   }else if(!paths.has(k)&&!map.walls.has(k)&&map.flowers.has(k))stamp(c,art.topdown,0,4);
   if(map.bridge.has(k))stamp(c,art.topdown,7,12);
   c.restore();

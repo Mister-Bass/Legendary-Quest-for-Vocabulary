@@ -1,5 +1,5 @@
 // Shade's Puny World: native 16×16 cells, CC0. Coordinates refer to the unmodified sheet.
-export const TILE_PIXELS=16;
+export const TILE_PIXELS=32;
 export const regionStyles={
   A01:{terrain:'forest',ground:'#456a38',wash:'#244d32',wall:[3,5],floor:[0,0],tree:0x70a89a,detail:'TOP-DOWN Adventure Pack woodland: grass, winding dirt paths, earthen ledges, flowers, and broadleaf trees'},
   A02:{terrain:'marsh',ground:'#568b44',wash:'#7da79d',wall:[19,27],floor:[20,28],tree:0xb5d5d5,detail:'Lantern Marsh: a central pond, island, sinking lily pads, mud banks, three guardian lanterns, and a northern purple shrine'},
@@ -13,7 +13,7 @@ export const regionStyles={
 };
 export const chapterAreaIds=['A07','A02','A04','A06','A09'];
 export function stamp(c,image,col,row,x=0,y=0,w=16,h=16){
-  if(image)c.drawImage(image,col*16,row*16,16,16,x,y,w,h);
+  if(image)c.drawImage(image,col*32,row*32,32,32,x,y,w,h);
 }
 // Transparent color glazes retain the source tile's pixel detail.
 export function groundTile(c,art,kind,x,y){

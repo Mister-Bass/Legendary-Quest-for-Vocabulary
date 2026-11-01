@@ -1,4 +1,4 @@
-// Native 16-pixel artwork; the cutscene also paints on an integer pixel grid.
+// Native 32-pixel artwork; the cutscene also paints on an integer pixel grid.
 export const GATE_DURATION=3900;
 export function gateFrame(ms){
   const inserted=Math.min(3,Math.max(0,Math.floor((ms-550)/800)+1));
@@ -19,7 +19,7 @@ export class GateCutscene {
   }
   draw(ms){
     const {inserted,phase,opening}=gateFrame(ms),c=this.canvas.getContext('2d'),image=key=>this.scene.textures.get(this.scene.room.marsh&&key==='rune-door'?'marsh-door':this.scene.room.marsh&&key==='rune-door-open'?'marsh-door-open':key).getSourceImage();
-    c.imageSmoothingEnabled=false;c.fillStyle='#122b29';c.fillRect(0,0,128,80);
+    c.save();c.scale(2,2);c.imageSmoothingEnabled=false;c.fillStyle='#122b29';c.fillRect(0,0,128,80);
     // Stone alcove and floor remain deliberately chunky at every display size.
     for(let y=4;y<72;y+=8)for(let x=8;x<120;x+=16){c.fillStyle=(x+y)%3?'#29443c':'#314e42';c.fillRect(x+(y%16?4:0),y,14,6);}
     c.fillStyle='#19332c';c.fillRect(0,64,128,16);
@@ -39,6 +39,7 @@ export class GateCutscene {
       const w=Math.round(24*opening);c.save();c.beginPath();c.rect(64-w/2,21,w,36);c.clip();c.drawImage(image('rune-door-open'),x,y,48,48);c.restore();
     }
     if(phase==='open')this.scene.doorSprite.setTexture(this.scene.room.marsh?'marsh-door-open':'rune-door-open');
+    c.restore();
     Object.assign(this.dialog.dataset,{phase,inserted:String(inserted)});
     if(this.phase!==phase){
       this.phase=phase;

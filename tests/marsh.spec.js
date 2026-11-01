@@ -59,21 +59,21 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
       ['kenney-pond/rpgTile010.png',[0,0,64,64],[11,8],null]
     ]){
       const image=new Image();image.src='/assets/'+file;await image.decode();
-      const sample=document.createElement('canvas');sample.width=sample.height=16;
+      const sample=document.createElement('canvas');sample.width=sample.height=32;
       const c=sample.getContext('2d');c.imageSmoothingEnabled=false;
-      if(base){c.fillStyle=base;c.fillRect(0,0,16,16);}c.drawImage(image,...rect,0,0,16,16);
-      const expected=c.getImageData(0,0,16,16).data,actual=canvas.getContext('2d').getImageData(tile[0]*16,tile[1]*16,16,16).data;
+      if(base){c.fillStyle=base;c.fillRect(0,0,32,32);}c.drawImage(image,...rect,0,0,32,32);
+      const expected=c.getImageData(0,0,32,32).data,actual=canvas.getContext('2d').getImageData(tile[0]*32,tile[1]*32,32,32).data;
       const differences=Array.from(expected,(value,i)=>Math.abs(value-actual[i]));
       let maxDelta=Math.max(...differences),sampling='canvas';
-      // At 4:1 reduction, a destination centre falls exactly between source
+      // At 2:1 reduction, a destination centre falls exactly between source
       // pixel centres. Both adjacent samples are valid nearest-neighbour ties.
       // Compare complete source-derived patterns, never a relaxed colour range.
       if(file.startsWith('kenney-pond/')){
         const source=document.createElement('canvas');source.width=source.height=64;
         const sc=source.getContext('2d');sc.drawImage(image,0,0);const rgba=sc.getImageData(0,0,64,64).data;
-        for(const ox of [1,2])for(const oy of [1,2]){
+        for(const ox of [0,1])for(const oy of [0,1]){
           let delta=0;
-          for(let y=0;y<16;y++)for(let x=0;x<16;x++)for(let channel=0;channel<4;channel++)delta=Math.max(delta,Math.abs(rgba[((y*4+oy)*64+x*4+ox)*4+channel]-actual[(y*16+x)*4+channel]));
+          for(let y=0;y<32;y++)for(let x=0;x<32;x++)for(let channel=0;channel<4;channel++)delta=Math.max(delta,Math.abs(rgba[((y*2+oy)*64+x*2+ox)*4+channel]-actual[(y*32+x)*4+channel]));
           if(delta<maxDelta){maxDelta=delta;sampling=`nearest tie ${ox},${oy}`;}
         }
       }

@@ -46,12 +46,12 @@
   </dialog>
   <dialog id="gate-cutscene" aria-labelledby="gate-title" aria-describedby="gate-status">
     <p class="eyebrow">THREE KEYS / ONE WAY FORWARD</p><h2 id="gate-title">The rune door awakens</h2>
-    <canvas id="gate-film" width="128" height="80" tabindex="-1" role="img" aria-label="Three keys unlocking a pixel door"></canvas>
+    <canvas id="gate-film" width="256" height="160" tabindex="-1" role="img" aria-label="Three keys unlocking a pixel door"></canvas>
     <p id="gate-status" role="status" aria-live="polite"></p>
     <p class="small">Your adventure continues when the door opens.</p>
     <button data-action="restart" class="text-button">Restart adventure</button>
   </dialog>
   <div id="marsh-controls" class="marsh-controls" hidden aria-label="Lantern Marsh controls"><button data-action="shield" aria-label="Shield">Shield · Q</button><button data-action="roll">Roll · Shift</button><button data-action="throw">Throw stone · F</button><button data-action="bomb">Bomb · B</button><span>Right-click and hold to shield · Time a throw during Croak’s tongue lash</span></div>
-  <dialog id="marsh-map" aria-labelledby="marsh-map-title"><button id="close-marsh-map" class="dialog-close" aria-label="Close marsh map">✕</button><p class="eyebrow">A02 · ROUTE PLANNING</p><h2 id="marsh-map-title">Lantern Marsh</h2><canvas id="marsh-layout" width="512" height="512" role="img" aria-label="Lantern Marsh layout: central pond and island, south entrance, north shrine, three lanterns, and a winding lily-pad route"></canvas><p>Green: grass · Dark green: trees · Gray: stone · Blue: deep water · Brown: slowing mud · Light green: sinking pads · Amber: guardian lanterns · Purple: shrine. Timers are paused while you plan.</p></dialog>
+  <dialog id="marsh-map" aria-labelledby="marsh-map-title"><button id="close-marsh-map" class="dialog-close" aria-label="Close marsh map">✕</button><p class="eyebrow">A02 · ROUTE PLANNING</p><h2 id="marsh-map-title">Lantern Marsh</h2><canvas id="marsh-layout" width="1024" height="1024" role="img" aria-label="Lantern Marsh layout: central pond and island, south entrance, north shrine, three lanterns, and a winding lily-pad route"></canvas><p>Green: grass · Dark green: trees · Gray: stone · Blue: deep water · Brown: slowing mud · Light green: sinking pads · Amber: guardian lanterns · Purple: shrine. Timers are paused while you plan.</p></dialog>
   <script type="module" src="/src/adventure.js"></script>
 </body></html>

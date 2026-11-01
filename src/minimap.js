@@ -16,9 +16,9 @@ export class Minimap {
     const c=this.ctx;c.fillStyle='#07110f';c.fillRect(0,0,200,140);
     for(const key of this.explored){
       const [tx,ty]=key.split(',').map(Number);
-      c.imageSmoothingEnabled=false;c.drawImage(this.scene.chamberGround,tx*16,ty*16,16,16,left+tx*scale,ty*scale,scale,scale);
+      c.imageSmoothingEnabled=false;c.drawImage(this.scene.chamberGround,tx*32,ty*32,32,32,left+tx*scale,ty*scale,scale,scale);
       if(room.trees.some(p=>p.x===tx&&p.y===ty)){c.fillStyle='#294c39';c.fillRect(left+tx*scale,ty*scale,scale,scale);}
-      if(room.marsh&&room.bridge.has(key)&&this.scene.padSprites.get(key)?.visible)c.drawImage(this.scene.textures.get('marsh-pad').getSourceImage(),0,0,16,16,left+tx*scale,ty*scale,scale,scale);
+      if(room.marsh&&room.bridge.has(key)&&this.scene.padSprites.get(key)?.visible)c.drawImage(this.scene.textures.get('marsh-pad').getSourceImage(),0,0,32,32,left+tx*scale,ty*scale,scale,scale);
       if(room.bridge.has(key)&&!room.marsh){c.fillStyle='#d4b486';c.fillRect(left+tx*scale,ty*scale,scale,scale);}
     }
     const marker=(point,color,size=3)=>{if(!this.explored.has(`${point.x},${point.y}`))return;c.fillStyle=color;c.fillRect(left+(point.x+.5)*scale-size/2,(point.y+.5)*scale-size/2,size,size);};

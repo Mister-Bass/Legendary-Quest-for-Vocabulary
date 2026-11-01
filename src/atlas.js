@@ -9,7 +9,7 @@ export class Atlas {
     this.art=Object.fromEntries(['grass','terrain','water','puny','topdown','tree1','tree2','tree3','tree4'].map(key=>[key,adventure.textures.get(key).getSourceImage()]));
     this.art.pond=pondImages(adventure);
     this.art.marshProps=marshPlantImages(adventure);
-    for(const [key,texture]of[['marshMud','marsh-mud'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
+    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
     $('overworld-toggle').addEventListener('click',()=>this.toggle());
     $('close-atlas').addEventListener('click',()=>this.close());
     $('atlas').addEventListener('cancel',event=>{event.preventDefault();this.close();});
@@ -34,7 +34,7 @@ export class Atlas {
     this.selected=id;const a=areas.find(a=>a.id===id),chapter=a.chapter;
     drawAtlas($('atlas-map'),this.map,{selected:id,position:this.adventure.overworldPosition,art:this.art});
     $('area-title').textContent=`${a.id} · ${a.name}`;
-    $('area-description').textContent=`${a.description} Landmark: ${a.landmark}. 16×16 scenery: ${a.style.detail}.`;
+    $('area-description').textContent=`${a.description} Landmark: ${a.landmark}. 32×32 scenery: ${a.style.detail}.`;
     $('area-status').textContent=chapter===undefined?'Exploration area · available now':this.adventure.roomComplete(chapter)?'Vocabulary chamber restored':chapter<=this.adventure.unlocked?'Vocabulary chamber available':'Vocabulary chamber locked · finish the preceding chambers';
     $('area-request').textContent=`To edit this area, tell me: “In ${a.id} (${a.name}), change … Keep the existing assets.”`;
     for(const b of $('area-buttons').children)b.setAttribute('aria-pressed',String(b.dataset.area===id));

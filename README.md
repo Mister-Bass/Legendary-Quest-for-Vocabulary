@@ -36,7 +36,7 @@ At zero hearts, Return to chamber restores five hearts and returns to the curren
 
 The marsh is a 32×32 map of native 16-pixel terrain cells, rendered in a scrolling 1,280×1,280 world at 1.1× zoom.
 
-A02 grass and forest borders use the supplied `top-down-forest-tileset.png`. Grass is sampled as a native 16×16 tile; the larger tree spans multiple terrain cells without being squeezed into a square. The chamber, Marsh map, and A02 overworld/atlas share these textures. Other areas retain their existing assets. The original image is included unchanged with its provenance in `public/assets/forest/CREDITS.txt`; its creator and license are unknown, so this project does not grant an additional license to reuse it.
+A02 grass and forest borders use the supplied `top-down-forest-tileset.png`. The source grass is converted to a 32×32 runtime tile; the larger forest border is composed of 32×32 cells. The chamber, Marsh map, and A02 overworld/atlas share these textures. Other areas retain their existing assets. The original image is included unchanged with its provenance in `public/assets/forest/CREDITS.txt`; its creator and license are unknown, so this project does not grant an additional license to reuse it.
 
 Mud patches use the supplied `wet-mud-tile.png`, with a glossy, irregular shore and slow pixel bubbles that pause during reading and map dialogs. The same texture appears in the Marsh map and overworld atlas. The original PNG and supplied provenance are retained in `public/assets/marsh/`; creator and license were not provided.
 
@@ -73,11 +73,11 @@ For a direct review/practice run, append `?area=A02` to the game URL. It clearly
 
 ## The Lanternlands overworld and area designations
 
-### 16×16 terrain and matching chamber scenery
+### 32×32 artwork and matching chamber scenery
 
 **A01 · Whisperwood uses the owner-selected Overworld_Tileset.png from TOP-DOWN Adventure Pack v1.0 by o_lobster.** The exact sheet was already bundled as `public/assets/topdown/overworld.png`; it is unchanged. Only A01 (columns 0–23, rows 0–17) opts into this override. Its grass, dirt paths, earthen ledges, small plants, flowers, and 2×3-cell broadleaf trees come from that sheet, using the same source rectangles in the atlas and playable region. Tree trunks retain their existing blocked cells, and every road and landmark keeps its original location. Other regions retain their scenery except A02, whose marsh redesign is described above. The supplied player, Keeper, water animations, door cutscene, vocabulary, and controls remain in use. Credits: [TOP-DOWN Adventure Pack by o_lobster](https://o-lobster.itch.io/adventure-pack), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the bundled credit notice records frame selection, scaling, and arrangement into original maps.
 
-The free **Puny World** tileset by [Shade on itch.io](https://merchant-shade.itch.io/16x16-puny-world) now supplies native 16×16 grass, dirt paths, ledges, masonry, roofs, and stone floors. It is CC0; the unmodified sheet, source links, and credit record are bundled locally in `public/assets/puny/`. The atlas, playable overworld, and vocabulary chambers use the same tile painter. Terrain textures are authored at 16 pixels per cell and enlarged with nearest-neighbor sampling; the existing 40-pixel movement grid and camera zoom remain intact. Characters and the supplied animated trees/water retain their original frame sizes and credits.
+The free **Puny World** tileset by [Shade on itch.io](https://merchant-shade.itch.io/16x16-puny-world) supplies the original 16×16 grass, dirt paths, ledges, masonry, roofs, and stone floors. It is CC0; the unmodified sheet, source links, and credit record are bundled locally in `public/assets/puny/`. The atlas, playable overworld, and vocabulary chambers use the same tile painter. All terrain is converted and baked at 32 pixels per cell with nearest-neighbor sampling; the existing 40-pixel movement grid and camera zoom remain intact. Characters, chests, animated trees, water, doors, bridge, keys, and water enemies now use 32×32 runtime frames. Source files and credits remain unchanged.
 
 | Area | Scenery direction | Vocabulary chamber |
 | --- | --- | --- |
@@ -122,7 +122,7 @@ For maintainers, `src/overworld.js` owns the area registry, deterministic geogra
 
 ## Controls
 
-The eastern exit is an original 16×16 pixel door with three empty key slots. Earn all three chamber keys, then touch the door or press E beside it. A short pixel cutscene inserts the three keys one by one, releases the lock, and opens the doorway before advancing. The final chamber plays the same sequence before the win screen. Movement, attacks, enemies, and projectiles pause during the cutscene; Escape cannot skip the locks. **Restart adventure** (or R) cancels the animation and resets the adventure safely. The images and credits are bundled locally in `public/assets/gate/`; no external artwork or service is required.
+The eastern exit uses a 32×32 pixel door converted from the original 16×16 drawing with three empty key slots. Earn all three chamber keys, then touch the door or press E beside it. A short pixel cutscene inserts the three keys one by one, releases the lock, and opens the doorway before advancing. The final chamber plays the same sequence before the win screen. Movement, attacks, enemies, and projectiles pause during the cutscene; Escape cannot skip the locks. **Restart adventure** (or R) cancels the animation and resets the adventure safely. The images and credits are bundled locally in `public/assets/gate/`; no external artwork or service is required.
 
 | Action | Keyboard | Touch / mouse |
 | --- | --- | --- |
@@ -168,7 +168,7 @@ All 45 terms are assigned to exactly one chamber. Artwork loads from this site's
 
 ## Artwork credits
 
-Mystic Woods Free 2.1 by [Game Endeavor](https://game-endeavor.itch.io/mystic-woods), supplied by the owner. Uses player.png (48×48 frames), slime.png (32×32), chest_01.png (16×16), and grass/plains/fence terrain from the supplied tilesets folder. All 45 vocabulary terms belong to Level 1 across its five chambers, which now share this artwork. Pixel frames are selected, flipped, and scaled in original maps. The player's own sword-swing frames replace the old generated sword. The gate and interface are original project artwork. The Keeper, water, and trees use the additional owner-supplied packs credited below.
+Mystic Woods Free 2.1 by [Game Endeavor](https://game-endeavor.itch.io/mystic-woods), supplied by the owner. Uses player.png (48×48 frames), slime.png (32×32), chest_01.png (16×16), and grass/plains/fence terrain from the supplied tilesets folder. All 45 vocabulary terms belong to Level 1 across its five chambers, which now share this artwork. Original non-32 frames are converted to 32×32 at load time, then selected, flipped, and scaled in the maps. The player's own sword-swing frames replace the old generated sword. The gate and interface are original project artwork. The Keeper, water, and trees use the additional owner-supplied packs credited below.
 
 This free pack permits non-commercial use and restricts redistribution. The owner confirmed permission to include the supplied files in this project's public repository and downloadable ZIP on October 15, 2026. That confirmation does not change the creator's license or grant downstream users rights to extract/reuse the pack. The original license and attribution are retained in public/assets/mystic/LICENSE.txt and CREDITS.txt and in both playable and source ZIP folders. Old TOP-DOWN pack files are retained with their separate CC BY 4.0 notice for historical compatibility but are no longer loaded by the game.
 
@@ -223,3 +223,13 @@ Ask for future changes in plain English: “Build the game, run its browser test
 Keep production changes in pull requests for owner approval. Repository administrators can require the Build and browser tests check, up-to-date branches, and pull requests in main’s branch-protection settings. These repository settings are separate from workflow YAML and are not automatically enabled by adding this project. The assistant must wait for explicit approval before merging or deploying production.
 
 Serve the ZIP’s playable/ directory over HTTP. Opening index.html directly from disk is unsupported because browser ES modules require HTTP. Physical mobile devices and screen-reader-only gameplay require additional validation.
+
+### Consistent 32×32 / 16-bit-style art
+
+Every game area now uses 32×32 terrain cells and sprite frames. Existing 32×32 slimes, Keeper, plants, lanterns, Gloamwisps, and frog artwork retain their authored pixels. The older 16px and 48px frames and larger trees, bridge, and Octorot are converted at startup with nearest-neighbor sampling. Tall sprites fit a square transparent frame; their world-space display sizes preserve their silhouettes. Supplied original files are retained for provenance and future edits. This is a frame-format conversion, not a claim that every supplied asset was redrawn.
+
+The marsh map is now 1024×1024 (32 cells of 32 pixels), chamber terrain is 32 pixels per cell, and the gate film is 256×160. Large scenery and maps are compositions of cells; the two-cell arena gate remains 64×32. UI text stays readable HTML. The 16-bit description refers to the pixel-art aesthetic, not a 16-bit PNG file encoding.
+
+Fish, mud balls, slime bolts, stones, bombs, carried fire, and the active shield have original 32×32 pixel artwork in `src/effect-art.js`; no external generation or download is required. Ripples, mist, lighting, and combat warnings remain animated effects. `src/pixel-format.js` defines the conversion rules so future supplied assets follow the same format. Browser checks verify the actual runtime sprite frame dimensions, terrain size, loading, controls, and restart.
+
+You can request further changes in plain English, for example: “Make A03 snowy, keep the 32×32 16-bit style, and preserve the paths and vocabulary.”

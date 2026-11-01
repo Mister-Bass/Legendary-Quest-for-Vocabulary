@@ -2,7 +2,7 @@
 export function createOctorotArt(scene){
   if(scene.textures.exists('marsh-octorok'))return;
   const source=scene.textures.get('octorot-source').getSourceImage();
-  const sheet=scene.textures.createCanvas('marsh-octorok',640,80);
+  const sheet=scene.textures.createCanvas('marsh-octorok',256,32);
   const frame=document.createElement('canvas');frame.width=frame.height=80;
   const c=frame.getContext('2d');c.imageSmoothingEnabled=false;
   for(let n=0;n<8;n++){
@@ -15,7 +15,7 @@ export function createOctorotArt(scene){
     };
     for(let i=0;i<80;i++){visit(i);visit(6320+i);visit(i*80);visit(i*80+79);}
     while(head<tail){const i=queue[head++],x=i%80,y=Math.floor(i/80);if(x)visit(i-1);if(x<79)visit(i+1);if(y)visit(i-80);if(y<79)visit(i+80);}
-    sheet.context.putImageData(pixels,n*80,0);sheet.add(n,0,n*80,0,80,80);
+    c.putImageData(pixels,0,0);sheet.context.imageSmoothingEnabled=false;sheet.context.drawImage(frame,0,0,80,80,n*32,0,32,32);sheet.add(n,0,n*32,0,32,32);
   }
   sheet.refresh();
 }
