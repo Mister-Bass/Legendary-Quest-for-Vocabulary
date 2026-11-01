@@ -42,7 +42,7 @@ export class Atlas {
   }
   close(){
     if(this.adventure.state.mode!=='atlas')return;
-    $('atlas').close();const a=this.adventure;a.state.mode=this.returnMode;
+    $('atlas').close();$('game').tabIndex=-1;$('game').focus({preventScroll:true});const a=this.adventure;a.state.mode=this.returnMode;
     if(a.state.mode==='playing')a.action.invulnerableUntil=Math.max(a.action.invulnerableUntil,a.action.clock+1.2);
     a.render();
     if(a.state.mode==='playing')a.action.minimap.update(a.action.clock,true);

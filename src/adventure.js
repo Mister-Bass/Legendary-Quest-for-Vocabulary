@@ -85,6 +85,7 @@ class Adventure extends Phaser.Scene {
     this.worldLayer=this.add.container();
     const before=new Set(this.children.list);
     this.room=makeRoom(this.state.chapter,chapters.length);
+    if(this.room.marsh&&this.marshProgress.bossAwakened&&!this.marshProgress.bossDefeated&&this.state.y>=28.5)Object.assign(this.state,this.room.arenaSpawn);
     paintWorld(this,this.room,this.state.chapter);
     this.stationSprites=this.room.seals.map((point,index)=>{
       const {x,y}=tilePosition(point);
@@ -111,7 +112,7 @@ class Adventure extends Phaser.Scene {
   }
   feedback(message) {$('feedback').textContent=message;}
   update(time,delta){if(!this.scene.isActive('Overworld'))this.action?.update(delta);}
-  roomComplete(chapter){return [0,1,2].every(i=>this.state.sealed.has(`${chapter}:${i}`));}
+  roomComplete(chapter){return [0,1,2].every(i=>this.state.sealed.has(`${chapter}:${i}`))&&(chapter!==1||this.marshProgress.bossDefeated);}
   pressOverworld(action,id){
     if(['up','down','left','right'].includes(action)){this.overworldInput?.set(id,action);this.overworldTaps?.set(action,this.overworldClock+.08);}
     else if(action==='interact'&&this.scene.isActive('Overworld'))this.scene.get('Overworld').enter();
@@ -119,6 +120,7 @@ class Adventure extends Phaser.Scene {
   openOverworld(){
     if(!['playing','overworld'].includes(this.state.mode))return;
     if(this.state.mode==='overworld')return;
+    if(this.room.marsh&&this.action.model.gateClosed){this.feedback('The arena is sealed. Defeat Grandfather Croak before leaving the marsh.');return;}
     this.action.stop();this.overworldInput=new Map();this.overworldTaps=new Map();this.overworldClock=0;this.state.mode='overworld';this.render();
     this.scene.launch('Overworld',{adventure:this});
     this.feedback('Explore nine regions. Touch a chamber entrance to enter. O opens the labeled atlas; Return to quest resumes your chamber.');
@@ -134,7 +136,7 @@ class Adventure extends Phaser.Scene {
   roomKeys() {return [0,1,2].filter(i=>this.state.sealed.has(`${this.state.chapter}:${i}`)).length;}
   drawGate() {
     this.doorSprite.setTexture(this.room.marsh?'marsh-door':'rune-door');
-    document.getElementById('game').dataset.doorReady=String(this.roomKeys()===3);
+    document.getElementById('game').dataset.doorReady=String(this.roomKeys()===3&&(!this.room.marsh||this.marshProgress.bossDefeated));
   }
   reset() {
     this.gateCutscene.cancel();
@@ -174,7 +176,7 @@ class Adventure extends Phaser.Scene {
     this.render();
   }
   nearbyHint() {
-    if(this.room.marsh)return this.roomKeys()===3?'All three lanterns are lit. Touch the northern shrine to enter.':'Carry Wisp Flames to the guardian lanterns. Open Marsh map or speak to the Keeper for help.';
+    if(this.room.marsh)return this.roomKeys()===3?(this.marshProgress.bossDefeated?'Croak is defeated. Touch the northern shrine to enter.':'The gate has sealed the marsh. Stun Croak with a tongue-window throw, then strike its belly.'):'Carry Wisp Flames to the guardian lanterns. Open Marsh map or speak to the Keeper for help.';
     if(this.near(this.room.exit))return this.roomKeys()===3?'All three keys are ready. Touch the door or press E to unlock it.':'The door has three empty key slots. Restore all three seals to earn its keys.';
     const index=this.room.seals.findIndex(p=>this.near(p));
     if(index>=0)return this.state.sealed.has(`${this.state.chapter}:${index}`)?'This seal is restored. Its words are in your journal.':`${objects[index]} is within reach. Walk into its chest to begin, or press E.`;
@@ -185,6 +187,7 @@ class Adventure extends Phaser.Scene {
     const s=this.state;
     if(this.room.marsh&&this.action.interact())return;
     if(this.near(this.room.exit)) {
+      if(this.room.marsh&&this.roomKeys()===3&&!this.marshProgress.bossDefeated){this.feedback('The shrine remains sealed. Defeat Grandfather Croak to lower the gate and open the shrine.');return;}
       if(this.roomKeys()<3){this.feedback(this.room.marsh?'The shrine is sealed. Light all three guardian lanterns with fire and vocabulary.':'The gate is locked. Restore all three seals to earn its keys.');return;}
       if(s.mode!=='playing')return;
       s.mode='gate-opening';this.action.stop();this.feedback(this.room.marsh?'Three guardian lanterns. The shrine curse releases.':'Three keys. Three locks. The way forward awakens.');this.render();
@@ -199,7 +202,7 @@ class Adventure extends Phaser.Scene {
     if(index>=0){this.openTrial(index);return;}
     if(this.near(this.room.guide)) {
       s.mode='guide';$('puzzle-label').textContent='THE KEEPER';$('puzzle-title').textContent='Words open what swords cannot.';
-      $('puzzle-prompt').textContent=this.room.marsh?'Corner a pale Gloamwisp and strike it, or throw a stone with F. Pick up its Wisp Flame and carry it to a lantern within 10 seconds. Answer the lantern’s vocabulary questions to finish lighting it. Circle the pond for the corner lanterns; take the winding lily-pad route to the island lantern. Pads sink two seconds after you step on them and regrow after four seconds. Mud slows you. Hold Q or right-click toward mud balls to shield, and use Shift to roll. The island Heart Piece chest wakes Grandfather Croak: throw a stone (F) or bomb (B) while its tongue is extended, then strike its stunned belly. Awake Croak shortens pad time to 0.9 seconds. Reading pauses all timers. Restore all three lanterns, then touch the northern shrine door.': 'Walk into chests, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. There is no shield. Slimes take three sword hits. Their final hit releases a death burst: stand outside the red ring to avoid losing one heart. Slimes flash violet before firing; step aside to dodge their slime bolts. A stone bridge crosses the first pond from south to north. Combat pauses while you read. The bottom-right minimap reveals places you explore. Open the overworld atlas with O to explore nine named regions and find chamber entrances. After three keys, walk into the eastern gate.';
+      $('puzzle-prompt').textContent=this.room.marsh?'Corner a pale Gloamwisp and strike it, or throw a stone with F. Pick up its Wisp Flame and carry it to a lantern within 10 seconds. Answer the lantern’s vocabulary questions to finish lighting it. Circle the pond for the corner lanterns; take the winding lily-pad route to the island lantern. Pads sink two seconds after you step on them and regrow after four seconds. Mud slows you. Hold Q or right-click toward mud balls to shield, and use Shift to roll. Lighting the final lantern wakes Grandfather Croak and raises a gate across the southern entrance. The Heart Piece chest is optional. Defeat Croak to open the northern shrine: throw a stone (F) or bomb (B) while its tongue is extended, then strike its stunned belly. Awake Croak shortens pad time to 0.9 seconds. Reading pauses all timers. Restore all three lanterns, defeat Croak, then touch the northern shrine door.': 'Walk into chests, the Keeper, and gates to interact. Use 1–4 or the answer buttons in trials. Wrong answers cost a heart and reveal a hint. Hold arrows or WASD to move. Left-click inside the world or press Space to draw and swing your sword. There is no shield. Slimes take three sword hits. Their final hit releases a death burst: stand outside the red ring to avoid losing one heart. Slimes flash violet before firing; step aside to dodge their slime bolts. A stone bridge crosses the first pond from south to north. Combat pauses while you read. The bottom-right minimap reveals places you explore. Open the overworld atlas with O to explore nine named regions and find chamber entrances. After three keys, walk into the eastern gate.';
       $('answers').replaceChildren();$('puzzle-feedback').textContent='Your journal (M) keeps every word you learn.';$('puzzle-progress').textContent=chapters[s.chapter].name;$('puzzle').showModal();return;
     }
     this.feedback(this.room.marsh?'Touch lanterns, the Heart Piece chest, the Keeper, or the northern shrine to interact. E also works nearby.':'Walk into a chest, the Keeper, or the gate to interact. E also works beside them.');
@@ -281,7 +284,7 @@ class Adventure extends Phaser.Scene {
     $('chapter-title').textContent=chapters[s.chapter].name;$('chapter-subtitle').textContent=chapters[s.chapter].subtitle;
     $('marsh-controls').hidden=!this.room.marsh;
     $('objective').textContent=this.roomKeys()===3?(s.chapter===4?'Enter the eastern gate and restore the archive.':'Enter the eastern gate to reach the next chamber.'):'Restore the three rune seals to unlock the eastern gate.';
-    if(this.room.marsh)$('objective').textContent=this.roomKeys()===3?'The three guardian lanterns are lit. Enter the northern shrine.':'Carry Wisp Flames to the three lanterns and solve their vocabulary trials. Cross the sinking lily pads for the island lantern.';
+    if(this.room.marsh)$('objective').textContent=this.roomKeys()===3?(this.marshProgress.bossDefeated?'Croak is defeated. Enter the northern shrine.':'The gate is raised. Stun Grandfather Croak during its tongue lash, then strike its belly. Defeat it to open the shrine.'):'Carry Wisp Flames to the three lanterns and solve their vocabulary trials. Cross the sinking lily pads for the island lantern.';
     $('seal-list').replaceChildren(...[0,1,2].map(index=>{
       const item=document.createElement('li'),solved=s.sealed.has(`${s.chapter}:${index}`);
       item.className=solved?'complete':'';item.textContent=`${solved?'✦':'◇'} ${this.room.marsh?['Northwest lantern','Northeast lantern','Island lantern'][index]:objects[index]}${solved?' · restored':''}`;return item;

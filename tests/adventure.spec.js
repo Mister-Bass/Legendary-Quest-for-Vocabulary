@@ -6,7 +6,7 @@ import { areas, makeOverworld, overworldWalkable, entranceFor } from '../src/ove
 import { chapterAreaIds, regionStyles, makeChamberLandscape, TILE_PIXELS } from '../src/region-art.js';
 import { gateFrame, GATE_DURATION } from '../src/gate.js';
 import { usesA01Tiles } from '../src/a01-art.js';
-import { waitForMarshPads,guardMarshExit } from './marsh-journey.js';
+import { waitForMarshPads,guardMarshExit,defeatMarshBoss } from './marsh-journey.js';
 
 test.setTimeout(360000);
 import {game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial} from './play-input.js';
@@ -133,11 +133,12 @@ test('all 45 contact trials unlock the scrolling chambers and win; replay resets
   test.setTimeout(600000);
   await start(page);
   for(let chapter=0;chapter<5;chapter++){
+    if(process.env.GAME_TEST_PROGRESS)console.log('Full quest chapter',chapter+1);
     await expect(game(page)).toHaveAttribute('data-art-area',chapterAreaIds[chapter]);
     await expect(game(page)).toHaveAttribute('data-terrain-theme',regionStyles[chapterAreaIds[chapter]].terrain);
     await page.screenshot({path:test.info().outputPath(`chamber-${chapterAreaIds[chapter]}.png`)});
     for(let trial=0;trial<3;trial++)await finishTrial(page,trial);
-    if(chapter===1)await waitForMarshPads(page,state);
+    if(chapter===1){await defeatMarshBoss(page,{state,walkTo});await waitForMarshPads(page,state);}
     await expect(game(page)).toHaveAttribute('data-keys','3');const gate=makeRoom(chapter,5).exit;if(chapter===1)await guardMarshExit(page,state,()=>walkTo(page,gate));else await walkTo(page,gate);
     if((await state(page)).chapter===String(chapter)&& (await state(page)).mode==='playing')await contact(page,gate,async()=>{const s=await state(page);return s.mode==='gate-opening';});
     await expect(game(page)).toHaveAttribute('data-mode','gate-opening');

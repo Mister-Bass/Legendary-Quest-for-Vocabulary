@@ -1,8 +1,8 @@
 import { test,expect } from '@playwright/test';
 import { makeMarshRoom,at,cell,marshWalkable } from '../src/marsh-map.js';
-import { MarshModel } from '../src/marsh-model.js';
+import { MarshModel,bossTongue } from '../src/marsh-model.js';
 import { state,finishTrial,walkTo,moveAxis,contact } from './play-input.js';
-import { waitForMarshPads,guardMarshExit } from './marsh-journey.js';
+import { waitForMarshPads,guardMarshExit,defeatMarshBoss } from './marsh-journey.js';
 const advance=(m,seconds,input={})=>{for(let t=0;t<seconds;t+=1/60)m.tick(Math.min(1/60,seconds-t),input);};
 test('marsh layout preserves all bank and island routes around deep water',()=>{
   const r=makeMarshRoom(),q=[r.spawn],seen=new Set();
@@ -34,8 +34,10 @@ test('marsh Slurg splits into two smaller sword targets',()=>{
   const m=new MarshModel(makeMarshRoom()),s=m.enemies.find(e=>e.type==='slurg');s.hidden=false;Object.assign(m.hero,{x:s.x-48,y:s.y,facing:'right'});m.attack();m.tick(.01);
   expect(s.active).toBe(false);expect(m.enemies.filter(e=>e.type==='small-slurg'&&e.active)).toHaveLength(2);
 });
-test('marsh Heart Piece wakes Croak; only a tongue-window throw exposes its belly',()=>{
-  const m=new MarshModel(makeMarshRoom());m.openHeart();expect(m.progress.heartTaken).toBe(true);expect(m.boss.active).toBe(true);
+test('final lantern awakens Croak; the optional Heart Piece does not',()=>{
+  const m=new MarshModel(makeMarshRoom());m.openHeart();expect(m.progress.heartTaken).toBe(true);expect(m.boss.active).toBe(false);
+  m.light(0);m.light(1);expect(m.boss.phase).toBe('sleeping');m.light(2);expect(m.boss.phase).toBe('rising');expect(m.gateClosed).toBe(true);
+  const position={...m.hero};advance(m,4,{up:true,attack:true});expect(m.hero).toEqual(position);expect(m.boss.phase).toBe('rising');advance(m,.7);expect(m.boss.phase).toBe('watching');
   const b=m.boss;m.items.push({x:b.x,y:b.y,vx:0,vy:0,until:10});m.tick(.01);expect(b.phase).not.toBe('stunned');
   b.phase='tongue';b.until=m.clock+1;b.aim={x:b.x+200,y:b.y};m.items.push({x:b.x,y:b.y,vx:0,vy:0,until:10});m.tick(.01);expect(b.phase).toBe('stunned');
   Object.assign(m.hero,{x:b.x,y:b.y+80,facing:'up'});
@@ -80,6 +82,7 @@ test('marsh real-input mission restores all ten words and three lanterns',async(
     }catch{}},10000);timer.unref();page.once('close',()=>clearInterval(timer));
     page.on('pageerror',error=>console.error('Game error',error.stack));
   }
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
   let cpuSession;
   for(let i=0;i<3;i++){
@@ -92,32 +95,55 @@ test('marsh real-input mission restores all ten words and three lanterns',async(
   if(cpuSession)await cpuSession.send('Emulation.setCPUThrottlingRate',{rate:1});
   await expect(page.locator('#game')).toHaveAttribute('data-learned','10');await expect(page.locator('#game')).toHaveAttribute('data-lanterns','[true,true,true]');
   await page.screenshot({path:test.info().outputPath('lantern-marsh-island-restored.png')});
+  await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','true');
+  await expect(page.locator('#game')).toHaveAttribute('data-door-ready','false');
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','boss-rise');
+  const frozen=await state(page);await page.keyboard.down('w');await page.waitForTimeout(200);await page.keyboard.up('w');expect((await state(page)).px).toBe(frozen.px);expect((await state(page)).py).toBe(frozen.py);
+  await page.waitForTimeout(400);await page.screenshot({path:test.info().outputPath('croak-rising.png')});
+  await expect.poll(async()=>Number((await state(page)).arenaGateLift),{timeout:5000}).toBeGreaterThan(.9);
+  await page.screenshot({path:test.info().outputPath('arena-gate-rising.png')});
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','playing',{timeout:8000});
+  // Lose through actual enemy attacks, then verify the sealed-arena checkpoint.
+  await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,attack:false});
+  await expect.poll(async()=>(await state(page)).bossPhase,{timeout:20000,intervals:[30]}).toBe('tongue');
+  await expect.poll(async()=>Number((await state(page)).tongueLength),{timeout:2000,intervals:[20]}).toBeGreaterThan(45);
+  await page.screenshot({path:test.info().outputPath('frog-tongue.png')});
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','lost',{timeout:45000});
+  await page.getByRole('button',{name:'Return to chamber'}).click();
+  await expect(page.locator('#game')).toHaveAttribute('data-keys','3');await expect(page.locator('#game')).toHaveAttribute('data-learned','10');await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','true');
+  expect(Number((await state(page)).y)).toBeCloseTo(16,0);
+  await defeatMarshBoss(page,{state,walkTo});
+  await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','false');
+  await expect(page.locator('#game')).toHaveAttribute('data-door-ready','true');
   await waitForMarshPads(page,state);
   await guardMarshExit(page,state,()=>walkTo(page,makeMarshRoom().exit,{avoidEnemies:false}));await page.keyboard.press('e');
-  await expect(page.locator('#game')).toHaveAttribute('data-mode','gate-opening');await expect(page.locator('#game')).toHaveAttribute('data-chapter','2',{timeout:8000});
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','gate-opening');await expect(page.locator('#game')).toHaveAttribute('data-chapter','2',{timeout:8000});expect(errors).toEqual([]);
 });
 
 
-test('marsh island chest wakes Croak and a timed stone permits a real sword victory',async({page})=>{
+test('optional island chest heals without waking the frog and restart resets it',async({page})=>{
   test.setTimeout(180000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
-  const room=makeMarshRoom();await walkTo(page,{x:16,y:26},{exact:true,avoidEnemies:false});
-  await walkTo(page,room.heart,{avoidEnemies:false});
+  const room=makeMarshRoom();await walkTo(page,{x:16,y:26},{exact:true,avoidEnemies:false});await walkTo(page,room.heart,{avoidEnemies:false});
   if((await state(page)).heartPiece!=='true')await contact(page,room.heart,async()=>(await state(page)).heartPiece==='true');
-  await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','true');
-  await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,guard:true});
-  await page.locator('#game canvas').scrollIntoViewIfNeeded();
-  const aimBoss=async()=>{
-    const s=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),boss=at(room.boss);
-    await page.mouse.move(box.x+((boss.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((boss.y-Number(s.cameraY)-280)*z+280)/560*box.height);
-  };
-  await aimBoss();
-  await page.keyboard.down('q');
-  await expect.poll(async()=>(await state(page)).bossPhase,{timeout:30000,intervals:[40]}).toBe('tongue');
-  await aimBoss();await page.keyboard.press('f');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','stunned');
-  await page.keyboard.up('q');await page.keyboard.down('Space');
-  try{await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','defeated',{timeout:30000});}finally{await page.keyboard.up('Space');}
-  await expect(page.locator('#game')).toHaveAttribute('data-boss-hp','0');
-  await page.screenshot({path:test.info().outputPath('lantern-marsh-croak-defeated.png'),fullPage:true});
-  await page.getByRole('button',{name:'Restart adventure'}).click();
-  await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','false');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');
+  await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','true');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','false');
+  await page.getByRole('button',{name:'Restart adventure'}).click();await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','false');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');
+});
+
+test('raised arena gate survives checkpoint recovery and lowers after Croak falls',()=>{
+  const r=makeMarshRoom(),m=new MarshModel(r);for(let i=0;i<3;i++)m.light(i);
+  expect(m.events.filter(e=>e.type==='boss-awakened')).toHaveLength(1);m.light(2);expect(m.events.filter(e=>e.type==='boss-awakened')).toHaveLength(1);
+  const retry=new MarshModel(r,m.progress);expect(retry.gateClosed).toBe(true);expect(retry.hero).toMatchObject(at(r.arenaSpawn));expect(retry.solid(retry.hero.x,retry.hero.y)).toBe(false);
+  Object.assign(retry.hero,at({x:15,y:28}));advance(retry,1.2,{down:true});expect(retry.hero.y).toBeLessThan(r.barrier.y*40);
+  Object.assign(retry.hero,{x:retry.boss.x,y:retry.boss.y+80,facing:'up'});retry.boss.phase='stunned';retry.boss.until=retry.clock+4;
+  for(let i=0;i<6;i++){retry.attack();retry.tick(.01);advance(retry,.45);}
+  expect(retry.progress.bossDefeated).toBe(true);expect(retry.gateClosed).toBe(false);expect(retry.solid(620,r.barrier.y*40+20)).toBe(false);
+  const done=new MarshModel(r,retry.progress);expect(done.boss.active).toBe(false);expect(done.gateClosed).toBe(false);
+});
+
+test('frog tongue damage follows its extending and retracting tip',()=>{
+  const m=new MarshModel(makeMarshRoom());for(let i=0;i<3;i++)m.light(i);advance(m,4.7);
+  const b=m.boss;Object.assign(b,{phase:'tongue',phaseAt:m.clock,until:m.clock+.9,aim:{x:b.x+200,y:b.y},nextSlam:m.clock+20});Object.assign(m.hero,{x:b.x+100,y:b.y});m.invulnerable=0;
+  m.tick(.01);expect(bossTongue(b,m.clock).length).toBeLessThan(20);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(0);
+  advance(m,.25);expect(bossTongue(b,m.clock).length).toBeGreaterThan(150);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(1);
+  m.events=[];m.invulnerable=0;b.phaseAt=m.clock-.87;m.tick(.01);expect(bossTongue(b,m.clock).length).toBeLessThan(25);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(0);
 });

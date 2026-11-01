@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { makeMarshRoom,marshWalkable } from '../src/marsh-map.js';
+import { makeMarshRoom,marshWalkable,at } from '../src/marsh-map.js';
 // Real input route: defeat a Wisp, pick up its drop, and carry it to the lantern.
 export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
   const go=async(x,y)=>walkTo(page,{x,y},{exact:true,avoidEnemies:false,attack:index!==2});
@@ -126,4 +126,29 @@ export async function guardMarshExit(page,state,walk){
   if((await state(page)).mode==='lost')await page.getByRole('button',{name:'Return to chamber'}).click();
   await attempt();
   if((await state(page)).mode==='lost'){await page.getByRole('button',{name:'Return to chamber'}).click();await expect(page.locator('#game')).toHaveAttribute('data-keys','3');await attempt();}
+}
+
+async function fightMarshBoss(page,{state,walkTo}){
+  const game=page.locator('#game');if((await state(page)).bossPhase==='defeated')return;
+  if((await state(page)).mode==='boss-rise'){
+    const before=await state(page);await page.keyboard.press('w');expect((await state(page)).px).toBe(before.px);expect((await state(page)).py).toBe(before.py);
+    await page.screenshot({path:'test-results/croak-emergence.png'});
+  }
+  await expect(game).toHaveAttribute('data-mode','playing',{timeout:8000});
+  await expect(game).toHaveAttribute('data-arena-gate-lift','1.00');
+  await page.getByRole('button',{name:'Overworld atlas'}).click();await page.getByRole('button',{name:'Explore overworld'}).click();
+  await expect(game).toHaveAttribute('data-mode','playing');await expect(page.locator('#feedback')).toContainText('arena is sealed');
+  await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,guard:true});
+  const aim=async()=>{const s=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),b=at(makeMarshRoom().boss);await page.mouse.move(box.x+((b.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((b.y-Number(s.cameraY)-280)*z+280)/560*box.height);};
+  await page.locator('#game canvas').scrollIntoViewIfNeeded();await aim();await expect(game).toHaveAttribute('data-mode','playing');await page.keyboard.down('q');
+  try{await expect.poll(async()=>(await state(page)).bossPhase,{timeout:30000,intervals:[30]}).toBe('tongue');await aim();await page.keyboard.press('f');await expect(game).toHaveAttribute('data-boss-phase','stunned');}finally{await page.keyboard.up('q');}
+  await page.keyboard.down('Space');try{await expect(game).toHaveAttribute('data-boss-phase','defeated',{timeout:6000});}finally{await page.keyboard.up('Space');}
+  await expect(game).toHaveAttribute('data-boss-hp','0');await page.screenshot({path:'test-results/croak-defeated.png'});
+}
+
+export async function defeatMarshBoss(page,helpers){
+  for(let attempt=0;attempt<3;attempt++){
+    if((await helpers.state(page)).mode==='lost')await page.getByRole('button',{name:'Return to chamber'}).click();
+    try{return await fightMarshBoss(page,helpers);}catch(error){if((await helpers.state(page)).mode!=='lost'||attempt===2)throw error;}
+  }
 }

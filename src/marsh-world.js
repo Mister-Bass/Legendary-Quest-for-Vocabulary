@@ -1,16 +1,17 @@
+import { drawFrogEncounter } from './frog-art.js';
 import { wispTexture,paintWispAura } from './wisp-art.js';
 import { lanternTexture,paintLanternGlow } from './lantern-art.js';
 import { octorotPose } from './octorot-art.js';
 import { paintMarshOoze } from './marsh-art.js';
-import { MarshModel } from './marsh-model.js';
+import { MarshModel,bossTongue } from './marsh-model.js';
 import { at,cell } from './marsh-map.js';
 import { Minimap } from './minimap.js';
 export class MarshWorld{
   constructor(scene){
     this.scene=scene;this.hero=scene.hero;this.room=scene.room;this.model=new MarshModel(this.room,scene.marshProgress);this.model.hero.x=this.hero.x;this.model.hero.y=this.hero.y;
     this.clock=0;this.attackAt=-10;this.facing='up';this.invulnerableUntil=1;this.vx=0;this.vy=0;this.keys=new Map();this.taps=new Map();this.sprites=new Map();this.contacts=new Set();this.mouseAim=null;
-    this.effects=scene.add.graphics();this.bossSprite=scene.add.image(this.model.boss.x,this.model.boss.y,'marsh-toad').setDisplaySize(128,128).setOrigin(.5,.55);
-    this.bossLabel=scene.add.text(this.model.boss.x,this.model.boss.y-85,'GRANDFATHER CROAK',{fontFamily:'monospace',fontSize:12,color:'#e4e9b6',backgroundColor:'#203f32',padding:{x:5,y:3}}).setOrigin(.5);
+    this.bossWater=scene.add.graphics();this.arenaGate=scene.add.image(0,0,'marsh-arena-gate').setDisplaySize(160,80).setOrigin(.5,1);this.bossSprite=scene.add.image(this.model.boss.x,this.model.boss.y,'marsh-toad').setDisplaySize(128,128).setOrigin(.5);
+    this.bossLabel=scene.add.text(this.model.boss.x,this.model.boss.y-85,'GRANDFATHER CROAK',{fontFamily:'monospace',fontSize:12,color:'#e4e9b6',backgroundColor:'#203f32',padding:{x:5,y:3}}).setOrigin(.5);this.effects=scene.add.graphics();
     this.minimap=new Minimap(scene,scene.exploration.get(1)||new Set());scene.exploration.set(1,this.minimap.explored);
     scene.cameras.main.setBounds(0,0,1280,1280).setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);
     this.initializing=true;this.sync();this.initializing=false;this.minimap.update(0,true);
@@ -28,6 +29,7 @@ export class MarshWorld{
     return false;
   }
   update(delta){
+    if(this.scene.state.mode==='boss-rise'){this.model.tick(Math.min(.25,delta/1000));this.clock=this.model.clock;this.events();this.sync();this.telemetry();return;}
     if(this.scene.state.mode!=='playing'){this.stop();this.telemetry();return;}
     const elapsed=Math.min(.25,delta/1000),steps=Math.ceil(elapsed/(1/60));
     for(let i=0;i<steps;i++){
@@ -50,10 +52,14 @@ export class MarshWorld{
   }
   events(){
     for(const e of this.model.events.splice(0)){
+      if(e.type==='boss-awakened'){this.stop();this.scene.state.mode='boss-rise';this.scene.cameras.main.stopFollow();this.scene.feedback('The final flame awakens Grandfather Croak. The southern gate rises!');this.scene.render();}
+      if(e.type==='boss-ready'){this.scene.state.mode='playing';this.invulnerableUntil=this.clock+1.2;this.scene.cameras.main.setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);this.scene.feedback('The arena is sealed. Throw a stone or bomb during the tongue lash, then sword the stunned belly.');this.scene.render();}
+      if(e.type==='boss-defeated'){this.scene.drawGate();this.scene.render();}
+
       if(e.type==='hurt'){this.scene.hurt(e.message);this.scene.render();}
       if(e.type==='message')this.scene.feedback(e.message);
       if(e.type==='lantern')this.scene.openTrial(e.index);
-      if(e.type==='heart'){this.scene.state.hearts=Math.min(5,this.scene.state.hearts+1);this.scene.heartChest.play('chest-open');this.scene.feedback('Heart Piece found (1 of 4). One heart restored. Grandfather Croak awakens!');this.scene.render();}
+      if(e.type==='heart'){this.scene.state.hearts=Math.min(5,this.scene.state.hearts+1);this.scene.heartChest.play('chest-open');this.scene.feedback('Heart Piece found (1 of 4). One heart restored.');this.scene.render();}
       if(e.type==='slam')this.scene.cameras.main.shake(130,.002);
       if(e.type==='blast'){const g=this.scene.add.graphics({x:e.x,y:e.y});g.fillStyle(0xffbc76,.45).fillCircle(0,0,38);g.lineStyle(3,0xffdf9e).strokeCircle(0,0,38);this.scene.worldLayer.add(g);this.scene.tweens.add({targets:g,alpha:0,duration:350,onComplete:()=>g.destroy()});}
     }
@@ -71,8 +77,7 @@ export class MarshWorld{
       if(e.type==='octorok'){const pose=octorotPose(e,m.hero,this.clock);sprite.setFrame(pose.frame).setFlipX(pose.flipX);}
       this.scene.shades.push({...e,sprite});
     }
-    this.bossSprite.setVisible(m.boss.active).setTint(m.boss.phase==='stunned'?0xf7dca0:0xffffff);
-    this.bossLabel.setVisible(m.boss.active);
+    drawFrogEncounter(this);
     const g=this.effects;g.clear();
     for(const p of this.room.pads){const timer=m.padTimers.get(cell(p.x,p.y));if(!timer)continue;
       g.fillStyle(timer.sunkUntil>this.clock?0x244e68:0xa1c46a,.9).fillCircle(p.x*40+20,p.y*40+20,18);
@@ -84,8 +89,12 @@ export class MarshWorld{
     if(m.flameUntil>this.clock){g.fillStyle(0xffcc76,.25).fillCircle(this.hero.x,this.hero.y-18,24);g.fillStyle(0xffec9f).fillRect(this.hero.x-3,this.hero.y-29,6,12);}
     if(m.shield){const dir={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[this.facing];g.lineStyle(5,0x9bbfc5).strokeCircle(this.hero.x+dir[0]*18,this.hero.y+dir[1]*18,13);}
     const b=m.boss;if(b.active){
-      if(b.phase==='warning'||b.phase==='tongue')g.lineStyle(b.phase==='tongue'?9:2,b.phase==='tongue'?0xd6a0a2:0xe6c585,.7).lineBetween(b.x,b.y,b.aim.x,b.aim.y);
-      for(let i=0;i<6;i++)g.fillStyle(i<b.hp?0xa8d57b:0x284d38).fillRect(b.x-33+i*11,b.y-55,8,5);
+      if(b.phase==='warning'||b.phase==='tongue'){
+        const tongue=bossTongue(b,this.clock);
+        if(b.phase==='warning')g.lineStyle(2,0xe6c585,.65).lineBetween(b.x,b.y,tongue.tipX,tongue.tipY);
+        else{g.lineStyle(13,0x793f58).lineBetween(b.x,b.y,tongue.tipX,tongue.tipY);g.lineStyle(8,0xd98798).lineBetween(b.x,b.y,tongue.tipX,tongue.tipY);g.lineStyle(2,0xffc0b0).lineBetween(b.x,b.y-2,tongue.tipX,tongue.tipY-2);g.fillStyle(0xefaaac).fillEllipse(tongue.tipX,tongue.tipY,13,10);}
+      }
+      for(let i=0;i<6;i++)g.fillStyle(i<b.hp?0xa8d57b:0x284d38).fillRect(b.x-33+i*11,b.y-70,8,5);
     }
     // Low, translucent mist drifts over the water without concealing the pads.
     for(let i=0;i<5;i++)g.fillStyle(0xb7d2c3,.035).fillEllipse(360+i*125+Math.sin(this.clock*.1+i)*30,380+i%3*180,220,55);
@@ -94,7 +103,7 @@ export class MarshWorld{
   }
   telemetry(){
     const m=this.model,s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
+    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
     document.getElementById('wayfinder').textContent=`Lanterns ${m.progress.lit.filter(Boolean).length}/3 · Wisp Flame ${Math.max(0,m.flameUntil-m.clock).toFixed(1)}s · Heart Piece ${m.progress.heartTaken?'1/4':'0/4'}`;
     document.getElementById('combat-state').textContent='Space Sword · Q/Right-click Shield · Shift Roll · F Throw · B Bomb';
   }

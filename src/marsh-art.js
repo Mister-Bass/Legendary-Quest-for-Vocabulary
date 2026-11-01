@@ -1,3 +1,4 @@
+import { createFrogArt } from './frog-art.js';
 import { createWispArt } from './wisp-art.js';
 import { createLanternArt } from './lantern-art.js';
 import { createOctorotArt } from './octorot-art.js';
@@ -17,7 +18,7 @@ export function createMarshArt(scene){
   createWispArt(scene);
   createOctorotArt(scene);
   texture('marsh-slurg',c=>{rect(c,'#3c2b55',2,9,12,5);rect(c,'#7f4a9a',3,6,10,7);rect(c,'#ac72bb',5,4,6,6);rect(c,'#eee3b3',5,9,2,2);rect(c,'#eee3b3',10,9,2,2);});
-  texture('marsh-toad',c=>{rect(c,'#264c31',1,5,14,10);rect(c,'#497839',2,3,12,10);rect(c,'#8dab54',4,6,8,7);rect(c,'#577d36',2,1,4,5);rect(c,'#577d36',10,1,4,5);rect(c,'#f1d879',3,2,2,2);rect(c,'#f1d879',11,2,2,2);rect(c,'#283d28',4,9,8,1);rect(c,'#d7ce88',5,11,6,3);});
+  createFrogArt(scene);
   texture('marsh-door',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#37254e',4,3,8,12);rect(c,'#67458c',5,4,6,11);rect(c,'#ab83c0',7,5,2,9);for(const x of [4,8,11])rect(c,'#251e38',x,7,1,3);});
   texture('marsh-door-open',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#271e3b',4,3,8,12);rect(c,'#6e7297',5,4,6,11);rect(c,'#e6e0ac',7,5,2,10);});
   const preview=scene.textures.createCanvas('marsh-preview',512,512),c=preview.context,room=makeMarshRoom(),art=marshTerrainArt(scene);
