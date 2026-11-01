@@ -1,3 +1,4 @@
+import { marshPlantImages,paintMarshSceneryCell } from './marsh-scenery.js';
 import { cell,makeMarshRoom } from './marsh-map.js';
 // Supplied forest terrain and original 16-pixel creatures; see assets/forest/CREDITS.txt.
 export function createMarshArt(scene){
@@ -34,11 +35,13 @@ export function paintMarshTile(c,room,x,y,size=16,art=null){
   if(room.water.has(k)){c.fillStyle='#22506c';c.fillRect(0,0,16,16);c.fillStyle='#488399';c.fillRect(n%7+2,5,6,1);c.fillRect(3,12,4,1);}
   if(room.bridge.has(k))paintPad(c,false);
   if(room.walls.has(k)){
-    if(room.pillars?.some(p=>p.x===x&&p.y===y)){c.fillStyle='#53636a';c.fillRect(2,13,12,3);c.fillStyle='#959e9b';c.fillRect(4,3,8,10);c.fillStyle='#c0c5b5';c.fillRect(5,4,2,8);c.fillStyle='#aeb8ab';c.fillRect(2,1,12,3);}
+    if(art?.props&&room.scenery?.some(p=>p.x===x&&p.y===y)&&(room.bushes?.some(p=>p.x===x&&p.y===y)||room.rocks.some(p=>p.x===x&&p.y===y))){/* supplied prop painted below */}
+    else if(room.pillars?.some(p=>p.x===x&&p.y===y)){c.fillStyle='#53636a';c.fillRect(2,13,12,3);c.fillStyle='#959e9b';c.fillRect(4,3,8,10);c.fillStyle='#c0c5b5';c.fillRect(5,4,2,8);c.fillStyle='#aeb8ab';c.fillRect(2,1,12,3);}
     else if(room.bushes?.some(p=>p.x===x&&p.y===y)){c.fillStyle='#244e31';c.fillRect(2,6,12,9);c.fillStyle='#3e8347';c.fillRect(3,3,10,10);c.fillStyle='#72a451';c.fillRect(5,4,5,4);c.fillStyle='#d0a063';c.fillRect(4,8,1,1);c.fillRect(11,6,1,1);}
     else if(room.rocks.some(p=>p.x===x&&p.y===y)){c.fillStyle='#53636a';c.fillRect(2,5,12,10);c.fillStyle='#8e999c';c.fillRect(4,2,8,11);c.fillStyle='#b4bbab';c.fillRect(5,3,3,6);}
     else if(art?.tree)paintForestEdge(c,room,x,y,art.tree);else{c.fillStyle='#234f32';c.fillRect(0,0,16,16);c.fillStyle='#357643';c.fillRect(3,2,11,11);}
   }
+  paintMarshSceneryCell(c,room,x,y,art?.props);
   c.restore();
 }
 // A 48x64 tree spans 3x4 native tiles rather than being squeezed into one.
@@ -55,7 +58,7 @@ function paintForestEdge(c,room,x,y,tree){
   else{col=u%3;row=v%3;}
   c.drawImage(tree,col*16,row*16,16,16,0,0,16,16);
 }
-function marshTerrainArt(scene){return {tree:scene.textures.get('marsh-tree').getSourceImage(),grass:scene.textures.get('marsh-grass').getSourceImage(),mud:scene.textures.get('marsh-mud').getSourceImage()};}
+function marshTerrainArt(scene){return {props:marshPlantImages(scene),tree:scene.textures.get('marsh-tree').getSourceImage(),grass:scene.textures.get('marsh-grass').getSourceImage(),mud:scene.textures.get('marsh-mud').getSourceImage()};}
 // Sample the supplied mud interior so transparent padding and square tile rims
 // do not repeat inside each connected patch. Only exposed shores receive a rim.
 function paintMud(c,room,x,y,image){

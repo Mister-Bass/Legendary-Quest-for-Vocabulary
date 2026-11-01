@@ -104,7 +104,7 @@ export function makeOverworld(){
     }
   }
   // Project the marsh's actual layout into A02; roads keep neighboring regions connected.
-  const marsh=makeMarshRoom();map.marshPreview=true;map.marshTerrain={forestBounds:{x:24,y:0,width:24,height:18},water:map.water,walls:map.walls,bridge:map.bridge,mud:new Set(),stone:new Set(),rocks:[],pillars:[]};
+  const marsh=makeMarshRoom();map.marshPreview=true;map.marshTerrain={forestBounds:{x:24,y:0,width:24,height:18},water:map.water,walls:map.walls,bridge:map.bridge,mud:new Set(),stone:new Set(),rocks:[],pillars:[],bushes:[],scenery:[]};
   map.trees=map.trees.filter(t=>!(t.x>=24&&t.x<48&&t.y<18));
   for(let y=0;y<18;y++)for(let x=24;x<48;x++){
     const k=key(x,y),u=Math.min(31,Math.floor((x-24+.5)*32/24)),v=Math.min(31,Math.floor((y+.5)*32/18)),mk=cell(u,v);
@@ -114,8 +114,10 @@ export function makeOverworld(){
     if(map.water.has(k)&&(roads.has(k)||marsh.bridge.has(mk)))map.bridge.add(k);
     if(marsh.mud.has(mk))map.marshTerrain.mud.add(k);if(marsh.stone.has(mk))map.marshTerrain.stone.add(k);
     if(marsh.pillars.some(p=>Math.abs(p.x-u)<1&&Math.abs(p.y-v)<1))map.marshTerrain.pillars.push({x,y});
+    if(marsh.bushes.some(p=>Math.abs(p.x-u)<1&&Math.abs(p.y-v)<1))map.marshTerrain.bushes.push({x,y});
     if(marsh.rocks.some(p=>Math.abs(p.x-u)<1&&Math.abs(p.y-v)<1))map.marshTerrain.rocks.push({x,y});
   }
+  map.marshTerrain.scenery=marsh.scenery.map(p=>({...p,x:24+Math.floor((p.x+.5)*24/32),y:Math.floor((p.y+.5)*18/32)})).filter(p=>map.walls.has(key(p.x,p.y)));
   for(const a of areas)if(a.id==='A02')for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const k=key(a.x+ox,a.y+oy);map.walls.delete(k);map.water.delete(k);map.bridge.delete(k);}
   return map;
 }

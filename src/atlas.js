@@ -1,3 +1,4 @@
+import { marshPlantImages } from './marsh-scenery.js';
 import { areas, areaAt, entranceFor, makeOverworld, drawAtlas } from './overworld.js';
 const $=id=>document.getElementById(id);
 
@@ -5,6 +6,7 @@ export class Atlas {
   constructor(adventure){
     this.adventure=adventure;this.map=makeOverworld();this.selected='A07';
     this.art=Object.fromEntries(['grass','terrain','water','puny','topdown','tree1','tree2','tree3','tree4'].map(key=>[key,adventure.textures.get(key).getSourceImage()]));
+    this.art.marshProps=marshPlantImages(adventure);
     for(const [key,texture]of[['marshMud','marsh-mud'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
     $('overworld-toggle').addEventListener('click',()=>this.toggle());
     $('close-atlas').addEventListener('click',()=>this.close());
