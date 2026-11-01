@@ -1,3 +1,4 @@
+import { wispTexture,paintWispAura } from './wisp-art.js';
 import { lanternTexture,paintLanternGlow } from './lantern-art.js';
 import { octorotPose } from './octorot-art.js';
 import { paintMarshOoze } from './marsh-art.js';
@@ -61,10 +62,12 @@ export class MarshWorld{
     const m=this.model;this.scene.shades=[];
     paintMarshOoze(this.scene.mudEffects,this.room,this.clock);
     this.scene.pondLife.draw(this.scene.pondEffects,this.clock);
+    paintWispAura(this.scene.wispGlow,m.enemies,this.clock);
     for(const e of m.enemies){
-      if(!this.sprites.has(e.id)){const texture=e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg';const s=this.scene.add.image(e.x,e.y,texture,e.type==='octorok'?3:undefined).setDisplaySize(e.type==='small-slurg'?26:44,e.type==='small-slurg'?26:44);if(!this.initializing)this.scene.worldLayer.add(s);this.sprites.set(e.id,s);}
+      if(!this.sprites.has(e.id)){const texture=e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg';const s=this.scene.add.image(e.x,e.y,texture,e.type==='octorok'?3:undefined).setDisplaySize(e.type==='small-slurg'?26:e.type==='wisp'?64:44,e.type==='small-slurg'?26:e.type==='wisp'?64:44);if(!this.initializing)this.scene.worldLayer.add(s);this.sprites.set(e.id,s);}
       const hop=(e.type==='slurg'||e.type==='small-slurg')&&this.clock%1.1<.35?Math.sin(this.clock%1.1/.35*Math.PI)*12:0;
       const sprite=this.sprites.get(e.id);sprite.setPosition(e.x,e.y+(e.type==='wisp'?Math.sin(this.clock*4+e.id)*5:-hop)).setVisible(e.active&&!e.hidden).setAlpha(e.type==='octorok'&&e.next-this.clock>1.4?.35:1).setTint(e.type==='octorok'&&e.next-this.clock<.4?0xffc994:0xffffff);
+      if(e.type==='wisp')sprite.setTexture(wispTexture(this.clock,e.id));
       if(e.type==='octorok'){const pose=octorotPose(e,m.hero,this.clock);sprite.setFrame(pose.frame).setFlipX(pose.flipX);}
       this.scene.shades.push({...e,sprite});
     }

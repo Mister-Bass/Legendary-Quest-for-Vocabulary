@@ -1,3 +1,4 @@
+import { createWispArt } from './wisp-art.js';
 import { createLanternArt } from './lantern-art.js';
 import { createOctorotArt } from './octorot-art.js';
 import { pondImages,pondTile,PondLife } from './marsh-water.js';
@@ -13,7 +14,7 @@ export function createMarshArt(scene){
   const tree=scene.textures.createCanvas('marsh-tree',48,64);
   tree.context.drawImage(forest,160,48,48,64,0,0,48,64);tree.refresh();
   createLanternArt(scene);
-  texture('marsh-wisp',c=>{rect(c,'#657e85',5,5,7,9);rect(c,'#a5c7c2',4,4,8,8);rect(c,'#e8f1d6',6,2,4,7);rect(c,'#fff3aa',7,5,2,4);rect(c,'#455364',6,10,1,1);rect(c,'#455364',10,10,1,1);});
+  createWispArt(scene);
   createOctorotArt(scene);
   texture('marsh-slurg',c=>{rect(c,'#3c2b55',2,9,12,5);rect(c,'#7f4a9a',3,6,10,7);rect(c,'#ac72bb',5,4,6,6);rect(c,'#eee3b3',5,9,2,2);rect(c,'#eee3b3',10,9,2,2);});
   texture('marsh-toad',c=>{rect(c,'#264c31',1,5,14,10);rect(c,'#497839',2,3,12,10);rect(c,'#8dab54',4,6,8,7);rect(c,'#577d36',2,1,4,5);rect(c,'#577d36',10,1,4,5);rect(c,'#f1d879',3,2,2,2);rect(c,'#f1d879',11,2,2,2);rect(c,'#283d28',4,9,8,1);rect(c,'#d7ce88',5,11,6,3);});
@@ -24,7 +25,7 @@ export function createMarshArt(scene){
   for(const p of room.seals)c.drawImage(scene.textures.get('marsh-lantern').getSourceImage(),p.x*16-8,p.y*16-20,32,32);
   c.drawImage(scene.textures.get('marsh-door').getSourceImage(),15*16,1*16,32,32);
   c.drawImage(scene.textures.get('chest').getSourceImage(),0,0,16,16,room.heart.x*16,room.heart.y*16,16,16);
-  for(const e of room.shades){const texture=scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg'),f=texture.get(e.type==='octorok'?3:'__BASE');c.drawImage(f.source.image,f.cutX,f.cutY,f.cutWidth,f.cutHeight,e.x*16,e.y*16,16,16);}
+  for(const e of room.shades){const texture=scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg'),f=texture.get(e.type==='octorok'?3:'__BASE');const size=e.type==='wisp'?24:16;c.drawImage(f.source.image,f.cutX,f.cutY,f.cutWidth,f.cutHeight,e.x*16+(16-size)/2,e.y*16+(16-size)/2,size,size);}
   c.drawImage(scene.textures.get('marsh-toad').getSourceImage(),room.boss.x*16-8,room.boss.y*16-8,32,32);
   c.fillStyle='#9ac96e';c.beginPath();c.moveTo(248,464);c.lineTo(240,480);c.lineTo(256,480);c.closePath();c.fill();
   preview.refresh();
@@ -106,7 +107,7 @@ export function paintMarshWorld(scene,room){
   texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(1280,1280);scene.chamberGround=texture.getSourceImage();scene.waterSprites=[];scene.treeSprites=[];
   scene.mudEffects=scene.add.graphics();
   scene.pondEffects=scene.add.graphics();scene.pondLife=new PondLife(room);
-  scene.lanternGlow=scene.add.graphics();
+  scene.lanternGlow=scene.add.graphics();scene.wispGlow=scene.add.graphics();
   scene.doorSprite=scene.add.image(620,100,'marsh-door').setDisplaySize(100,100).setOrigin(.5,.65);
   scene.heartChest=scene.add.sprite(room.heart.x*40+20,room.heart.y*40+20,'chest').setDisplaySize(40,40).setFrame(scene.marshProgress.heartTaken?3:0);
   Object.assign(document.getElementById('game').dataset,{artArea:'A02',tilePixels:16,tileset:'lantern-marsh',terrainTheme:'marsh'});
