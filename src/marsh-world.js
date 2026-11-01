@@ -58,6 +58,7 @@ export class MarshWorld{
   sync(){
     const m=this.model;this.scene.shades=[];
     paintMarshOoze(this.scene.mudEffects,this.room,this.clock);
+    this.scene.pondLife.draw(this.scene.pondEffects,this.clock);
     for(const e of m.enemies){
       if(!this.sprites.has(e.id)){const texture=e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg';const s=this.scene.add.image(e.x,e.y,texture).setDisplaySize(e.type==='small-slurg'?26:44,e.type==='small-slurg'?26:44);if(!this.initializing)this.scene.worldLayer.add(s);this.sprites.set(e.id,s);}
       const hop=(e.type==='slurg'||e.type==='small-slurg')&&this.clock%1.1<.35?Math.sin(this.clock%1.1/.35*Math.PI)*12:0;
@@ -86,7 +87,7 @@ export class MarshWorld{
   }
   telemetry(){
     const m=this.model,s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.waterSprites[0]?.frame.name,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
+    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
     document.getElementById('wayfinder').textContent=`Lanterns ${m.progress.lit.filter(Boolean).length}/3 · Wisp Flame ${Math.max(0,m.flameUntil-m.clock).toFixed(1)}s · Heart Piece ${m.progress.heartTaken?'1/4':'0/4'}`;
     document.getElementById('combat-state').textContent='Space Sword · Q/Right-click Shield · Shift Roll · F Throw · B Bomb';
   }

@@ -53,7 +53,8 @@ test('marsh practice loads, pauses timers for its map, and exposes responsive co
   expect(await page.locator('#marsh-layout').evaluate(async canvas=>{
     for(const [file,rect,tile,base]of[
       ['forest/top-down-forest-tileset.png',[128,32,16,16],[10,26],null],
-      ['marsh/wet-mud-tile.png',[72,72,112,112],[4,9],'#755e2c']
+      ['marsh/wet-mud-tile.png',[72,72,112,112],[4,9],'#755e2c'],
+      ['kenney-pond/rpgTile010.png',[0,0,64,64],[11,8],null]
     ]){
       const image=new Image();image.src='/assets/'+file;await image.decode();
       const sample=document.createElement('canvas');sample.width=sample.height=16;

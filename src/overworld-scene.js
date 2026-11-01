@@ -1,3 +1,4 @@
+import { pondImages } from './marsh-water.js';
 import { marshPlantImages } from './marsh-scenery.js';
 import Phaser from 'phaser';
 import { areas, areaAt, entranceFor, makeOverworld, overworldWalkable, drawAtlas } from './overworld.js';
@@ -14,6 +15,7 @@ export class OverworldScene extends Phaser.Scene {
     this.map=makeOverworld();
     const art=Object.fromEntries(['grass','terrain','water','puny','topdown'].map(key=>[key,this.textures.get(key).getSourceImage()]));
     this.art=art;
+    art.pond=pondImages(this);
     art.marshProps=marshPlantImages(this);
     for(const [key,texture]of[['marshMud','marsh-mud'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])art[key]=this.textures.get(texture).getSourceImage();
     // Bake static scenery into small chunks. Only trees and water need per-frame animation.

@@ -1,3 +1,4 @@
+import { pondImages,pondTile,PondLife } from './marsh-water.js';
 import { marshPlantImages,paintMarshSceneryCell } from './marsh-scenery.js';
 import { cell,makeMarshRoom } from './marsh-map.js';
 // Supplied forest terrain and original 16-pixel creatures; see assets/forest/CREDITS.txt.
@@ -28,11 +29,11 @@ export function createMarshArt(scene){
   preview.refresh();
 }
 export function paintMarshTile(c,room,x,y,size=16,art=null){
-  const k=cell(x,y),n=(x*19+y*37)%13;c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;
+  const k=cell(x,y);c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;
   if(art?.grass)c.drawImage(art.grass,0,0,16,16);else{c.fillStyle='#187454';c.fillRect(0,0,16,16);}
   if(room.mud.has(k))paintMud(c,room,x,y,art?.mud);
   if(room.stone.has(k)){c.fillStyle='#8f958d';c.fillRect(0,0,16,16);c.fillStyle='#aeb1a2';c.fillRect(1,1,6,12);c.fillRect(9,1,6,6);c.fillRect(9,9,6,5);c.fillStyle='#737e76';c.fillRect(0,15,16,1);}
-  if(room.water.has(k)){c.fillStyle='#22506c';c.fillRect(0,0,16,16);c.fillStyle='#488399';c.fillRect(n%7+2,5,6,1);c.fillRect(3,12,4,1);}
+  if(room.water.has(k)){const image=art?.pond?.[pondTile(room,x,y)];if(image)c.drawImage(image,0,0,image.width,image.height,0,0,16,16);else{c.fillStyle='#6abdc5';c.fillRect(0,0,16,16);}}
   if(room.bridge.has(k))paintPad(c,false);
   if(room.walls.has(k)){
     if(art?.props&&room.scenery?.some(p=>p.x===x&&p.y===y)&&(room.bushes?.some(p=>p.x===x&&p.y===y)||room.rocks.some(p=>p.x===x&&p.y===y))){/* supplied prop painted below */}
@@ -58,7 +59,7 @@ function paintForestEdge(c,room,x,y,tree){
   else{col=u%3;row=v%3;}
   c.drawImage(tree,col*16,row*16,16,16,0,0,16,16);
 }
-function marshTerrainArt(scene){return {props:marshPlantImages(scene),tree:scene.textures.get('marsh-tree').getSourceImage(),grass:scene.textures.get('marsh-grass').getSourceImage(),mud:scene.textures.get('marsh-mud').getSourceImage()};}
+function marshTerrainArt(scene){return {pond:pondImages(scene),props:marshPlantImages(scene),tree:scene.textures.get('marsh-tree').getSourceImage(),grass:scene.textures.get('marsh-grass').getSourceImage(),mud:scene.textures.get('marsh-mud').getSourceImage()};}
 // Sample the supplied mud interior so transparent padding and square tile rims
 // do not repeat inside each connected patch. Only exposed shores receive a rim.
 function paintMud(c,room,x,y,image){
@@ -103,7 +104,7 @@ export function paintMarshWorld(scene,room){
   for(let y=0;y<32;y++)for(let x=0;x<32;x++)paintMarshTile(c,room,x,y,16,art);
   texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(1280,1280);scene.chamberGround=texture.getSourceImage();scene.waterSprites=[];scene.treeSprites=[];
   scene.mudEffects=scene.add.graphics();
-  for(const k of room.water){if(room.bridge.has(k))continue;const [x,y]=k.split(',').map(Number);scene.waterSprites.push(scene.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).setAlpha(.24).setTint(0x6bafbf).play('water-ripple'));}
+  scene.pondEffects=scene.add.graphics();scene.pondLife=new PondLife(room);
   scene.doorSprite=scene.add.image(620,100,'marsh-door').setDisplaySize(100,100).setOrigin(.5,.65);
   scene.heartChest=scene.add.sprite(room.heart.x*40+20,room.heart.y*40+20,'chest').setDisplaySize(40,40).setFrame(scene.marshProgress.heartTaken?3:0);
   Object.assign(document.getElementById('game').dataset,{artArea:'A02',tilePixels:16,tileset:'lantern-marsh',terrainTheme:'marsh'});
