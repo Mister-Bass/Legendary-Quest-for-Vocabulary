@@ -141,7 +141,13 @@ async function fightMarshBoss(page,{state,walkTo}){
   await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,guard:true});
   const aim=async()=>{const s=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom),b=at(makeMarshRoom().boss);await page.mouse.move(box.x+((b.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((b.y-Number(s.cameraY)-280)*z+280)/560*box.height);};
   await page.locator('#game canvas').scrollIntoViewIfNeeded();await aim();await expect(game).toHaveAttribute('data-mode','playing');await page.keyboard.down('q');
-  try{await expect.poll(async()=>(await state(page)).bossPhase,{timeout:30000,intervals:[30]}).toBe('tongue');await aim();await page.keyboard.press('f');await expect(game).toHaveAttribute('data-boss-phase','stunned');}finally{await page.keyboard.up('q');}
+  try{
+    await expect.poll(async()=>(await state(page)).bossPhase,{timeout:30000,intervals:[30]}).toBe('tongue');
+    // Hold the normal throw control until a hit lands during a lash. A single
+    // OS key tap can arrive after the short opening on a slow Canvas renderer.
+    await page.keyboard.down('f');
+    try{await expect(game).toHaveAttribute('data-boss-phase','stunned',{timeout:10000});}finally{await page.keyboard.up('f');}
+  }finally{await page.keyboard.up('q');}
   await page.keyboard.down('Space');try{await expect(game).toHaveAttribute('data-boss-phase','defeated',{timeout:6000});}finally{await page.keyboard.up('Space');}
   await expect(game).toHaveAttribute('data-boss-hp','0');await page.screenshot({path:'test-results/croak-defeated.png'});
 }
