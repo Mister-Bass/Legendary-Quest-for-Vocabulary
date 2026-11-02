@@ -233,3 +233,5 @@ The marsh map is now 1024×1024 (32 cells of 32 pixels), chamber terrain is 32 p
 Fish, mud balls, slime bolts, stones, bombs, carried fire, and the active shield have original 32×32 pixel artwork in `src/effect-art.js`; no external generation or download is required. Ripples, mist, lighting, and combat warnings remain animated effects. `src/pixel-format.js` defines the conversion rules so future supplied assets follow the same format. Browser checks verify the actual runtime sprite frame dimensions, terrain size, loading, controls, and restart.
 
 You can request further changes in plain English, for example: “Make A03 snowy, keep the 32×32 16-bit style, and preserve the paths and vocabulary.”
+
+A02 Slurgs and their split offspring use the same 32×32 Mystic Woods slime frames as the first chamber, recolored with the marsh mud's five brown/gold shades. Eyes, mouths, transparency, hiding, hopping, splitting, and collision rules are preserved. The original blue slime sheet is unchanged; `src/mud-slime-art.js` makes the palette variant at load time. Both sizes use the first chamber's idle/run poses and frame rates.

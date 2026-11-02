@@ -1,3 +1,4 @@
+import { createMudSlimeArt } from './mud-slime-art.js';
 import { pixelBevel } from './pixel-format.js';
 import { createFrogArt } from './frog-art.js';
 import { createWispArt } from './wisp-art.js';
@@ -19,7 +20,7 @@ export function createMarshArt(scene){
   createLanternArt(scene);
   createWispArt(scene);
   createOctorotArt(scene);
-  texture('marsh-slurg',c=>{rect(c,'#3c2b55',2,9,12,5);rect(c,'#7f4a9a',3,6,10,7);rect(c,'#ac72bb',5,4,6,6);rect(c,'#eee3b3',5,9,2,2);rect(c,'#eee3b3',10,9,2,2);});
+  createMudSlimeArt(scene);
   createFrogArt(scene);
   texture('marsh-door',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#37254e',4,3,8,12);rect(c,'#67458c',5,4,6,11);rect(c,'#ab83c0',7,5,2,9);for(const x of [4,8,11])rect(c,'#251e38',x,7,1,3);});
   texture('marsh-door-open',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#271e3b',4,3,8,12);rect(c,'#6e7297',5,4,6,11);rect(c,'#e6e0ac',7,5,2,10);});
@@ -29,7 +30,7 @@ export function createMarshArt(scene){
   for(const p of room.seals)c.drawImage(scene.textures.get('marsh-lantern').getSourceImage(),p.x*16-8,p.y*16-20,32,32);
   c.drawImage(scene.textures.get('marsh-door').getSourceImage(),15*16,1*16,32,32);
   c.drawImage(scene.textures.get('chest').getSourceImage(),0,0,32,32,room.heart.x*16,room.heart.y*16,16,16);
-  for(const e of room.shades){const texture=scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg'),f=texture.get(e.type==='octorok'?3:'__BASE');const size=e.type==='wisp'?24:16;c.drawImage(f.source.image,f.cutX,f.cutY,f.cutWidth,f.cutHeight,e.x*16+(16-size)/2,e.y*16+(16-size)/2,size,size);}
+  for(const e of room.shades){const texture=scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg'),f=texture.get(e.type==='octorok'?3:e.type==='slurg'?0:'__BASE');const size=e.type==='wisp'?24:e.type==='slurg'?32:16;c.drawImage(f.source.image,f.cutX,f.cutY,f.cutWidth,f.cutHeight,e.x*16+(16-size)/2,e.y*16+(16-size)/2,size,size);}
   c.drawImage(scene.textures.get('marsh-toad').getSourceImage(),room.boss.x*16-8,room.boss.y*16-8,32,32);
   c.fillStyle='#9ac96e';c.beginPath();c.moveTo(248,464);c.lineTo(240,480);c.lineTo(256,480);c.closePath();c.fill();
   preview.refresh();

@@ -43,6 +43,7 @@ export function createArt(scene){
     animate(`hero-attack-${direction}`,'player',(row+6)*6,(row+6)*6+3,14,0);
   }
   animate('slime-idle','slime',0,3,5);animate('slime-run','slime',7,13,9);
+  animate('mud-slime-idle','marsh-slurg',0,3,5);animate('mud-slime-run','marsh-slurg',7,13,9);
   animate('slime-attack','slime',14,20,10);animate('slime-death','slime',28,32,10,0);
   animate('chest-open','chest',0,3,8,0);
   animate('water-ripple','water',0,7,6);
