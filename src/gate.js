@@ -38,7 +38,7 @@ export class GateCutscene {
   }
   draw(ms){
     if(this.portal)return this.drawPortal(ms);
-    const {inserted,phase,opening}=gateFrame(ms),c=this.canvas.getContext('2d'),image=key=>this.scene.textures.get(this.scene.room.marsh&&key==='rune-door'?'marsh-door':this.scene.room.marsh&&key==='rune-door-open'?'marsh-door-open':key).getSourceImage();
+    const {inserted,phase,opening}=gateFrame(ms),c=this.canvas.getContext('2d'),image=key=>this.scene.textures.get(this.scene.state.chapter===0&&key.startsWith('rune-door')?key.replace('rune-','opening-'):this.scene.room.marsh&&key==='rune-door'?'marsh-door':this.scene.room.marsh&&key==='rune-door-open'?'marsh-door-open':key).getSourceImage();
     c.save();c.scale(2,2);c.imageSmoothingEnabled=false;c.fillStyle='#122b29';c.fillRect(0,0,128,80);
     // Stone alcove and floor remain deliberately chunky at every display size.
     for(let y=4;y<72;y+=8)for(let x=8;x<120;x+=16){c.fillStyle=(x+y)%3?'#29443c':'#314e42';c.fillRect(x+(y%16?4:0),y,14,6);}
@@ -58,7 +58,7 @@ export class GateCutscene {
       // Reveal the lit passage from the center as both leaves slide outwards.
       const w=Math.round(24*opening);c.save();c.beginPath();c.rect(64-w/2,21,w,36);c.clip();c.drawImage(image('rune-door-open'),x,y,48,48);c.restore();
     }
-    if(phase==='open')this.scene.doorSprite.setTexture(this.scene.room.marsh?'marsh-door-open':'rune-door-open');
+    if(phase==='open')this.scene.doorSprite.setTexture(this.scene.room.marsh?'marsh-door-open':this.scene.state.chapter===0?'opening-door-open':'rune-door-open');
     c.restore();
     Object.assign(this.dialog.dataset,{phase,inserted:String(inserted)});
     if(this.phase!==phase){

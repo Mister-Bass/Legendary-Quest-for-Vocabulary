@@ -1,3 +1,4 @@
+import { createOpeningArt,paintOpeningTile,OPENING_ART } from './opening-art.js';
 import { createEffectArt,EFFECT_KEYS } from './effect-art.js';
 import { preparePixelArt } from './pixel-format.js';
 import { POND_TILES } from './marsh-water.js';
@@ -29,8 +30,9 @@ export function createArt(scene){
   preparePixelArt(scene);
   createMarshArt(scene);
   createEffectArt(scene);
+  createOpeningArt(scene);
   // Read-only diagnostics allow browser tests to verify every runtime frame.
-  const keys=['player','slime','chest','guide','water','tree1','tree2','tree3','tree4','bridge','a01-tree','rune-door','rune-door-open','rune-key','marsh-pad','marsh-slurg','marsh-door','marsh-door-open','marsh-octorok','marsh-wisp','marsh-toad','marsh-lantern',...EFFECT_KEYS.map(k=>'effect-'+k),'terrain','fences','grass','puny','topdown',...POND_TILES.map(n=>'pond-'+n),...MARSH_PLANTS.map(n=>'marsh-plant-'+n),'marsh-grass','marsh-mud-tile',...scene.textures.getTextureKeys().filter(k=>/^marsh-(wisp-|lantern-lit|toad-|portal-)/.test(k))];
+  const keys=[...OPENING_ART,'player','slime','chest','guide','water','tree1','tree2','tree3','tree4','bridge','a01-tree','rune-door','rune-door-open','rune-key','marsh-pad','marsh-slurg','marsh-door','marsh-door-open','marsh-octorok','marsh-wisp','marsh-toad','marsh-lantern',...EFFECT_KEYS.map(k=>'effect-'+k),'terrain','fences','grass','puny','topdown',...POND_TILES.map(n=>'pond-'+n),...MARSH_PLANTS.map(n=>'marsh-plant-'+n),'marsh-grass','marsh-mud-tile',...scene.textures.getTextureKeys().filter(k=>/^marsh-(wisp-|lantern-lit|toad-|portal-)/.test(k))];
   document.getElementById('game').dataset.artFrames=JSON.stringify(keys.map(key=>{
     const t=scene.textures.get(key),frames=t.getFrameNames();if(!frames.length)frames.push('__BASE');
     return {key,frames:frames.map(name=>{const f=t.get(name);return [f.cutWidth,f.cutHeight];})};
@@ -52,29 +54,34 @@ export function createArt(scene){
 }
 export function paintWorld(scene,room){
   if(room.marsh)return paintMarshWorld(scene,room);
+  const opening=room.number===1;
   const art=Object.fromEntries(['grass','terrain','water','puny'].map(key=>[key,scene.textures.get(key).getSourceImage()]));
   const landscape=makeChamberLandscape(room),id='chamber-ground';
   if(scene.textures.exists(id))scene.textures.remove(id);
   // Author at native 32x32 resolution, then scale with nearest-neighbor sampling.
   const texture=scene.textures.createCanvas(id,WORLD.columns*TILE_PIXELS,WORLD.rows*TILE_PIXELS),c=texture.context;
-  for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++)paintOverworldTile(c,landscape,x,y,TILE_PIXELS,art);
+  c.imageSmoothingEnabled=false;
+  for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++){
+    if(opening)paintOpeningTile(c,landscape,x,y);else paintOverworldTile(c,landscape,x,y,TILE_PIXELS,art);
+  }
   texture.refresh();scene.add.image(0,0,id).setOrigin(0).setDisplaySize(WORLD.columns*40,WORLD.rows*40);
   scene.chamberLandscape=landscape;scene.chamberArt=art;scene.chamberGround=texture.getSourceImage();
-  Object.assign(document.getElementById('game').dataset,{artArea:room.areaId,tilePixels:TILE_PIXELS,tileset:'puny-world',terrainTheme:regionStyles[room.areaId].terrain});
+  Object.assign(document.getElementById('game').dataset,{artArea:room.areaId,tilePixels:TILE_PIXELS,tileset:opening?'opening-native-32':'puny-world',terrainTheme:regionStyles[room.areaId].terrain});
   document.getElementById('game').dataset.marsh='false';
   scene.waterSprites=[];
   for(let y=0;y<WORLD.rows;y++)for(let x=0;x<WORLD.columns;x++){
     const key=`${x},${y}`;
-    if(room.water.has(key)){
-      scene.waterSprites.push(scene.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).play('water-ripple'));
+    if(room.water.has(key)&&!(opening&&room.bridge.has(key))){
+      scene.waterSprites.push(scene.add.sprite(x*40+20,y*40+20,opening?'opening-water':'water').setDisplaySize(40,40).play(opening?'opening-water-ripple':'water-ripple'));
     }
   }
-  if(room.bridge.size)scene.add.image(402,680,'bridge').setDisplaySize(272,272).setAngle(90);
+  if(room.bridge.size&&!opening)scene.add.image(402,680,'bridge').setDisplaySize(272,272).setAngle(90);
   scene.treeSprites=room.trees.map(({x,y,variant})=>{
+    if(opening)return scene.add.sprite(x*40+20,y*40+28,'opening-tree').setOrigin(.5,.94).setDisplaySize(96,96).play('opening-tree-sway');
     const height=variant<=2?256:192;
     return scene.add.sprite(x*40+20,y*40+28,`tree${variant}`).setOrigin(.5,variant<=2?.94:.88).setDisplaySize(height*.7,height*.7).setTint(regionStyles[room.areaId].tree).play(`tree${variant}-sway`);
   });
   const x=room.exit.x*40+20,y=room.exit.y*40+20;
-  scene.doorSprite=scene.add.image(x,y,'rune-door').setDisplaySize(80,80).setOrigin(.5,.65);
+  scene.doorSprite=scene.add.image(x,y,opening?'opening-door':'rune-door').setDisplaySize(80,80).setOrigin(.5,.65);
   return scene.doorSprite;
 }

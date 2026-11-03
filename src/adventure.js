@@ -93,7 +93,7 @@ class Adventure extends Phaser.Scene {
     this.stationSprites=this.room.seals.map((point,index)=>{
       const {x,y}=tilePosition(point);
       const lit=this.state.sealed.has(`${this.state.chapter}:${index}`);
-      const sprite=this.room.marsh?this.add.sprite(x,y-2,lit?'marsh-lantern-lit':'marsh-lantern').setDisplaySize(80,80).setOrigin(.5,.875):this.add.sprite(x,y-2,'chest').setDisplaySize(40,40).setFrame(lit?3:0);
+      const sprite=this.room.marsh?this.add.sprite(x,y-2,lit?'marsh-lantern-lit':'marsh-lantern').setDisplaySize(80,80).setOrigin(.5,.875):this.add.sprite(x,y-2,this.state.chapter===0?'opening-chest':'chest').setDisplaySize(40,40).setFrame(lit?3:0);
       this.add.text(x,y+25,['I','II','III'][index],{fontFamily:'Georgia',fontSize:14,color:'#e8d7a6'}).setOrigin(.5);
       return sprite;
     });
@@ -138,7 +138,7 @@ class Adventure extends Phaser.Scene {
   near(point){return Math.hypot(this.state.x-point.x,this.state.y-point.y)<1.65;}
   roomKeys() {return [0,1,2].filter(i=>this.state.sealed.has(`${this.state.chapter}:${i}`)).length;}
   drawGate() {
-    this.doorSprite.setTexture(this.room.marsh?portalTexture(this.marshProgress.lit,this.action?.clock||0):'rune-door');
+    this.doorSprite.setTexture(this.room.marsh?portalTexture(this.marshProgress.lit,this.action?.clock||0):this.state.chapter===0?'opening-door':'rune-door');
     document.getElementById('game').dataset.portalOpen=String(!!this.room.marsh&&portalReady(this.marshProgress.lit));
     document.getElementById('game').dataset.doorReady=String(this.roomKeys()===3&&(!this.room.marsh||portalReady(this.marshProgress.lit)));
   }
@@ -235,7 +235,7 @@ class Adventure extends Phaser.Scene {
     if(s.sealed.has(`${s.chapter}:${index}`)){this.feedback('This seal is already restored. Continue to another seal or the gate.');return;}
     if(s.mode==='opening')return;
     this.activeTrial=index;this.trialFeedback='';s.mode='opening';this.renderPuzzle();
-    const chest=this.stationSprites[index];if(!this.room.marsh)chest.clearTint().play('chest-open');
+    const chest=this.stationSprites[index];if(!this.room.marsh)chest.clearTint().play(this.state.chapter===0?'opening-chest-open':'chest-open');
     this.feedback(this.room.marsh?'The Wisp Flame kindles the guardian lantern. Its vocabulary trial rises…':'The chest opens. A vocabulary question rises from within…');
     const text=this.add.text(chest.x,chest.y-12,this.question.prompt,{fontFamily:'Georgia',fontSize:12,color:'#fff4cf',backgroundColor:'#21372f',padding:{x:10,y:8},wordWrap:{width:205},align:'center'}).setOrigin(.5,1).setDepth(100).setAlpha(0);
     this.worldLayer.add(text);this.floatingQuestion=text;this.render();
