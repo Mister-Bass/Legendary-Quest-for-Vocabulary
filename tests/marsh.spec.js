@@ -170,7 +170,8 @@ test('portal requires all three lit lanterns and animates only when active',()=>
 test('Croak releases the final flame needed for the third lantern and portal travel',async({page})=>{
   // Exercise the shield-only route; other reward weaknesses are covered separately.
   await page.addInitScript(()=>{const original=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=array=>{if(array instanceof Uint32Array&&array.length===1){array[0]=0x20000000;return array;}return original(array);};});
-  test.setTimeout(300000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  // Shield-only combat can include real checkpoint recoveries on WebKit.
+  test.setTimeout(420000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/?area=A02');const game=page.locator('#game');await expect(game).toHaveAttribute('data-ready','true');
   await begin(page);
   for(let i=0;i<3;i++){
