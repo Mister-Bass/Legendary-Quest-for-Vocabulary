@@ -186,6 +186,9 @@ test('three lanterns open the portal and permit travel before Croak is defeated'
     await finishTrial(page,i);
   }
   await expect(game).toHaveAttribute('data-portal-open','true');await expect(game).toHaveAttribute('data-door-ready','true');
+  // Observe the final-lantern emergence before starting the exit route; the
+  // answer handler briefly reports playing before its queued boss event runs.
+  await expect(game).toHaveAttribute('data-arena-gate-lift','1.00',{timeout:8000});
   await expect(game).toHaveAttribute('data-mode','playing',{timeout:8000});
   const frame=await game.getAttribute('data-portal-frame');await expect.poll(()=>game.getAttribute('data-portal-frame')).not.toBe(frame);
   await expect(game).toHaveAttribute('data-boss-hp','6');await expect(game).toHaveAttribute('data-arena-gate-closed','true');
