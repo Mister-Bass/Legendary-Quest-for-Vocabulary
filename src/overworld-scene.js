@@ -1,3 +1,4 @@
+import { portalTexture } from './portal-art.js';
 import { pondImages } from './marsh-water.js';
 import { marshPlantImages } from './marsh-scenery.js';
 import Phaser from 'phaser';
@@ -17,7 +18,7 @@ export class OverworldScene extends Phaser.Scene {
     this.art=art;
     art.pond=pondImages(this);
     art.marshProps=marshPlantImages(this);
-    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])art[key]=this.textures.get(texture).getSourceImage();
+    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor',portalTexture(this.adventure.marshProgress.lit)],['marshLantern','marsh-lantern']])art[key]=this.textures.get(texture).getSourceImage();
     // Bake static scenery into small chunks. Only trees and water need per-frame animation.
     const chunkKeys=[];
     for(let cy=0;cy<54;cy+=12)for(let cx=0;cx<72;cx+=12){

@@ -5,7 +5,7 @@ import { makeMarshRoom,cell } from './marsh-map.js';
 export const OVERWORLD = { columns:72, rows:54, tileSize:40, areaWidth:24, areaHeight:18 };
 export const areas = [
   {id:'A01',name:'Whisperwood',biome:'forest',color:'#385e40',description:'A dense northern woodland with winding clearings and swaying trees.',landmark:'The Listening Grove'},
-  {id:'A02',name:'Lantern Marsh',biome:'marsh',color:'#47756a',description:'A forgotten northern shrine watches over a misty central pond. Carry Wisp Flames to three guardian lanterns and cross the sinking lily pads.',landmark:'Lantern Marsh · South Entrance',chapter:1},
+  {id:'A02',name:'Lantern Marsh',biome:'marsh',color:'#47756a',description:'A dormant northern portal watches over a misty central pond. Carry Wisp Flames to three guardian lanterns and cross the sinking lily pads.',landmark:'Lantern Marsh · South Entrance',chapter:1},
   {id:'A03',name:'Crown Heights',biome:'highlands',color:'#847c65',description:'Tiered stone ridges frame a quiet northeastern lookout.',landmark:'The Crown Lookout'},
   {id:'A04',name:'Citizens’ Commons',biome:'meadow',color:'#688951',description:'Open lawns and stone courtyards around the Citizens’ Court.',landmark:'Citizens’ Court',chapter:2},
   {id:'A05',name:'Lantern Crossroads',biome:'crossroads',color:'#788b51',description:'A white-walled citadel, formal gardens, and a blue moat anchor the heart of the world.',landmark:'The Lantern Citadel'},

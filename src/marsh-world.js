@@ -1,3 +1,4 @@
+import { portalReady,portalTexture } from './portal-art.js';
 import { paintEffect } from './effect-art.js';
 import { drawFrogEncounter } from './frog-art.js';
 import { wispTexture,paintWispAura } from './wisp-art.js';
@@ -54,7 +55,7 @@ export class MarshWorld{
   events(){
     for(const e of this.model.events.splice(0)){
       if(e.type==='boss-awakened'){this.stop();this.scene.state.mode='boss-rise';this.scene.cameras.main.stopFollow();this.scene.feedback('The final flame awakens Grandfather Croak. The southern gate rises!');this.scene.render();}
-      if(e.type==='boss-ready'){this.scene.state.mode='playing';this.invulnerableUntil=this.clock+1.2;this.scene.cameras.main.setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);this.scene.feedback('The arena is sealed. Throw a stone or bomb during the tongue lash, then sword the stunned belly.');this.scene.render();}
+      if(e.type==='boss-ready'){this.scene.state.mode='playing';this.invulnerableUntil=this.clock+1.2;this.scene.cameras.main.setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);this.scene.feedback('The arena is sealed. The northern portal is open. Enter it to continue, or throw during Croak’s tongue lash and strike its stunned belly.');this.scene.render();}
       if(e.type==='boss-defeated'){this.scene.drawGate();this.scene.render();}
 
       if(e.type==='hurt'){this.scene.hurt(e.message);this.scene.render();}
@@ -79,6 +80,7 @@ export class MarshWorld{
       if(e.type==='octorok'){const pose=octorotPose(e,m.hero,this.clock);sprite.setFrame(pose.frame).setFlipX(pose.flipX);}
       this.scene.shades.push({...e,sprite});
     }
+    this.scene.doorSprite.setTexture(portalTexture(m.progress.lit,this.clock));
     drawFrogEncounter(this);
     const g=this.effects;g.clear();
     this.padRipples=0;
@@ -113,7 +115,7 @@ export class MarshWorld{
   }
   telemetry(){
     const m=this.model,s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{marsh:'true',flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),visiblePads:[...this.scene.padSprites.values()].filter(s=>s.visible).length,padRipples:this.padRipples||0,arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
+    Object.assign(document.getElementById('game').dataset,{marsh:'true',portalOpen:String(portalReady(m.progress.lit)),portalFrame:this.scene.doorSprite.texture.key,flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),visiblePads:[...this.scene.padSprites.values()].filter(s=>s.visible).length,padRipples:this.padRipples||0,arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
     document.getElementById('wayfinder').textContent=`Lanterns ${m.progress.lit.filter(Boolean).length}/3 · Wisp Flame ${Math.max(0,m.flameUntil-m.clock).toFixed(1)}s · Heart Piece ${m.progress.heartTaken?'1/4':'0/4'}`;
     document.getElementById('combat-state').textContent='Space Sword · Q/Right-click Shield · Shift Roll · F Throw · B Bomb';
   }

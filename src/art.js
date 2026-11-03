@@ -30,7 +30,7 @@ export function createArt(scene){
   createMarshArt(scene);
   createEffectArt(scene);
   // Read-only diagnostics allow browser tests to verify every runtime frame.
-  const keys=['player','slime','chest','guide','water','tree1','tree2','tree3','tree4','bridge','a01-tree','rune-door','rune-door-open','rune-key','marsh-pad','marsh-slurg','marsh-door','marsh-door-open','marsh-octorok','marsh-wisp','marsh-toad','marsh-lantern',...EFFECT_KEYS.map(k=>'effect-'+k),'terrain','fences','grass','puny','topdown',...POND_TILES.map(n=>'pond-'+n),...MARSH_PLANTS.map(n=>'marsh-plant-'+n),'marsh-grass','marsh-mud-tile',...scene.textures.getTextureKeys().filter(k=>/^marsh-(wisp-|lantern-lit|toad-)/.test(k))];
+  const keys=['player','slime','chest','guide','water','tree1','tree2','tree3','tree4','bridge','a01-tree','rune-door','rune-door-open','rune-key','marsh-pad','marsh-slurg','marsh-door','marsh-door-open','marsh-octorok','marsh-wisp','marsh-toad','marsh-lantern',...EFFECT_KEYS.map(k=>'effect-'+k),'terrain','fences','grass','puny','topdown',...POND_TILES.map(n=>'pond-'+n),...MARSH_PLANTS.map(n=>'marsh-plant-'+n),'marsh-grass','marsh-mud-tile',...scene.textures.getTextureKeys().filter(k=>/^marsh-(wisp-|lantern-lit|toad-|portal-)/.test(k))];
   document.getElementById('game').dataset.artFrames=JSON.stringify(keys.map(key=>{
     const t=scene.textures.get(key),frames=t.getFrameNames();if(!frames.length)frames.push('__BASE');
     return {key,frames:frames.map(name=>{const f=t.get(name);return [f.cutWidth,f.cutHeight];})};

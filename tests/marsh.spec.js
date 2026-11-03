@@ -1,3 +1,4 @@
+import { portalReady,portalTexture } from '../src/portal-art.js';
 import { test,expect } from '@playwright/test';
 import { makeMarshRoom,at,cell,marshWalkable } from '../src/marsh-map.js';
 import { MarshModel,bossTongue } from '../src/marsh-model.js';
@@ -113,7 +114,7 @@ test('marsh real-input mission restores all ten words and three lanterns',async(
   await expect(page.locator('#game')).toHaveAttribute('data-learned','10');await expect(page.locator('#game')).toHaveAttribute('data-lanterns','[true,true,true]');
   await page.screenshot({path:test.info().outputPath('lantern-marsh-island-restored.png')});
   await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','true');
-  await expect(page.locator('#game')).toHaveAttribute('data-door-ready','false');
+  await expect(page.locator('#game')).toHaveAttribute('data-door-ready','true');
   await expect(page.locator('#game')).toHaveAttribute('data-mode','boss-rise');
   const frozen=await state(page);await page.keyboard.down('w');await page.waitForTimeout(200);await page.keyboard.up('w');expect((await state(page)).px).toBe(frozen.px);expect((await state(page)).py).toBe(frozen.py);
   await page.waitForTimeout(400);await page.screenshot({path:test.info().outputPath('croak-rising.png')});
@@ -163,4 +164,40 @@ test('frog tongue damage follows its extending and retracting tip',()=>{
   m.tick(.01);expect(bossTongue(b,m.clock).length).toBeLessThan(20);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(0);
   advance(m,.25);expect(bossTongue(b,m.clock).length).toBeGreaterThan(150);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(1);
   m.events=[];m.invulnerable=0;b.phaseAt=m.clock-.87;m.tick(.01);expect(bossTongue(b,m.clock).length).toBeLessThan(25);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(0);
+});
+
+test('portal requires all three lit lanterns and animates only when active',()=>{
+  for(let mask=0;mask<8;mask++){
+    const lit=[0,1,2].map(i=>!!(mask&(1<<i)));
+    expect(portalReady(lit)).toBe(mask===7);
+    expect(portalTexture(lit,0).startsWith('marsh-portal-open-')).toBe(mask===7);
+    if(mask!==7)expect(portalTexture(lit,0)).toBe(portalTexture(lit,1));
+  }
+  expect(portalReady([])).toBe(false);
+  expect(portalTexture([true,true,true],0)).not.toBe(portalTexture([true,true,true],.125));
+});
+
+test('three lanterns open the portal and permit travel before Croak is defeated',async({page})=>{
+  test.setTimeout(300000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/?area=A02');const game=page.locator('#game');await expect(game).toHaveAttribute('data-ready','true');
+  await page.getByRole('button',{name:'Begin adventure'}).click();
+  for(let i=0;i<3;i++){
+    await expect(game).toHaveAttribute('data-portal-open','false');await expect(game).toHaveAttribute('data-door-ready','false');
+    await finishTrial(page,i);
+  }
+  await expect(game).toHaveAttribute('data-portal-open','true');await expect(game).toHaveAttribute('data-door-ready','true');
+  await expect(game).toHaveAttribute('data-mode','playing',{timeout:8000});
+  const frame=await game.getAttribute('data-portal-frame');await expect.poll(()=>game.getAttribute('data-portal-frame')).not.toBe(frame);
+  await expect(game).toHaveAttribute('data-boss-hp','6');await expect(game).toHaveAttribute('data-arena-gate-closed','true');
+  await waitForMarshPads(page,state);
+  await guardMarshExit(page,state,()=>walkTo(page,makeMarshRoom().exit,{avoidEnemies:false,attack:false}));
+  if((await state(page)).mode==='playing')await page.keyboard.press('e');
+  await expect(page.locator('#gate-cutscene')).toBeVisible();await expect(page.locator('#gate-cutscene')).toHaveAttribute('data-phase','portal');
+  await expect(page.locator('#gate-title')).toHaveText('The lantern portal');
+  await expect(game).toHaveAttribute('data-boss-hp','6');
+  await page.screenshot({path:test.info().outputPath('lantern-portal-travel.png')});
+  await expect(game).toHaveAttribute('data-chapter','2',{timeout:5000});
+  await page.getByRole('button',{name:'Restart adventure'}).click();
+  await expect(game).toHaveAttribute('data-chapter','1');await expect(game).toHaveAttribute('data-portal-open','false');await expect(game).toHaveAttribute('data-keys','0');
+  expect(errors).toEqual([]);
 });

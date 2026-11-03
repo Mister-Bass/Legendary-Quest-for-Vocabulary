@@ -1,3 +1,4 @@
+import { portalTexture } from './portal-art.js';
 import { pondImages } from './marsh-water.js';
 import { marshPlantImages } from './marsh-scenery.js';
 import { areas, areaAt, entranceFor, makeOverworld, drawAtlas } from './overworld.js';
@@ -9,7 +10,7 @@ export class Atlas {
     this.art=Object.fromEntries(['grass','terrain','water','puny','topdown','tree1','tree2','tree3','tree4'].map(key=>[key,adventure.textures.get(key).getSourceImage()]));
     this.art.pond=pondImages(adventure);
     this.art.marshProps=marshPlantImages(adventure);
-    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor','marsh-door'],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
+    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor',portalTexture(adventure.marshProgress.lit)],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
     $('overworld-toggle').addEventListener('click',()=>this.toggle());
     $('close-atlas').addEventListener('click',()=>this.close());
     $('atlas').addEventListener('cancel',event=>{event.preventDefault();this.close();});
@@ -31,6 +32,7 @@ export class Atlas {
     this.select(current.id);$('atlas').showModal();
   }
   select(id){
+    this.art.marshDoor=this.adventure.textures.get(portalTexture(this.adventure.marshProgress.lit,this.adventure.action?.clock||0)).getSourceImage();
     this.selected=id;const a=areas.find(a=>a.id===id),chapter=a.chapter;
     drawAtlas($('atlas-map'),this.map,{selected:id,position:this.adventure.overworldPosition,art:this.art});
     $('area-title').textContent=`${a.id} · ${a.name}`;

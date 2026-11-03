@@ -58,7 +58,7 @@ export class MarshModel{
   split(enemy){enemy.active=false;for(const side of [-1,1])this.enemies.push({x:enemy.x+side*12,y:enemy.y,home:{x:enemy.x,y:enemy.y},type:'small-slurg',id:this.enemies.length,hp:1,active:true,next:this.clock+.4,lastSwing:this.attackAt});this.emit('message',{message:'The Slurg split into two small slimes!'});}
   defeat(e){e.active=false;if(e.type==='wisp'){e.respawn=this.clock+6;this.drops.push({x:e.x,y:e.y,until:this.clock+12});this.emit('message',{message:'A Wisp Flame dropped! Walk into it. You have ten seconds after pickup.'});}}
   hitBoss(){if(!this.boss.active||this.boss.phase!=='stunned'||this.boss.lastSwing===this.attackAt||dist(this.hero,this.boss)>100)return;
-    this.boss.lastSwing=this.attackAt;if(--this.boss.hp<=0){this.boss.active=false;this.boss.phase='defeated';this.boss.defeatedAt=this.clock;this.progress.bossDefeated=true;this.emit('message',{message:'Grandfather Croak is defeated. The gate lowers, the shrine opens, and the lily pads settle.'});this.emit('boss-defeated');}}
+    this.boss.lastSwing=this.attackAt;if(--this.boss.hp<=0){this.boss.active=false;this.boss.phase='defeated';this.boss.defeatedAt=this.clock;this.progress.bossDefeated=true;this.emit('message',{message:'Grandfather Croak is defeated. The southern gate lowers and the lily pads settle. The northern portal remains open.'});this.emit('boss-defeated');}}
   tick(dt,input={}){
     this.clock+=dt;
     if(this.boss.phase==='rising'){

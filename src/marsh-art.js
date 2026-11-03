@@ -1,3 +1,4 @@
+import { createPortalArt } from './portal-art.js';
 import { createMudSlimeArt } from './mud-slime-art.js';
 import { pixelBevel } from './pixel-format.js';
 import { createFrogArt } from './frog-art.js';
@@ -22,13 +23,13 @@ export function createMarshArt(scene){
   createOctorotArt(scene);
   createMudSlimeArt(scene);
   createFrogArt(scene);
+  createPortalArt(scene);
   texture('marsh-door',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#37254e',4,3,8,12);rect(c,'#67458c',5,4,6,11);rect(c,'#ab83c0',7,5,2,9);for(const x of [4,8,11])rect(c,'#251e38',x,7,1,3);});
   texture('marsh-door-open',c=>{rect(c,'#6c777d',1,1,14,15);rect(c,'#a8afb0',2,0,12,3);rect(c,'#271e3b',4,3,8,12);rect(c,'#6e7297',5,4,6,11);rect(c,'#e6e0ac',7,5,2,10);});
   const preview=scene.textures.createCanvas('marsh-preview',1024,1024),c=preview.context,room=makeMarshRoom(),art=marshTerrainArt(scene);
   c.imageSmoothingEnabled=false;c.scale(2,2);
   for(let y=0;y<32;y++)for(let x=0;x<32;x++)paintMarshTile(c,room,x,y,16,art);
   for(const p of room.seals)c.drawImage(scene.textures.get('marsh-lantern').getSourceImage(),p.x*16-8,p.y*16-20,32,32);
-  c.drawImage(scene.textures.get('marsh-door').getSourceImage(),15*16,1*16,32,32);
   c.drawImage(scene.textures.get('chest').getSourceImage(),0,0,32,32,room.heart.x*16,room.heart.y*16,16,16);
   for(const e of room.shades){const texture=scene.textures.get(e.type==='wisp'?'marsh-wisp':e.type==='octorok'?'marsh-octorok':'marsh-slurg'),f=texture.get(e.type==='octorok'?3:e.type==='slurg'?0:'__BASE');const size=e.type==='wisp'?24:e.type==='slurg'?32:16;c.drawImage(f.source.image,f.cutX,f.cutY,f.cutWidth,f.cutHeight,e.x*16+(16-size)/2,e.y*16+(16-size)/2,size,size);}
   c.drawImage(scene.textures.get('marsh-toad').getSourceImage(),room.boss.x*16-8,room.boss.y*16-8,32,32);
@@ -114,7 +115,7 @@ export function paintMarshWorld(scene,room){
   scene.pondEffects=scene.add.graphics();scene.pondLife=new PondLife(room);
   scene.padSprites=new Map(room.pads.map(p=>[cell(p.x,p.y),scene.add.image(p.x*40+20,p.y*40+20,'marsh-pad').setDisplaySize(40,40)]));
   scene.lanternGlow=scene.add.graphics();scene.wispGlow=scene.add.graphics();
-  scene.doorSprite=scene.add.image(620,100,'marsh-door').setDisplaySize(100,100).setOrigin(.5,.65);
+  scene.doorSprite=scene.add.image(620,100,'marsh-portal-dormant-0').setDisplaySize(100,100).setOrigin(.5,.65);
   scene.heartChest=scene.add.sprite(room.heart.x*40+20,room.heart.y*40+20,'chest').setDisplaySize(40,40).setFrame(scene.marshProgress.heartTaken?3:0);
   Object.assign(document.getElementById('game').dataset,{artArea:'A02',tilePixels:32,tileset:'lantern-marsh',terrainTheme:'marsh'});
 }
