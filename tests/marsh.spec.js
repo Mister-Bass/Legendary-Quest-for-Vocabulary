@@ -1,3 +1,4 @@
+import {begin,restart} from './play-input.js';
 import { portalReady,portalTexture } from '../src/portal-art.js';
 import { test,expect } from '@playwright/test';
 import { makeMarshRoom,at,cell,marshWalkable } from '../src/marsh-map.js';
@@ -27,7 +28,7 @@ test('marsh pads sink after two seconds, rescue the player, and regrow',()=>{
   const edge=new MarshModel(makeMarshRoom()),pair=edge.room.pads.find(p=>edge.room.bridge.has(cell(p.x+1,p.y)));Object.assign(edge.hero,{x:(pair.x+1)*40+2,y:pair.y*40+20});edge.padTimers.set(cell(pair.x,pair.y),{deadline:0,sunkUntil:0});edge.tick(.02);expect(edge.falls).toBe(1);expect(edge.hero.x).toBe(edge.safe.x);expect(edge.hero.y).toBe(edge.safe.y);
 });
 test('marsh mud slows movement; facing shields and rolls avoid mud balls',()=>{
-  const r=makeMarshRoom(),m=new MarshModel(r);Object.assign(m.hero,at({x:5,y:25}));advance(m,.1,{up:true});expect(m.speed).toBe(95);
+  const r=makeMarshRoom(),m=new MarshModel(r,undefined,'shield');Object.assign(m.hero,at({x:5,y:25}));advance(m,.1,{up:true});expect(m.speed).toBe(95);
   Object.assign(m.hero,at({x:8,y:27}),{facing:'up'});m.clock=3;m.bolts=[{x:m.hero.x,y:m.hero.y-15,vx:0,vy:0,until:10}];m.tick(.01,{shield:true});expect(m.blocks).toBe(1);expect(m.slowUntil).toBe(0);
   m.bolts=[{x:m.hero.x,y:m.hero.y-15,vx:0,vy:0,until:10}];m.tick(.01,{roll:true});expect(m.rolls).toBe(1);expect(m.slowUntil).toBe(0);
 });
@@ -47,9 +48,9 @@ test('two bank lanterns awaken Croak; the optional Heart Piece does not',()=>{
 });
 test('marsh practice loads, pauses timers for its map, and exposes responsive controls',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?area=A02');
-  await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
+  await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await begin(page);
   await expect(page.locator('#chapter-title')).toHaveText('Lantern Marsh');await expect(page.locator('#game')).toHaveAttribute('data-marsh','true');
-  await page.keyboard.down('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','true');await page.keyboard.up('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','false');
+  const shield=(await state(page)).item==='shield';await page.keyboard.down('q');await expect(page.locator('#game')).toHaveAttribute('data-shield',String(shield));await page.keyboard.up('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','false');
   await page.keyboard.press('Shift');await expect(page.locator('#game')).toHaveAttribute('data-rolls','1');
   await page.getByRole('button',{name:'Marsh map',exact:true}).click();await expect(page.locator('#marsh-map')).toBeVisible();
   // Compare clear terrain cells with the supplied images, including mud alpha.
@@ -101,20 +102,20 @@ test('marsh real-input mission restores all ten words and three lanterns',async(
     page.on('pageerror',error=>console.error('Game error',error.stack));
   }
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
+  await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await begin(page);
   for(let i=0;i<2;i++){await finishTrial(page,i);await expect(page.locator('#game')).toHaveAttribute('data-keys',String(i+1));}
   await expect(page.locator('#game')).toHaveAttribute('data-portal-open','false');
   await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-lift','1.00',{timeout:8000});
   await page.screenshot({path:test.info().outputPath('arena-gate-rising.png')});
   await expect(page.locator('#game')).toHaveAttribute('data-mode','playing',{timeout:8000});
-  const learned=(await state(page)).learned;
+  const learned=(await state(page)).learned,earned=(await state(page)).item;
   // Lose through real attacks, then preserve the two bank lanterns on retry.
   await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,attack:false});
   await expect.poll(async()=>(await state(page)).bossPhase,{timeout:20000,intervals:[30]}).toBe('tongue');
   await page.screenshot({path:test.info().outputPath('frog-tongue.png')});
   await expect(page.locator('#game')).toHaveAttribute('data-mode','lost',{timeout:45000});
   await page.getByRole('button',{name:'Return to chamber'}).click();
-  await expect(page.locator('#game')).toHaveAttribute('data-keys','2');await expect(page.locator('#game')).toHaveAttribute('data-learned',learned);
+  await expect(page.locator('#game')).toHaveAttribute('data-keys','2');await expect(page.locator('#game')).toHaveAttribute('data-learned',learned);await expect(page.locator('#game')).toHaveAttribute('data-item',earned);
   await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','true');expect(Number((await state(page)).y)).toBeCloseTo(16,0);
   await finishTrial(page,2);
   await expect(page.locator('#game')).toHaveAttribute('data-final-flame-used','true');
@@ -129,11 +130,11 @@ test('marsh real-input mission restores all ten words and three lanterns',async(
 
 
 test('optional island chest heals without waking the frog and restart resets it',async({page})=>{
-  test.setTimeout(180000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await page.getByRole('button',{name:'Begin adventure'}).click();
+  test.setTimeout(180000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await begin(page);
   const room=makeMarshRoom();await walkTo(page,{x:16,y:26},{exact:true,avoidEnemies:false});await walkTo(page,room.heart,{avoidEnemies:false});
   if((await state(page)).heartPiece!=='true')await contact(page,room.heart,async()=>(await state(page)).heartPiece==='true');
   await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','true');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','false');
-  await page.getByRole('button',{name:'Restart adventure'}).click();await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','false');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');
+  await restart(page);await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','false');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');
 });
 
 test('raised arena gate survives checkpoint recovery and lowers after Croak falls',()=>{
@@ -167,9 +168,11 @@ test('portal requires all three lit lanterns and animates only when active',()=>
 });
 
 test('Croak releases the final flame needed for the third lantern and portal travel',async({page})=>{
+  // Exercise the shield-only route; other reward weaknesses are covered separately.
+  await page.addInitScript(()=>{const original=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=array=>{if(array instanceof Uint32Array&&array.length===1){array[0]=0x20000000;return array;}return original(array);};});
   test.setTimeout(300000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/?area=A02');const game=page.locator('#game');await expect(game).toHaveAttribute('data-ready','true');
-  await page.getByRole('button',{name:'Begin adventure'}).click();
+  await begin(page);
   for(let i=0;i<3;i++){
     await expect(game).toHaveAttribute('data-portal-open','false');await expect(game).toHaveAttribute('data-door-ready','false');
     await finishTrial(page,i);
@@ -187,7 +190,7 @@ test('Croak releases the final flame needed for the third lantern and portal tra
   await expect(game).toHaveAttribute('data-boss-hp','0');
   await page.screenshot({path:test.info().outputPath('lantern-portal-travel.png')});
   await expect(game).toHaveAttribute('data-chapter','2',{timeout:5000});
-  await page.getByRole('button',{name:'Restart adventure'}).click();
+  await restart(page);
   await expect(game).toHaveAttribute('data-chapter','1');await expect(game).toHaveAttribute('data-portal-open','false');await expect(game).toHaveAttribute('data-keys','0');
   expect(errors).toEqual([]);
 });

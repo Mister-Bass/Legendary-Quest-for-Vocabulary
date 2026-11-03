@@ -1,3 +1,4 @@
+import { itemShot } from './equipment.js';
 import { at,cell,marshWalkable,marshProgress,FLAME_SECONDS,PAD_SECONDS } from './marsh-map.js';
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),dirs={down:[0,1],up:[0,-1],left:[-1,0],right:[1,0]};
 export function bossTongue(b,clock){
@@ -6,7 +7,8 @@ export function bossTongue(b,clock){
   return {x:b.x,y:b.y,tipX:b.x+dx/d*length,tipY:b.y+dy/d*length,length};
 }
 export class MarshModel{
-  constructor(room,progress=marshProgress()){
+  constructor(room,progress=marshProgress(),item=null){
+    this.item=item;
     this.room=room;this.progress=progress;this.clock=0;progress.bossAwakened=!!progress.bossAwakened||(progress.lit[0]&&progress.lit[1]);this.hero={...at(progress.bossAwakened&&!progress.bossDefeated?room.arenaSpawn:room.spawn),facing:'up'};this.safe={...this.hero};
     this.flameUntil=0;this.flameSource=null;this.slowUntil=0;this.invulnerable=1;this.attackAt=-10;this.rollAt=-10;this.throwAt=-10;this.padTimers=new Map();this.drops=[];this.bolts=[];this.items=[];this.events=[];this.blocks=0;this.falls=0;this.rolls=0;
     this.enemies=room.shades.map((p,i)=>({...at(p),home:at(p),type:p.type,id:i,hp:p.type==='octorok'?2:1,active:true,hidden:p.type==='slurg',next:1+i*.47,lastSwing:-10,respawn:0}));
@@ -25,10 +27,11 @@ export class MarshModel{
   hurt(message){if(this.clock<this.invulnerable||this.clock-this.rollAt<.42)return;this.invulnerable=this.clock+1.2;this.emit('hurt',{message});}
   attack(){if(this.clock-this.attackAt<.45)return;this.attackAt=this.clock;}
   roll(){if(this.clock-this.rollAt<1)return;this.rollAt=this.clock;this.rolls++;}
-  throwItem(bomb=false){
-    if(this.clock-this.throwAt<(bomb?2: .65))return;this.throwAt=this.clock;
-    let [dx,dy]=dirs[this.hero.facing];if(this.aim){const d=dist(this.hero,this.aim);if(d>8){dx=(this.aim.x-this.hero.x)/d;dy=(this.aim.y-this.hero.y)/d;}}this.items.push({x:this.hero.x,y:this.hero.y,vx:dx*340,vy:dy*340,until:this.clock+1.6,bomb});
+  useItem(){
+    const p=itemShot(this.item,this.hero,this.aim,this.clock,this.throwAt);if(!p)return;
+    this.throwAt=this.clock;this.items.push(p);
   }
+  throwItem(bomb=false){if(this.item===(bomb?'bomb':'stone'))this.useItem();}
   light(index){
     if(this.progress.lit[index])return;
     this.progress.lit[index]=true;this.emit('message',{message:`Guardian lantern ${index+1} is lit.`});
@@ -84,9 +87,9 @@ export class MarshModel{
     }
     const h=this.hero;let dx=Number(!!input.right)-Number(!!input.left),dy=Number(!!input.down)-Number(!!input.up),m=Math.hypot(dx,dy);
     if(m){dx/=m;dy/=m;h.facing=Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down';}
-    if(input.shield&&this.aim){const ax=this.aim.x-h.x,ay=this.aim.y-h.y;h.facing=Math.abs(ax)>Math.abs(ay)?ax<0?'left':'right':ay<0?'up':'down';}
-    if(input.attack)this.attack();if(input.roll)this.roll();if(input.throw)this.throwItem();if(input.bomb)this.throwItem(true);
-    const rolling=this.clock-this.rollAt<.34,shield=!!input.shield&&!rolling;
+    if(this.item==='shield'&&(input.shield||input.item)&&this.aim){const ax=this.aim.x-h.x,ay=this.aim.y-h.y;h.facing=Math.abs(ax)>Math.abs(ay)?ax<0?'left':'right':ay<0?'up':'down';}
+    if(input.attack)this.attack();if(input.roll)this.roll();if(input.item)this.useItem();if(input.throw)this.throwItem();if(input.bomb)this.throwItem(true);
+    const rolling=this.clock-this.rollAt<.34,shield=this.item==='shield'&&!!(input.shield||input.item)&&!rolling;
     if(rolling)[dx,dy]=dirs[h.facing];
     const muddy=this.room.mud.has(cell(Math.floor(h.x/40),Math.floor(h.y/40))),speed=rolling?340:(muddy||this.slowUntil>this.clock?95:185)*(shield?.55:1);
     this.speed=m||rolling?speed:0;this.shield=shield;this.move(h,dx*speed*dt,dy*speed*dt);
@@ -142,7 +145,11 @@ export class MarshModel{
       }
       if(b.phase==='tongue'){
         const tongue=bossTongue(b,this.clock),vx=tongue.tipX-b.x,vy=tongue.tipY-b.y,t=Math.max(0,Math.min(1,((h.x-b.x)*vx+(h.y-b.y)*vy)/(vx*vx+vy*vy||1)));
-        if(tongue.length>8&&Math.hypot(h.x-b.x-t*vx,h.y-b.y-t*vy)<22)this.hurt('Grandfather Croak lashes its tongue. Roll aside, then throw a stone or bomb during the lash.');
+        if(tongue.length>8&&Math.hypot(h.x-b.x-t*vx,h.y-b.y-t*vy)<22){
+          const [fx,fy]=dirs[h.facing],front=((b.x-h.x)*fx+(b.y-h.y)*fy)/Math.max(1,dist(b,h));
+          if(shield&&front>0){b.phase='stunned';b.phaseAt=this.clock;b.until=this.clock+3.2;this.blocks++;this.emit('message',{message:'Tongue blocked! Croak is stunned — strike his belly.'});}
+          else this.hurt('Grandfather Croak lashes its tongue. Roll aside; use your earned item during the lash.');
+        }
       }
     }
   }

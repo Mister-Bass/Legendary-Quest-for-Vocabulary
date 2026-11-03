@@ -31,6 +31,12 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
       near.sort((a,b)=>Math.abs(a.x*40+20-Number(s.px))+Math.abs(a.y*40+20-Number(s.py))-Math.abs(b.x*40+20-Number(s.px))-Math.abs(b.y*40+20-Number(s.py)));
       expect(near.length).toBeGreaterThan(0);await go(near[0].x,near[0].y);continue;
     }
+    if(s.item==='shield'){
+      const r=makeMarshRoom(),cells=[];
+      for(let y=2;y<30;y++)for(let x=2;x<30;x++)if(marshWalkable(r,x,y)&&!r.water.has(`${x},${y}`)&&![r.guide,r.exit,r.heart,...r.seals].some(p=>Math.hypot(p.x-x,p.y-y)<1.1))cells.push({x,y});
+      cells.sort((a,b)=>Math.hypot(a.x*40+20-enemy.x,a.y*40+20-enemy.y)-Math.hypot(b.x*40+20-enemy.x,b.y*40+20-enemy.y));
+      await go(cells[0].x,cells[0].y);await page.keyboard.down('Space');await page.waitForTimeout(250);await page.keyboard.up('Space');continue;
+    }
     await page.locator('#game canvas').scrollIntoViewIfNeeded();
     const camera=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(camera.zoom);
     const sx=(enemy.x-Number(camera.cameraX)-400)*z+400,sy=(enemy.y-Number(camera.cameraY)-280)*z+280;
@@ -73,7 +79,11 @@ async function kindleFinalMarsh(page,{state,walkTo,contact}){
       if(!w.active)break;
       const box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom);
       await page.mouse.move(box.x+((w.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((w.y-Number(s.cameraY)-280)*z+280)/560*box.height);
-      await page.keyboard.press('f');await page.waitForTimeout(350);
+      if(s.item==='shield'){
+        const cells=[];for(let y=13;y<=17;y++)for(let x=14;x<=17;x++)if(marshWalkable(room,x,y)&&![room.heart,...room.seals].some(p=>p.x===x&&p.y===y))cells.push({x,y});
+        cells.sort((a,b)=>Math.hypot(a.x*40+20-w.x,a.y*40+20-w.y)-Math.hypot(b.x*40+20-w.x,b.y*40+20-w.y));
+        await walkTo(page,cells[0],{exact:true,avoidEnemies:false,attack:true});
+      }else await page.keyboard.press('f');await page.waitForTimeout(350);
     }
     let s=await state(page);
     if(!['opening','puzzle'].includes(s.mode)&&s.flameSource!=='croak'){
@@ -137,8 +147,9 @@ async function fightMarshBoss(page,{state,walkTo}){
     await expect.poll(async()=>(await state(page)).bossPhase,{timeout:30000,intervals:[30]}).toBe('tongue');
     // Hold the normal throw control until a hit lands during a lash. A single
     // OS key tap can arrive after the short opening on a slow Canvas renderer.
-    await page.keyboard.down('f');
-    try{await expect(game).toHaveAttribute('data-boss-phase','stunned',{timeout:10000});}finally{await page.keyboard.up('f');}
+    const shield=(await state(page)).item==='shield';
+    if(!shield)await page.keyboard.down('f');
+    try{await expect(game).toHaveAttribute('data-boss-phase','stunned',{timeout:10000});}finally{if(!shield)await page.keyboard.up('f');}
   }finally{await page.keyboard.up('q');}
   await page.keyboard.down('Space');try{await expect(game).toHaveAttribute('data-boss-phase','defeated',{timeout:6000});}finally{await page.keyboard.up('Space');}
   await expect(game).toHaveAttribute('data-boss-hp','0');await expect(game).toHaveAttribute('data-final-wisp-released','true');await page.screenshot({path:'test-results/croak-defeated.png'});

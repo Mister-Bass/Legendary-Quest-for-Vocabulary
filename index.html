@@ -20,6 +20,7 @@
         </div>
         <div class="scene-caption"><span class="scene-icon">◇</span><div><p id="chapter-number" class="eyebrow">CHAMBER 1 / 5</p><h2 id="chapter-title">The Footprint Garden</h2><p id="chapter-subtitle">Every step leaves a trace.</p></div><span class="caption-direction">EAST →</span></div>
         <div class="feedback"><span>✦</span><p id="feedback" role="status" aria-live="polite">Your adventure is waiting.</p></div>
+        <div class="equipment-status"><canvas id="equipment-icon" width="32" height="32" hidden aria-hidden="true"></canvas><span id="equipment-status">Journey item: none. A gift waits beyond the first door.</span><button id="use-item" data-action="item" hidden>Use item · F</button></div>
         <div class="navigation"><span id="wayfinder" aria-label="Chest and gate directions"></span><span id="combat-state"></span></div>
         <nav class="touch" aria-label="Touch controls"><div><button data-action="up" aria-label="Move up">↑</button><button data-action="left" aria-label="Move left">←</button><button data-action="down" aria-label="Move down">↓</button><button data-action="right" aria-label="Move right">→</button></div><button data-action="interact">Interact</button><button data-action="attack">Sword</button></nav>
       </section>
@@ -44,6 +45,11 @@
     <p class="atlas-legend">Tan: paths &amp; cliffs · Blue: rivers &amp; lakes · Dark green: forests · White: citadel · Gold dot: traveler. The atlas shows geography; your exploration minimap keeps its fog of war.</p>
     <div class="atlas-actions"><button id="explore-overworld" class="primary">Explore overworld ↗</button><button id="return-to-quest">Return to quest</button></div>
   </dialog>
+  <dialog id="item-reward" aria-labelledby="reward-title" aria-describedby="reward-result reward-description">
+    <p class="eyebrow" id="reward-label">THE FIRST DOOR / JOURNEY ITEM</p><h2 id="reward-title">A gift for your journey</h2>
+    <div class="reward-machine" aria-label="Item slot machine"><span class="reward-pointer" aria-hidden="true">▶</span><div class="reward-reel"><canvas width="32" height="32" aria-hidden="true"></canvas><span></span></div><div class="reward-reel"><canvas width="32" height="32" aria-hidden="true"></canvas><span></span></div><div class="reward-reel"><canvas width="32" height="32" aria-hidden="true"></canvas><span></span></div><span class="reward-pointer" aria-hidden="true">◀</span></div>
+    <p id="reward-result" role="status" aria-live="polite"></p><p id="reward-description"></p><p class="small">Shield · Bow · Bomb · Stone — one random item, equal chances.</p><button id="keep-item" class="primary" disabled>Continue adventure</button>
+  </dialog>
   <dialog id="gate-cutscene" aria-labelledby="gate-title" aria-describedby="gate-status">
     <p class="eyebrow">THREE KEYS / ONE WAY FORWARD</p><h2 id="gate-title">The rune door awakens</h2>
     <canvas id="gate-film" width="256" height="160" tabindex="-1" role="img" aria-label="Three keys unlocking a pixel door"></canvas>
@@ -51,7 +57,7 @@
     <p class="small">Your adventure continues when the door opens.</p>
     <button data-action="restart" class="text-button">Restart adventure</button>
   </dialog>
-  <div id="marsh-controls" class="marsh-controls" hidden aria-label="Lantern Marsh controls"><button data-action="shield" aria-label="Shield">Shield · Q</button><button data-action="roll">Roll · Shift</button><button data-action="throw">Throw stone · F</button><button data-action="bomb">Bomb · B</button><span>Right-click and hold to shield · Time a throw during Croak’s tongue lash</span></div>
+  <div id="marsh-controls" class="marsh-controls" hidden aria-label="Lantern Marsh controls"><button data-action="roll">Roll · Shift</button><span>Shift: roll · Space: sword · F: earned item</span></div>
   <dialog id="marsh-map" aria-labelledby="marsh-map-title"><button id="close-marsh-map" class="dialog-close" aria-label="Close marsh map">✕</button><p class="eyebrow">A02 · ROUTE PLANNING</p><h2 id="marsh-map-title">Lantern Marsh</h2><canvas id="marsh-layout" width="1024" height="1024" role="img" aria-label="Lantern Marsh layout: central pond and island, south entrance, north portal, three lanterns, and a winding lily-pad route"></canvas><p>Green: grass · Dark green: trees · Gray: stone · Blue: deep water · Brown: slowing mud · Light green: sinking pads · Amber: guardian lanterns · Violet: lantern portal. Timers are paused while you plan.</p></dialog>
   <script type="module" src="/src/adventure.js"></script>
 </body></html>

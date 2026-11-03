@@ -1,3 +1,5 @@
+import { itemAction,itemShot } from './equipment.js';
+import { paintEffect,paintItemShot } from './effect-art.js';
 import { WORLD, isWalkable } from './world.js';
 import { SLIME_HEALTH, SLIME_BURST_RADIUS, strikeSlime } from './combat.js';
 import { Minimap } from './minimap.js';
@@ -10,6 +12,7 @@ const length=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 export class ActionWorld {
   constructor(scene){
     this.scene=scene;this.hero=scene.hero;this.room=scene.room;this.enemies=scene.shades;
+    this.gearShots=[];this.itemAt=-10;this.shield=false;this.blocks=0;this.itemEffects=scene.add.graphics();
     this.keys=new Map();this.taps=new Map();this.vx=0;this.vy=0;this.clock=0;
     this.facing='down';this.attackAt=-10;this.invulnerableUntil=1;
     this.contacts=new Set();this.projectiles=[];this.shots=0;this.mouseAim=null;this.deathBursts=0;this.burstHits=0;
@@ -22,12 +25,13 @@ export class ActionWorld {
     this.minimap.update(0,true);
   }
   press(action,id){
+    if(['item','shield','throw','bomb'].includes(action)){if(!itemAction(this.scene.state.item,action))return;action='item';this.fireItem();}
     this.keys.set(id,action);
     if(vectors[action])this.taps.set(action,this.clock+.08);
     if(action==='attack')this.attack();
   }
   release(id){this.keys.delete(id);}
-  stop(){this.keys.clear();this.taps.clear();this.mouseAim=null;this.vx=0;this.vy=0;}
+  stop(){this.shield=false;this.keys.clear();this.taps.clear();this.mouseAim=null;this.vx=0;this.vy=0;}
   attack(){if(this.scene.state.mode!=='playing'||this.clock-this.attackAt<.45)return;this.attackAt=this.clock;}
   aim(x,y){const dx=x-this.hero.x,dy=y-this.hero.y;if(Math.hypot(dx,dy)>8)this.facing=Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down';}
   solid(x,y,r=10){
@@ -63,11 +67,13 @@ export class ActionWorld {
   step(dt){
     this.clock+=dt;
     const held=new Set(this.keys.values());
+    this.shield=this.scene.state.item==='shield'&&held.has('item');
+    if(held.has('item'))this.fireItem();
     const active=action=>held.has(action)||(this.taps.get(action)||0)>this.clock;
     let dx=Number(active('right'))-Number(active('left')),dy=Number(active('down'))-Number(active('up'));
     const magnitude=Math.hypot(dx,dy);if(magnitude){dx/=magnitude;dy/=magnitude;this.facing=Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down';}
     if(this.mouseAim)this.aim(this.mouseAim.x,this.mouseAim.y);
-    const speed=170,blend=1-Math.exp(-24*dt);
+    const speed=this.shield?100:170,blend=1-Math.exp(-24*dt);
     this.vx+=(dx*speed-this.vx)*blend;this.vy+=(dy*speed-this.vy)*blend;
     if(!magnitude&&Math.hypot(this.vx,this.vy)<1){this.vx=0;this.vy=0;}
     const next={x:this.hero.x+this.vx*dt,y:this.hero.y+this.vy*dt};
@@ -102,7 +108,7 @@ export class ActionWorld {
       this.updateEnemy(e,dt,distance);
       if(this.scene.state.mode!=='playing')break;
     }
-    if(this.scene.state.mode==='playing')this.updateProjectiles(dt);
+    if(this.scene.state.mode==='playing'){this.updateProjectiles(dt);this.updateGear(dt);}
     this.hero.setAlpha(this.clock<this.invulnerableUntil&&Math.floor(this.clock*12)%2?.55:1);
     this.paintEquipment(swing);
   }
@@ -121,7 +127,9 @@ export class ActionWorld {
         e.phase='recover';e.until=now+.85;e.sprite.clearTint();
         if(distance<57){
 
-          if(now>=this.invulnerableUntil){this.invulnerableUntil=now+1.2;this.scene.hurt('A slime struck you. Step aside or use left-click / Space to swing.');this.scene.render();}
+          const [fx,fy]=vectors[this.facing],front=((e.sprite.x-this.hero.x)*fx+(e.sprite.y-this.hero.y)*fy)/Math.max(1,distance);
+          if(this.shield&&front>0){this.blocks++;this.scene.feedback('Slime attack blocked!');}
+          else if(now>=this.invulnerableUntil){this.invulnerableUntil=now+1.2;this.scene.hurt('A slime struck you. Step aside or use left-click / Space to swing.');this.scene.render();}
         }
       }
       return;
@@ -172,21 +180,40 @@ export class ActionWorld {
       const d=length(p.sprite,this.hero);
       if(d<18){
         p.sprite.destroy();
-        if(this.clock>=this.invulnerableUntil){this.invulnerableUntil=this.clock+1.2;this.scene.hurt('A slime bolt hit you. Watch the casting flash and step aside.');this.scene.render();}
+        const [fx,fy]=vectors[this.facing],front=((p.sprite.x-this.hero.x)*fx+(p.sprite.y-this.hero.y)*fy)/Math.max(1,d);
+        if(this.shield&&front>0){this.blocks++;this.scene.feedback('Slime bolt blocked!');}
+        else if(this.clock>=this.invulnerableUntil){this.invulnerableUntil=this.clock+1.2;this.scene.hurt('A slime bolt hit you. Watch the casting flash and step aside.');this.scene.render();}
       }
     }
     this.projectiles=this.projectiles.filter(p=>p.sprite.active);
   }
+  fireItem(){
+    const p=itemShot(this.scene.state.item,{x:this.hero.x,y:this.hero.y,facing:this.facing},this.mouseAim,this.clock,this.itemAt);
+    if(p){this.itemAt=this.clock;this.gearShots.push(p);}
+  }
+  updateGear(dt){
+    this.gearShots=this.gearShots.filter(p=>{
+      p.x+=p.vx*dt;p.y+=p.vy*dt;if(this.clock>p.until||this.solid(p.x,p.y,2))return false;
+      const e=this.enemies.find(e=>e.active&&length(e.sprite,p)<24);if(!e)return true;
+      const result=strikeSlime(e,`${p.kind}:${p.id}`,length(e.sprite,this.hero));
+      if(result.dead)this.defeatSlime(e,result.burstDamage);else{e.phase='hurt';e.until=this.clock+.5;e.hitUntil=this.clock+.15;}
+      return false;
+    });
+  }
   paintEquipment(swing){
+    const g=this.itemEffects;g.clear();
+    for(const p of this.gearShots)paintItemShot(g,p);
+    if(this.shield){const [dx,dy]=vectors[this.facing];paintEffect(g,'shield',this.hero.x+dx*18,this.hero.y+dy*18,34);}
+    if(this.scene.state.item==='bow'&&this.clock-this.itemAt<.2)paintEffect(g,'bow',this.hero.x+14,this.hero.y,32);
     // The supplied attack frames contain the sword; no idle weapon overlay.
     if(!swing&&this.hero.anims.currentAnim?.key.includes('attack'))this.hero.play(`hero-idle-${this.facing}`);
   }
   telemetry(){
     const s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{waterFrame:this.scene.waterSprites[0]?.frame.name,keeperFrame:this.scene.keeper.frame.name,x:s.x.toFixed(2),y:s.y.toFixed(2),px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),speed:Math.hypot(this.vx,this.vy).toFixed(1),facing:this.facing,shield:'false',cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:WORLD.columns*40,worldHeight:WORLD.rows*40,shades:this.enemies.filter(e=>e.active).length,enemies:JSON.stringify(this.enemies.map(e=>({x:+e.sprite.x.toFixed(1),y:+e.sprite.y.toFixed(1),active:e.active,hp:e.hp,phase:e.phase})))});
+    Object.assign(document.getElementById('game').dataset,{waterFrame:this.scene.waterSprites[0]?.frame.name,keeperFrame:this.scene.keeper.frame.name,x:s.x.toFixed(2),y:s.y.toFixed(2),px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),speed:Math.hypot(this.vx,this.vy).toFixed(1),facing:this.facing,shield:String(this.shield),blocks:this.blocks,itemProjectiles:JSON.stringify(this.gearShots.map(p=>({kind:p.kind,x:p.x,y:p.y}))),cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:WORLD.columns*40,worldHeight:WORLD.rows*40,shades:this.enemies.filter(e=>e.active).length,enemies:JSON.stringify(this.enemies.map(e=>({x:+e.sprite.x.toFixed(1),y:+e.sprite.y.toFixed(1),active:e.active,hp:e.hp,phase:e.phase})))});
     const arrow=p=>{const dx=p.x-s.x,dy=p.y-s.y;return Math.abs(dx)>Math.abs(dy)?dx>0?'→':'←':dy>0?'↓':'↑';};
     document.getElementById('wayfinder').textContent=this.room.seals.map((p,i)=>`${['I','II','III'][i]} ${s.sealed.has(`${s.chapter}:${i}`)?'✓':arrow(p)}`).join('   ·   ')+`   ·   Gate ${arrow(this.room.exit)}`;
     Object.assign(document.getElementById('game').dataset,{deathBursts:this.deathBursts,burstHits:this.burstHits,swordVisible:String(this.scene.state.mode==='playing'&&this.clock-this.attackAt<.28),shots:this.shots,projectiles:JSON.stringify(this.projectiles.map(p=>({x:+p.sprite.x.toFixed(1),y:+p.sprite.y.toFixed(1)})))});
-    document.getElementById('combat-state').textContent=this.clock-this.attackAt<.45?'Sword recovering':'Left-click / Space Sword · Dodge slime bolts';
+    document.getElementById('combat-state').textContent=this.clock-this.attackAt<.45?'Sword recovering':`Left-click / Space Sword${this.scene.state.item?' · F/Right-click '+this.scene.state.item:' · Dodge slime bolts'}`;
   }
 }

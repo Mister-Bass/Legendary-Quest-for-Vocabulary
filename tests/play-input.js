@@ -4,9 +4,17 @@ import { makeRoom,isWalkable,distance } from '../src/world.js';
 import { kindleMarsh,waitForMarshPads } from './marsh-journey.js';
 const game=page=>page.locator('#game');
 const state=page=>game(page).evaluate(el=>({...el.dataset}));
+async function completeReward(page){
+  if(await page.locator('#item-reward').isVisible()){
+    await expect(page.locator('#item-reward')).toHaveAttribute('data-phase','ready',{timeout:6000});
+    await page.getByRole('button',{name:'Continue adventure',exact:true}).click();
+  }
+}
+async function begin(page){await page.getByRole('button',{name:'Begin adventure'}).click();await completeReward(page);}
+async function restart(page){await page.getByRole('button',{name:'Restart adventure'}).click();await completeReward(page);}
 async function start(page){
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
-  await page.getByRole('button',{name:'Begin adventure'}).click();
+  await begin(page);
   await expect(game(page)).toHaveAttribute('data-mode','playing');
 }
 async function hold(page,key,ms){await page.keyboard.down(key);await page.waitForTimeout(ms);await page.keyboard.up(key);}
@@ -87,6 +95,7 @@ async function walkTo(page,target,{exact=false,avoidEnemies=true,rescues=0,attac
   if(!path)throw Error(`No path to ${JSON.stringify(target)}`);
   // Hold keys along straight segments instead of simulating frame-sized key taps.
   if(room.marsh){
+    guard=guard&&s.item==='shield';
     try{await walkMarshPath(page,path,chapter,origin,attack,guard);return;}
     catch(error){
       if(!error.marshFall||rescues>=2||Number(s.flameSeconds)>0)throw error;
@@ -157,4 +166,4 @@ async function finishTrial(page,index){
 }
 
 
-export {game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial};
+export {completeReward,begin,restart,game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial};

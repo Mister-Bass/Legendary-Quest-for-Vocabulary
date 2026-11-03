@@ -1,5 +1,6 @@
+import { itemAction } from './equipment.js';
 import { portalReady,portalTexture } from './portal-art.js';
-import { paintEffect } from './effect-art.js';
+import { paintEffect,paintItemShot } from './effect-art.js';
 import { drawFrogEncounter } from './frog-art.js';
 import { wispTexture,paintWispAura } from './wisp-art.js';
 import { lanternTexture,paintLanternGlow } from './lantern-art.js';
@@ -10,7 +11,7 @@ import { at,cell } from './marsh-map.js';
 import { Minimap } from './minimap.js';
 export class MarshWorld{
   constructor(scene){
-    this.scene=scene;this.hero=scene.hero;this.room=scene.room;this.model=new MarshModel(this.room,scene.marshProgress);this.model.hero.x=this.hero.x;this.model.hero.y=this.hero.y;
+    this.scene=scene;this.hero=scene.hero;this.room=scene.room;this.model=new MarshModel(this.room,scene.marshProgress,scene.state.item);this.model.hero.x=this.hero.x;this.model.hero.y=this.hero.y;
     this.clock=0;this.attackAt=-10;this.facing='up';this.invulnerableUntil=1;this.vx=0;this.vy=0;this.keys=new Map();this.taps=new Map();this.sprites=new Map();this.contacts=new Set();this.mouseAim=null;
     this.bossWater=scene.add.graphics();this.arenaGate=scene.add.image(0,0,'marsh-arena-gate').setDisplaySize(160,80).setOrigin(.5,1);this.bossSprite=scene.add.image(this.model.boss.x,this.model.boss.y,'marsh-toad').setDisplaySize(128,128).setOrigin(.5);
     this.bossLabel=scene.add.text(this.model.boss.x,this.model.boss.y-85,'GRANDFATHER CROAK',{fontFamily:'monospace',fontSize:12,color:'#e4e9b6',backgroundColor:'#203f32',padding:{x:5,y:3}}).setOrigin(.5);this.effects=scene.add.graphics();
@@ -18,7 +19,7 @@ export class MarshWorld{
     scene.cameras.main.setBounds(0,0,1280,1280).setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);
     this.initializing=true;this.sync();this.initializing=false;this.minimap.update(0,true);
   }
-  press(action,id){this.keys.set(id,action);if(['up','down','left','right'].includes(action))this.taps.set(action,this.clock+.08);if(action==='attack')this.attack();if(action==='roll')this.model.roll();if(action==='throw'||action==='bomb')this.model.throwItem(action==='bomb');}
+  press(action,id){if(['item','shield','throw','bomb'].includes(action)){if(!itemAction(this.scene.state.item,action))return;action='item';this.model.useItem();}this.keys.set(id,action);if(['up','down','left','right'].includes(action))this.taps.set(action,this.clock+.08);if(action==='attack')this.attack();if(action==='roll')this.model.roll();}
   release(id){this.keys.delete(id);}
   stop(){this.keys.clear();this.taps.clear();this.vx=0;this.vy=0;if(this.model){this.model.shield=false;this.model.speed=0;this.model.aim=null;}this.mouseAim=null;}
   attack(){this.model.attack();this.attackAt=this.model.attackAt;}
@@ -55,7 +56,7 @@ export class MarshWorld{
   events(){
     for(const e of this.model.events.splice(0)){
       if(e.type==='boss-awakened'){this.stop();this.scene.state.mode='boss-rise';this.scene.cameras.main.stopFollow();this.scene.feedback('The two bank flames awaken Grandfather Croak. The southern gate rises!');this.scene.render();}
-      if(e.type==='boss-ready'){this.scene.state.mode='playing';this.invulnerableUntil=this.clock+1.2;this.scene.cameras.main.setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);this.scene.feedback('Croak holds the final Gloamwisp. Throw during his tongue lash, then strike his stunned belly to release it.');this.scene.render();}
+      if(e.type==='boss-ready'){this.scene.state.mode='playing';this.invulnerableUntil=this.clock+1.2;this.scene.cameras.main.setZoom(1.1).startFollow(this.hero,true,.12,.12).centerOn(this.hero.x,this.hero.y);this.scene.feedback('Croak holds the final Gloamwisp. Use your earned item during his tongue lash, then strike his stunned belly to release it.');this.scene.render();}
       if(e.type==='boss-defeated'){this.scene.drawGate();this.scene.render();}
 
       if(e.type==='hurt'){this.scene.hurt(e.message);this.scene.render();}
@@ -97,7 +98,8 @@ export class MarshWorld{
     }
     for(const d of m.drops){g.fillStyle(0xffcc76,.3).fillCircle(d.x,d.y,18);paintEffect(g,'flame',d.x,d.y,32);}
     for(const p of m.bolts)paintEffect(g,'mud-ball',p.x,p.y,20);
-    for(const p of m.items)paintEffect(g,p.bomb?'bomb':'stone',p.x,p.y,20);
+    for(const p of m.items)paintItemShot(g,p);
+    if(m.item==='bow'&&this.clock-m.throwAt<.2)paintEffect(g,'bow',this.hero.x+14,this.hero.y,32);
     if(m.flameUntil>this.clock){g.fillStyle(0xffcc76,.25).fillCircle(this.hero.x,this.hero.y-18,24);paintEffect(g,'flame',this.hero.x,this.hero.y-25,26);}
     if(m.shield){const dir={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[this.facing];paintEffect(g,'shield',this.hero.x+dir[0]*18,this.hero.y+dir[1]*18,34);}
     const b=m.boss;if(b.active){
@@ -115,8 +117,8 @@ export class MarshWorld{
   }
   telemetry(){
     const m=this.model,s=this.scene.state,c=this.scene.cameras.main;
-    Object.assign(document.getElementById('game').dataset,{marsh:'true',portalOpen:String(portalReady(m.progress.lit)),finalWispReleased:String(m.progress.bossDefeated),finalWispEmerging:String(m.enemies.some(e=>e.finalWisp&&e.active&&this.clock<e.emergingUntil)),finalFlameUsed:String(m.progress.primed[2]),flameSource:this.clock<m.flameUntil?(m.flameSource||''):'',portalFrame:this.scene.doorSprite.texture.key,flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),visiblePads:[...this.scene.padSprites.values()].filter(s=>s.visible).length,padRipples:this.padRipples||0,arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),projectiles:JSON.stringify(m.bolts)});
+    Object.assign(document.getElementById('game').dataset,{marsh:'true',portalOpen:String(portalReady(m.progress.lit)),finalWispReleased:String(m.progress.bossDefeated),finalWispEmerging:String(m.enemies.some(e=>e.finalWisp&&e.active&&this.clock<e.emergingUntil)),finalFlameUsed:String(m.progress.primed[2]),flameSource:this.clock<m.flameUntil?(m.flameSource||''):'',portalFrame:this.scene.doorSprite.texture.key,flameSeconds:Math.max(0,m.flameUntil-m.clock).toFixed(1),flameDrops:JSON.stringify(m.drops),lanterns:JSON.stringify(m.progress.lit),pads:JSON.stringify([...m.padTimers]),visiblePads:[...this.scene.padSprites.values()].filter(s=>s.visible).length,padRipples:this.padRipples||0,arenaGateClosed:String(m.gateClosed),arenaGateLift:(this.scene.arenaGateLift||0).toFixed(2),bossRise:(m.boss.phase==='rising'?Math.max(0,Math.min(1,(this.clock-m.boss.riseAt)/1.8)):m.progress.bossAwakened?1:0).toFixed(2),tongueLength:(m.boss.phase==='tongue'?bossTongue(m.boss,this.clock).length:0).toFixed(1),bossPhase:m.boss.phase,bossHp:m.boss.hp,heartPiece:String(m.progress.heartTaken),blocks:m.blocks,falls:m.falls,rolls:m.rolls,shield:String(!!m.shield),waterFrame:this.scene.pondLife.frame,pondClock:this.clock.toFixed(2),waterRipples:this.scene.pondLife.ripples,fishJumps:this.scene.pondLife.fishJumps,activeFish:this.scene.pondLife.activeFish,activeRipples:this.scene.pondLife.activeRipples,keeperFrame:this.scene.keeper.frame.name,px:this.hero.x.toFixed(1),py:this.hero.y.toFixed(1),x:s.x.toFixed(2),y:s.y.toFixed(2),speed:m.speed||0,facing:this.facing,cameraX:c.scrollX.toFixed(1),cameraY:c.scrollY.toFixed(1),zoom:c.zoom,worldWidth:1280,worldHeight:1280,enemies:JSON.stringify(m.enemies),swordVisible:String(s.mode==='playing'&&this.clock-this.attackAt<.28),itemProjectiles:JSON.stringify(m.items.map(p=>({kind:p.kind,x:p.x,y:p.y}))),projectiles:JSON.stringify(m.bolts)});
     document.getElementById('wayfinder').textContent=`Lanterns ${m.progress.lit.filter(Boolean).length}/3 · Wisp Flame ${Math.max(0,m.flameUntil-m.clock).toFixed(1)}s · Heart Piece ${m.progress.heartTaken?'1/4':'0/4'}`;
-    document.getElementById('combat-state').textContent='Space Sword · Q/Right-click Shield · Shift Roll · F Throw · B Bomb';
+    document.getElementById('combat-state').textContent=`Space Sword · Shift Roll${this.scene.state.item?' · F/Right-click '+this.scene.state.item:''}`;
   }
 }

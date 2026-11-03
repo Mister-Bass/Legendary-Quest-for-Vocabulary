@@ -9,7 +9,7 @@ import { usesA01Tiles } from '../src/a01-art.js';
 import { waitForMarshPads,guardMarshExit,defeatMarshBoss } from './marsh-journey.js';
 
 test.setTimeout(360000);
-import {game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial} from './play-input.js';
+import {completeReward,game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial} from './play-input.js';
 
 test('all 45 terms and expanded chamber objectives are complete and reachable',()=>{
   expect(TILE_PIXELS).toBe(32);expect(Object.keys(regionStyles)).toEqual(areas.map(a=>a.id));
@@ -132,7 +132,13 @@ test('slime bolts pause, three distinct sword hits kill, and a nearby death burs
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
   test.setTimeout(600000);
   await start(page);
+  let earned;
   for(let chapter=0;chapter<5;chapter++){
+    if(earned){
+      await expect(game(page)).toHaveAttribute('data-item',earned);
+      if(earned==='shield'){await page.keyboard.down('q');await expect(game(page)).toHaveAttribute('data-shield','true');await page.keyboard.up('q');}
+      else{await page.keyboard.press('f');await expect.poll(async()=>JSON.parse((await state(page)).itemProjectiles).some(p=>p.kind===earned)).toBe(true);}
+    }
     if(process.env.GAME_TEST_PROGRESS)console.log('Full quest chapter',chapter+1);
     await expect(game(page)).toHaveAttribute('data-art-area',chapterAreaIds[chapter]);
     await expect(game(page)).toHaveAttribute('data-terrain-theme',regionStyles[chapterAreaIds[chapter]].terrain);
@@ -157,6 +163,7 @@ test('all 45 contact trials unlock the scrolling chambers and win; replay resets
     await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('open');
     if(chapter===0)await page.screenshot({path:test.info().outputPath('pixel-door-open.png')});
     }
+    if(chapter===0){await expect(page.locator('#item-reward')).toBeVisible();await completeReward(page);earned=(await state(page)).item;}
     if(chapter<4)await expect(game(page)).toHaveAttribute('data-chapter',String(chapter+1));
   }
   await expect(game(page)).toHaveAttribute('data-mode','won');await expect(game(page)).toHaveAttribute('data-learned','45');await expect(page.locator('#score')).toHaveText('1125');

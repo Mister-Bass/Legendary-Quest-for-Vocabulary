@@ -1,11 +1,17 @@
 // Original 32x32 sprites for objects formerly drawn as smooth shapes.
 const runs=new Map();
-export const EFFECT_KEYS=['fish','mud-ball','slime-bolt','stone','bomb','flame','shield'];
+export const EFFECT_KEYS=['fish','mud-ball','slime-bolt','stone','bomb','flame','shield','bow','arrow'];
 export function createEffectArt(scene){
   for(const key of EFFECT_KEYS){
     const t=scene.textures.createCanvas('effect-'+key,32,32),c=t.context;
     const r=(color,x,y,w,h)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
-    if(key==='fish'){
+    if(key==='bow'){
+      r('#342e29',8,3,4,26);r('#86613e',12,5,4,22);r('#c49c61',16,9,3,14);r('#86613e',19,12,3,8);
+      r('#e5dcb1',9,4,1,24);r('#f2ce87',12,5,2,3);r('#f2ce87',12,24,2,3);
+    }else if(key==='arrow'){
+      r('#654c33',3,15,23,3);r('#d5b880',3,15,21,1);r('#a9c8c2',23,12,3,9);r('#e2ece0',26,14,3,5);
+      r('#64838d',3,12,4,3);r('#64838d',3,18,4,3);
+    }else if(key==='fish'){
       r('#234753',6,12,21,9);r('#234753',10,10,13,13);r('#234753',2,9,5,15);
       r('#d68d58',7,13,19,7);r('#eaa86b',11,11,11,10);r('#a66542',3,11,3,11);
       r('#ffddb0',10,18,13,2);r('#f6bd81',12,12,7,2);r('#234753',23,13,2,2);r('#fff0ca',23,12,1,1);
@@ -37,4 +43,9 @@ export function createEffectArt(scene){
 export function paintEffect(g,key,x,y,size=32){
   const scale=size/32,left=Math.round(x-size/2),top=Math.round(y-size/2);
   for(const [color,px,py,width]of runs.get(key)||[])g.fillStyle(color).fillRect(left+px*scale,top+py*scale,width*scale,scale);
+}
+
+export function paintItemShot(g,p,size=24){
+  if(p.kind==='bow'){g.save();g.translateCanvas(p.x,p.y);g.rotateCanvas(Math.atan2(p.vy,p.vx));paintEffect(g,'arrow',0,0,size);g.restore();}
+  else paintEffect(g,p.bomb?'bomb':'stone',p.x,p.y,size);
 }
