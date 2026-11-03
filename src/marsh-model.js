@@ -7,11 +7,12 @@ export function bossTongue(b,clock){
 }
 export class MarshModel{
   constructor(room,progress=marshProgress()){
-    this.room=room;this.progress=progress;this.clock=0;progress.bossAwakened=!!progress.bossAwakened||progress.lit.every(Boolean);this.hero={...at(progress.bossAwakened&&!progress.bossDefeated?room.arenaSpawn:room.spawn),facing:'up'};this.safe={...this.hero};
-    this.flameUntil=0;this.slowUntil=0;this.invulnerable=1;this.attackAt=-10;this.rollAt=-10;this.throwAt=-10;this.padTimers=new Map();this.drops=[];this.bolts=[];this.items=[];this.events=[];this.blocks=0;this.falls=0;this.rolls=0;
+    this.room=room;this.progress=progress;this.clock=0;progress.bossAwakened=!!progress.bossAwakened||(progress.lit[0]&&progress.lit[1]);this.hero={...at(progress.bossAwakened&&!progress.bossDefeated?room.arenaSpawn:room.spawn),facing:'up'};this.safe={...this.hero};
+    this.flameUntil=0;this.flameSource=null;this.slowUntil=0;this.invulnerable=1;this.attackAt=-10;this.rollAt=-10;this.throwAt=-10;this.padTimers=new Map();this.drops=[];this.bolts=[];this.items=[];this.events=[];this.blocks=0;this.falls=0;this.rolls=0;
     this.enemies=room.shades.map((p,i)=>({...at(p),home:at(p),type:p.type,id:i,hp:p.type==='octorok'?2:1,active:true,hidden:p.type==='slurg',next:1+i*.47,lastSwing:-10,respawn:0}));
     this.boss={...at(room.boss),active:progress.bossAwakened&&!progress.bossDefeated,hp:progress.bossDefeated?0:6,phase:progress.bossDefeated?'defeated':'sleeping',until:0,nextSlam:3,lastSwing:-10,phaseAt:0,riseAt:-10,defeatedAt:-10};
     if(this.boss.active){this.boss.phase='watching';this.boss.until=2;}
+    if(progress.bossDefeated&&!progress.primed[2])this.releaseFinalWisp(false);
   }
   emit(type,data={}){this.events.push({type,...data});}
   get gateClosed(){return this.progress.bossAwakened&&!this.progress.bossDefeated;}
@@ -31,7 +32,7 @@ export class MarshModel{
   light(index){
     if(this.progress.lit[index])return;
     this.progress.lit[index]=true;this.emit('message',{message:`Guardian lantern ${index+1} is lit.`});
-    if(this.progress.lit.every(Boolean)&&!this.progress.bossAwakened&&!this.progress.bossDefeated){
+    if(this.progress.lit[0]&&this.progress.lit[1]&&!this.progress.bossAwakened&&!this.progress.bossDefeated){
       this.progress.bossAwakened=true;Object.assign(this.boss,{active:true,phase:'rising',riseAt:this.clock,phaseAt:this.clock,until:this.clock+4.6});
       this.emit('boss-awakened');
     }
@@ -39,14 +40,16 @@ export class MarshModel{
   interactLantern(index){
     if(this.progress.lit[index])return;
     if(!this.progress.primed[index]){
+      if(index===2&&!this.progress.bossDefeated){this.emit('message',{message:'Croak holds the final Gloamwisp. Light both bank lanterns, then defeat him to release it.'});return;}
+      if(index===2&&(this.flameUntil<=this.clock||this.flameSource!=='croak')){this.emit('message',{message:'The island lantern needs the final Gloamwisp’s flame, released by Grandfather Croak.'});return;}
       if(this.flameUntil<=this.clock){this.emit('message',{message:'This lantern needs a Wisp Flame. Corner and strike a pale Gloamwisp, then collect its flame.'});return;}
-      this.flameUntil=0;this.progress.primed[index]=true;
+      this.flameUntil=0;this.flameSource=null;this.progress.primed[index]=true;
     }
     this.emit('lantern',{index});
   }
   openHeart(){if(this.progress.heartTaken)return;this.progress.heartTaken=true;this.emit('heart');}
   strike(enemy){
-    if(!enemy.active||enemy.lastSwing===this.attackAt)return;
+    if(!enemy.active||this.clock<(enemy.emergingUntil||0)||enemy.lastSwing===this.attackAt)return;
     const d=dist(this.hero,enemy),[dx,dy]=dirs[this.hero.facing];if(d>68||((enemy.x-this.hero.x)*dx+(enemy.y-this.hero.y)*dy)/Math.max(1,d)<.15)return;
     enemy.lastSwing=this.attackAt;
     if(enemy.hidden)return;
@@ -56,11 +59,24 @@ export class MarshModel{
     if(--enemy.hp<=0)this.defeat(enemy);
   }
   split(enemy){enemy.active=false;for(const side of [-1,1])this.enemies.push({x:enemy.x+side*12,y:enemy.y,home:{x:enemy.x,y:enemy.y},type:'small-slurg',id:this.enemies.length,hp:1,active:true,next:this.clock+.4,lastSwing:this.attackAt});this.emit('message',{message:'The Slurg split into two small slimes!'});}
-  defeat(e){e.active=false;if(e.type==='wisp'){e.respawn=this.clock+6;this.drops.push({x:e.x,y:e.y,until:this.clock+12});this.emit('message',{message:'A Wisp Flame dropped! Walk into it. You have ten seconds after pickup.'});}}
+  releaseFinalWisp(emerge=true){
+    if(this.enemies.some(e=>e.finalWisp))return;
+    const home=at({x:this.room.boss.x+1,y:this.room.boss.y+2}),origin={x:this.boss.x,y:this.boss.y+8};
+    this.enemies.push({...(emerge?origin:home),home,origin,type:'wisp',id:1000,hp:1,active:true,hidden:false,next:0,lastSwing:this.attackAt,respawn:0,finalWisp:true,emerged:!emerge,emergeAt:this.clock,emergingUntil:emerge?this.clock+1.4:0});
+    if(emerge)this.emit('final-wisp-released');
+  }
+  defeat(e){
+    if(!e.active||this.clock<(e.emergingUntil||0))return;
+    e.active=false;if(e.type==='wisp'){
+      e.respawn=this.clock+6;this.drops.push({x:e.x,y:e.y,until:this.clock+12,source:e.finalWisp?'croak':'wisp'});
+      this.emit('message',{message:e.finalWisp?'The final Wisp Flame dropped! Carry it to the island lantern.':'A Wisp Flame dropped! Walk into it. You have ten seconds after pickup.'});
+    }
+  }
   hitBoss(){if(!this.boss.active||this.boss.phase!=='stunned'||this.boss.lastSwing===this.attackAt||dist(this.hero,this.boss)>100)return;
-    this.boss.lastSwing=this.attackAt;if(--this.boss.hp<=0){this.boss.active=false;this.boss.phase='defeated';this.boss.defeatedAt=this.clock;this.progress.bossDefeated=true;this.emit('message',{message:'Grandfather Croak is defeated. The southern gate lowers and the lily pads settle. The northern portal remains open.'});this.emit('boss-defeated');}}
+    this.boss.lastSwing=this.attackAt;if(--this.boss.hp<=0){this.boss.active=false;this.boss.phase='defeated';this.boss.defeatedAt=this.clock;this.progress.bossDefeated=true;this.releaseFinalWisp();this.emit('message',{message:'Grandfather Croak is defeated. The southern gate lowers and the lily pads settle. The final Gloamwisp emerges from Croak! Take its flame to the island lantern.'});this.emit('boss-defeated');}}
   tick(dt,input={}){
     this.clock+=dt;
+    if(this.flameUntil<=this.clock)this.flameSource=null;
     if(this.boss.phase==='rising'){
       this.speed=0;this.shield=false;
       if(this.clock>=this.boss.until){Object.assign(this.boss,{phase:'watching',phaseAt:this.clock,until:this.clock+2,nextSlam:this.clock+3});this.invulnerable=this.clock+1.2;this.emit('boss-ready');}
@@ -83,10 +99,17 @@ export class MarshModel{
     // Rescue the whole collision footprint so that movement cannot get trapped
     // between a live pad and a newly submerged neighboring pad.
     const submerged=[-8,8].some(ox=>[-8,8].some(oy=>this.padTimers.get(cell(Math.floor((h.x+ox)/40),Math.floor((h.y+oy)/40)))?.sunkUntil>this.clock));
-    if(submerged){h.x=this.safe.x;h.y=this.safe.y;this.flameUntil=0;this.falls++;this.hurt('The lily pad sank! You return to the last safe bank and lose one heart.');}
-    this.drops=this.drops.filter(d=>{if(d.until<=this.clock)return false;if(dist(d,h)<32){this.flameUntil=this.clock+FLAME_SECONDS;this.emit('message',{message:'Wisp Flame carried: 10 seconds. Run to an unlit lantern!'});return false;}return true;});
+    if(submerged){h.x=this.safe.x;h.y=this.safe.y;this.flameUntil=0;this.flameSource=null;this.falls++;this.hurt('The lily pad sank! You return to the last safe bank and lose one heart.');}
+    this.drops=this.drops.filter(d=>{if(d.until<=this.clock)return false;if(dist(d,h)<32){this.flameUntil=this.clock+FLAME_SECONDS;this.flameSource=d.source||'wisp';this.emit('message',{message:d.source==='croak'?'Final Wisp Flame carried: 10 seconds. Light the island lantern!':'Wisp Flame carried: 10 seconds. Run to a bank lantern!'});return false;}return true;});
     if(this.clock-this.attackAt<.28){for(const e of [...this.enemies])this.strike(e);this.hitBoss();}
     for(const e of this.enemies){
+      if(e.finalWisp&&this.progress.primed[2]){e.active=false;continue;}
+      if(e.finalWisp&&this.clock<e.emergingUntil){
+        const t=Math.max(0,Math.min(1,(this.clock-e.emergeAt)/1.4));
+        e.x=e.origin.x+(e.home.x-e.origin.x)*t;e.y=e.origin.y+(e.home.y-e.origin.y)*t-Math.sin(t*Math.PI)*90;
+        continue;
+      }
+      if(e.finalWisp&&!e.emerged){Object.assign(e,e.home);e.emerged=true;}
       if(!e.active){if(e.type==='wisp'&&this.clock>=e.respawn){e.active=true;e.hp=1;e.x=e.home.x;e.y=e.home.y;}continue;}
       const d=dist(e,h),ex=h.x-e.x,ey=h.y-e.y;
       if(e.type==='wisp'){
@@ -107,7 +130,7 @@ export class MarshModel{
     this.items=this.items.filter(p=>{
       p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.until<this.clock)return false;
       if(this.boss.active&&dist(p,this.boss)<65){if(p.bomb)this.emit('blast',{x:p.x,y:p.y});if(this.boss.phase==='tongue'){this.boss.phase='stunned';this.boss.phaseAt=this.clock;this.boss.until=this.clock+3.2;this.emit('message',{message:'Croak is stunned! Strike its exposed belly.'});}else this.emit('message',{message:'Croak’s hide deflects the hit. Throw during the extended tongue lash.'});return false;}
-      const target=this.enemies.find(e=>e.active&&dist(e,p)<(p.bomb?60:30));if(target){if(p.bomb)this.emit('blast',{x:p.x,y:p.y});if(target.type==='slurg')this.split(target);else if(target.type==='wisp')this.defeat(target);else if(--target.hp<=0)this.defeat(target);return false;}return true;
+      const target=this.enemies.find(e=>e.active&&this.clock>=(e.emergingUntil||0)&&dist(e,p)<(p.bomb?60:30));if(target){if(p.bomb)this.emit('blast',{x:p.x,y:p.y});if(target.type==='slurg')this.split(target);else if(target.type==='wisp')this.defeat(target);else if(--target.hp<=0)this.defeat(target);return false;}return true;
     });
     const b=this.boss;
     if(b.active){

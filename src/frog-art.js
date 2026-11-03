@@ -36,7 +36,7 @@ export function drawFrogEncounter(world){
   const {scene,model:m,clock}=world,b=m.boss,age=clock-b.riseAt;
   const sinking=b.phase==='defeated'&&b.defeatedAt>=0&&clock-b.defeatedAt<1.1;
   const rise=b.phase==='rising'?clamp(age/1.8):sinking?clamp(1-(clock-b.defeatedAt)/1.1):1;
-  const texture=b.phase==='stunned'?'marsh-toad-stunned':['warning','tongue'].includes(b.phase)?'marsh-toad-open':Math.floor(clock*2)%2?'marsh-toad-breathe':'marsh-toad';
+  const texture=sinking?'marsh-toad-open':b.phase==='stunned'?'marsh-toad-stunned':['warning','tongue'].includes(b.phase)?'marsh-toad-open':Math.floor(clock*2)%2?'marsh-toad-breathe':'marsh-toad';
   world.bossSprite.setTexture(texture).setVisible(b.active||sinking).setPosition(b.x,b.y+(1-rise)*128).setCrop(0,0,32,32*rise);
   world.bossLabel.setVisible(b.active&&rise>.5);
   const lift=b.phase==='rising'?clamp((age-1.8)/1.4):m.gateClosed?1:b.defeatedAt>=0?clamp(1-(clock-b.defeatedAt)/1.1):0;
