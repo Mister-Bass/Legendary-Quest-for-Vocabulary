@@ -1,10 +1,11 @@
 import { paintOverworldTile, paintAtlasDetails } from './overworld-art.js';
 import { regionStyles } from './region-art.js';
+import { makeMarshRoom,cell } from './marsh-map.js';
 // Original geography. Stable IDs are the owner's plain-English editing handles.
 export const OVERWORLD = { columns:72, rows:54, tileSize:40, areaWidth:24, areaHeight:18 };
 export const areas = [
   {id:'A01',name:'Whisperwood',biome:'forest',color:'#385e40',description:'A dense northern woodland with winding clearings and swaying trees.',landmark:'The Listening Grove'},
-  {id:'A02',name:'Mirror Lake',biome:'lake',color:'#47756a',description:'A mountain-fed lake surrounds the Hall of Mirrors. Follow the northern causeway to its island.',landmark:'Hall of Mirrors',chapter:1},
+  {id:'A02',name:'Lantern Marsh',biome:'marsh',color:'#47756a',description:'A dormant northern portal watches over a misty central pond. Carry Wisp Flames to three guardian lanterns and cross the sinking lily pads.',landmark:'Lantern Marsh · South Entrance',chapter:1},
   {id:'A03',name:'Crown Heights',biome:'highlands',color:'#847c65',description:'Tiered stone ridges frame a quiet northeastern lookout.',landmark:'The Crown Lookout'},
   {id:'A04',name:'Citizens’ Commons',biome:'meadow',color:'#688951',description:'Open lawns and stone courtyards around the Citizens’ Court.',landmark:'Citizens’ Court',chapter:2},
   {id:'A05',name:'Lantern Crossroads',biome:'crossroads',color:'#788b51',description:'A white-walled citadel, formal gardens, and a blue moat anchor the heart of the world.',landmark:'The Lantern Citadel'},
@@ -12,7 +13,7 @@ export const areas = [
   {id:'A07',name:'Footprint Fields',biome:'garden',color:'#638248',description:'The southern starting fields, with a protected garden and the first vocabulary chamber.',landmark:'Footprint Garden',chapter:0},
   {id:'A08',name:'Willow Marsh',biome:'marsh',color:'#426f59',description:'A winding river runs through low wetlands. Cross north–south over the old stone bridge.',landmark:'The Willow Crossing'},
   {id:'A09',name:'Trust Sanctuary',biome:'sanctuary',color:'#66867c',description:'A sanctuary island rises from a broad southeastern lake. A causeway leads to the final archive entrance.',landmark:'Sanctum of Trust',chapter:4},
-].map((area,index)=>({...area,style:regionStyles[area.id],column:index%3,row:Math.floor(index/3),x:(index%3)*24+12,y:Math.floor(index/3)*18+9}));
+].map((area,index)=>({...area,style:regionStyles[area.id],column:index%3,row:Math.floor(index/3),x:(index%3)*24+12,y:area.id==='A02'?15:Math.floor(index/3)*18+9}));
 
 
 export const areaAt=(x,y)=>areas[Math.min(2,Math.max(0,Math.floor(y/18)))*3+Math.min(2,Math.max(0,Math.floor(x/24)))];
@@ -102,6 +103,22 @@ export function makeOverworld(){
       map.trees.push({x,y,forest,variant:forest?3:1+(x+y)%4});
     }
   }
+  // Project the marsh's actual layout into A02; roads keep neighboring regions connected.
+  const marsh=makeMarshRoom();map.marshPreview=true;map.marshTerrain={forestBounds:{x:24,y:0,width:24,height:18},water:map.water,walls:map.walls,bridge:map.bridge,mud:new Set(),stone:new Set(),rocks:[],pillars:[],bushes:[],scenery:[]};
+  map.trees=map.trees.filter(t=>!(t.x>=24&&t.x<48&&t.y<18));
+  for(let y=0;y<18;y++)for(let x=24;x<48;x++){
+    const k=key(x,y),u=Math.min(31,Math.floor((x-24+.5)*32/24)),v=Math.min(31,Math.floor((y+.5)*32/18)),mk=cell(u,v);
+    for(const name of ['water','walls','cliffs','bridge','fortress','fields','flowers','gardens'])map[name].delete(k);map.buildings.delete(k);map.terrain.set(k,'marsh');
+    if(marsh.water.has(mk))map.water.add(k);
+    if(marsh.walls.has(mk)&&!roads.has(k))map.walls.add(k);
+    if(map.water.has(k)&&(roads.has(k)||marsh.bridge.has(mk)))map.bridge.add(k);
+    if(marsh.mud.has(mk))map.marshTerrain.mud.add(k);if(marsh.stone.has(mk))map.marshTerrain.stone.add(k);
+    if(marsh.pillars.some(p=>Math.abs(p.x-u)<1&&Math.abs(p.y-v)<1))map.marshTerrain.pillars.push({x,y});
+    if(marsh.bushes.some(p=>Math.abs(p.x-u)<1&&Math.abs(p.y-v)<1))map.marshTerrain.bushes.push({x,y});
+    if(marsh.rocks.some(p=>Math.abs(p.x-u)<1&&Math.abs(p.y-v)<1))map.marshTerrain.rocks.push({x,y});
+  }
+  map.marshTerrain.scenery=marsh.scenery.map(p=>({...p,x:24+Math.floor((p.x+.5)*24/32),y:Math.floor((p.y+.5)*18/32)})).filter(p=>map.walls.has(key(p.x,p.y)));
+  for(const a of areas)if(a.id==='A02')for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const k=key(a.x+ox,a.y+oy);map.walls.delete(k);map.water.delete(k);map.bridge.delete(k);}
   return map;
 }
 export function overworldWalkable(map,x,y){
@@ -126,7 +143,7 @@ export function drawAtlas(canvas,map,{explored=null,position=null,selected=null,
         c.beginPath();c.moveTo((x+dx*3)*sx,(y+dy*.4)*sy);c.lineTo((x+dx*.4)*sx,(y+dy*.4)*sy);c.lineTo((x+dx*.4)*sx,(y+dy*3)*sy);c.stroke();
       }
     }
-    const x=a.x*sx,y=(a.y+3.8)*sy;
+    const x=a.x*sx,y=Math.min(a.y+3.8,(a.row+1)*18-1.5)*sy;
     c.fillStyle='#203e2ee8';c.fillRect(x-2.3*sx,y-sy,4.6*sx,1.9*sy);
     c.strokeStyle='#cebc7c';c.lineWidth=1;c.strokeRect(x-2.3*sx,y-sy,4.6*sx,1.9*sy);
     c.fillStyle='#fff0bd';c.font=`bold ${Math.max(9,sx*1.15)}px Georgia`;c.textAlign='center';c.fillText(a.id,x,y+.4*sy);

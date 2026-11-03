@@ -1,23 +1,29 @@
 import { groundTile, stamp } from './region-art.js';
 import { usesA01Tiles, paintA01Tile, A01_TREE } from './a01-art.js';
+import { paintMarshTile } from './marsh-art.js';
 // Original pixel scenery, painted identically in the atlas and the playable world.
 // Existing grass/path/water/tree sprites remain the texture sources.
 const colors={grass:'#73a955',forest:'#34663c',sand:'#b9a365',highland:'#a8985c',marsh:'#669663',stone:'#9da88a'};
 const key=(x,y)=>`${x},${y}`;
 
 export function paintOverworldTile(context,map,x,y,size,art){
+  if(map.marshPreview&&art?.marshTree&&x>=24&&x<48&&y<18){
+    paintMarshTile(context,map.marshTerrain,x,y,size,{tree:art.marshTree,grass:art.marshGrass,mud:art.marshMud,props:art.marshProps,pond:art.pond});
+    for(const [tx,ty,key]of[[28,2,'marshLantern'],[43,2,'marshLantern'],[36,8,'marshLantern'],[36,1,'marshDoor']])if(x===tx&&y===ty)context.drawImage(art[key],x*size,y*size,size,size);
+    return;
+  }
   if(art?.topdown&&usesA01Tiles(map,x,y)){paintA01Tile(context,map,x,y,size,art);return;}
   const c=context,k=key(x,y),kind=map.terrain.get(k)||'grass',n=(x*37+y*19)%17;
   c.save();c.translate(x*size,y*size);c.scale(size/16,size/16);c.imageSmoothingEnabled=false;
   c.fillStyle=colors[kind];c.fillRect(0,0,16,16);
   groundTile(c,art,kind,x,y);
-  if(art&&kind==='grass'){c.globalAlpha=.35;c.drawImage(art.grass,0,0,16,16,0,0,16,16);c.globalAlpha=1;}
+  if(art&&kind==='grass'){c.globalAlpha=.35;c.drawImage(art.grass,0,0,32,32,0,0,16,16);c.globalAlpha=1;}
   // A restrained, repeatable pixel grain, rather than flat administrative blocks.
   c.fillStyle=kind==='forest'?'#487a44':kind==='highland'||kind==='sand'?'#cbb778':'#88b861';
   c.fillRect(2+n%9,4+n%7,2,1);c.fillRect(10-n%6,12-n%4,1,1);
   if(map.water.has(k)){
     c.fillStyle='#315b94';c.fillRect(0,0,16,16);
-    if(art){c.globalAlpha=.55;c.drawImage(art.water,0,0,16,16,0,0,16,16);c.globalAlpha=1;}
+    if(art){c.globalAlpha=.55;c.drawImage(art.water,0,0,32,32,0,0,16,16);c.globalAlpha=1;}
     c.fillStyle='#759fc3';if(n%3===0)c.fillRect(n%7+2,7,5,1);
   }else{
     // Sandy, stepped banks and dark water-facing edges follow the actual collision mask.
@@ -33,7 +39,7 @@ export function paintOverworldTile(context,map,x,y,size,art){
     if(art?.puny&&kind==='stone'){groundTile(c,art,kind,x,y);c.globalAlpha=.12;c.fillStyle='#f6e4b1';c.fillRect(0,0,16,16);c.globalAlpha=1;}
     else if(art?.puny&&(kind==='sand'||kind==='highland'))stamp(c,art.puny,14,1);
     else if(art?.puny)stamp(c,art.puny,3+col,row);
-    else if(art)c.drawImage(art.terrain,col*16,row*16,16,16,0,0,16,16);
+    else if(art)c.drawImage(art.terrain,col*32,row*32,32,32,0,0,16,16);
     else{c.fillStyle='#b69b64';c.fillRect(0,0,16,16);}
   }
   if(map.bridge.has(k)){
@@ -91,16 +97,16 @@ export function paintAtlasDetails(c,map,sx,sy,art){
   c.imageSmoothingEnabled=false;
   if(art&&!art.forestTree){
     // The supplied oak, tinted to the same woodland palette used by Phaser.
-    const canopy=document.createElement('canvas');canopy.width=192;canopy.height=192;
-    const cc=canopy.getContext('2d');cc.drawImage(art.tree3,0,0,192,192,0,0,192,192);
-    const pixels=cc.getImageData(0,0,192,192),d=pixels.data;
+    const canopy=document.createElement('canvas');canopy.width=32;canopy.height=32;
+    const cc=canopy.getContext('2d');cc.drawImage(art.tree3,0,0,32,32,0,0,32,32);
+    const pixels=cc.getImageData(0,0,32,32),d=pixels.data;
     for(let i=0;i<d.length;i+=4){d[i]*=80/255;d[i+1]*=150/255;d[i+2]*=160/255;}
     cc.putImageData(pixels,0,0);art.forestTree=canopy;
   }
   for(const t of map.trees){
-    if(art?.topdown&&usesA01Tiles(map,t.x,t.y))c.drawImage(art.topdown,A01_TREE.x,A01_TREE.y,A01_TREE.width,A01_TREE.height,(t.x-.5)*sx,(t.y-2)*sy,2*sx,3*sy);
+    if(art?.topdown&&usesA01Tiles(map,t.x,t.y))c.drawImage(art.topdown,A01_TREE.x*2,A01_TREE.y*2,A01_TREE.width*2,A01_TREE.height*2,(t.x-.5)*sx,(t.y-2)*sy,2*sx,3*sy);
     else if(art&&t.forest)c.drawImage(art.forestTree,(t.x-2)*sx,(t.y-3.5)*sy,5*sx,5*sy);
-    else if(art)c.drawImage(art[`tree${t.variant}`],0,0,192,t.variant<=2?256:192,(t.x-1)*sx,(t.y-2.2)*sy,3*sx,(t.variant<=2?4:3)*sy);
+    else if(art)c.drawImage(art[`tree${t.variant}`],0,0,32,32,(t.x-1)*sx,(t.y-2.2)*sy,3*sx,(t.variant<=2?4:3)*sy);
     else{c.fillStyle='#264f32';c.fillRect((t.x-.5)*sx,(t.y-1)*sy,2*sx,2*sy);}
   }
 }

@@ -1,0 +1,217 @@
+import {begin,restart} from './play-input.js';
+import { portalReady,portalTexture } from '../src/portal-art.js';
+import { test,expect } from '@playwright/test';
+import { makeMarshRoom,at,cell,marshWalkable } from '../src/marsh-map.js';
+import { MarshModel,bossTongue } from '../src/marsh-model.js';
+import { state,finishTrial,walkTo,moveAxis,contact } from './play-input.js';
+import { waitForMarshPads,guardMarshExit,defeatMarshBoss } from './marsh-journey.js';
+const advance=(m,seconds,input={})=>{for(let t=0;t<seconds;t+=1/60)m.tick(Math.min(1/60,seconds-t),input);};
+test('marsh layout preserves all bank and island routes around deep water',()=>{
+  const r=makeMarshRoom(),q=[r.spawn],seen=new Set();
+  for(let i=0;i<q.length;i++){const p=q[i],k=cell(p.x,p.y);if(seen.has(k))continue;seen.add(k);for(const [dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(marshWalkable(r,p.x+dx,p.y+dy))q.push({x:p.x+dx,y:p.y+dy});}
+  for(const p of [r.exit,r.guide,r.heart,...r.seals])expect(seen.has(cell(p.x,p.y))).toBe(true);
+  expect(r.water.size).toBeGreaterThan(200);expect(r.pads.length).toBeGreaterThan(8);expect(r.shades.map(e=>e.type).filter(t=>t==='octorok')).toHaveLength(3);
+  expect(marshWalkable(r,15,10)).toBe(false);
+});
+test('marsh Wisp Flames expire, respawn, and are required once per vocabulary lantern',()=>{
+  const nearby=new MarshModel(makeMarshRoom()),pale=nearby.enemies[0];Object.assign(nearby.hero,{x:pale.x,y:pale.y-240});advance(nearby,.2);expect(Math.abs(pale.y-pale.home.y)).toBeLessThan(10);nearby.hero.y=pale.y-80;const before=pale.y;advance(nearby,.1);expect(pale.y).toBeGreaterThan(before);
+  const m=new MarshModel(makeMarshRoom());m.interactLantern(0);expect(m.progress.primed[0]).toBe(false);
+  const w=m.enemies[0];m.hero.x=w.x;m.hero.y=w.y;m.defeat(w);advance(m,.02);expect(m.flameUntil-m.clock).toBeCloseTo(10,1);
+  m.interactLantern(0);expect(m.progress.primed[0]).toBe(true);expect(m.progress.lit[0]).toBe(false);expect(m.flameUntil).toBe(0);
+  m.light(0);expect(m.progress.lit[0]).toBe(true);advance(m,6.1);expect(w.active).toBe(true);
+  m.flameUntil=m.clock+10;advance(m,10.1);expect(m.flameUntil).toBeLessThan(m.clock);
+});
+test('marsh pads sink after two seconds, rescue the player, and regrow',()=>{
+  const m=new MarshModel(makeMarshRoom()),pad=m.room.pads[0];Object.assign(m.hero,at(pad));advance(m,1.8);expect(m.falls).toBe(0);
+  advance(m,.3);expect(m.falls).toBe(1);expect(m.flameUntil).toBe(0);expect(m.padTimers.get(cell(pad.x,pad.y)).sunkUntil).toBeGreaterThan(m.clock);
+  advance(m,4.1);expect(m.padTimers.has(cell(pad.x,pad.y))).toBe(false);
+  const edge=new MarshModel(makeMarshRoom()),pair=edge.room.pads.find(p=>edge.room.bridge.has(cell(p.x+1,p.y)));Object.assign(edge.hero,{x:(pair.x+1)*40+2,y:pair.y*40+20});edge.padTimers.set(cell(pair.x,pair.y),{deadline:0,sunkUntil:0});edge.tick(.02);expect(edge.falls).toBe(1);expect(edge.hero.x).toBe(edge.safe.x);expect(edge.hero.y).toBe(edge.safe.y);
+});
+test('marsh mud slows movement; facing shields and rolls avoid mud balls',()=>{
+  const r=makeMarshRoom(),m=new MarshModel(r,undefined,'shield');Object.assign(m.hero,at({x:5,y:25}));advance(m,.1,{up:true});expect(m.speed).toBe(95);
+  Object.assign(m.hero,at({x:8,y:27}),{facing:'up'});m.clock=3;m.bolts=[{x:m.hero.x,y:m.hero.y-15,vx:0,vy:0,until:10}];m.tick(.01,{shield:true});expect(m.blocks).toBe(1);expect(m.slowUntil).toBe(0);
+  m.bolts=[{x:m.hero.x,y:m.hero.y-15,vx:0,vy:0,until:10}];m.tick(.01,{roll:true});expect(m.rolls).toBe(1);expect(m.slowUntil).toBe(0);
+});
+test('marsh Slurg splits into two smaller sword targets',()=>{
+  const m=new MarshModel(makeMarshRoom()),s=m.enemies.find(e=>e.type==='slurg');s.hidden=false;Object.assign(m.hero,{x:s.x-48,y:s.y,facing:'right'});m.attack();m.tick(.01);
+  expect(s.active).toBe(false);expect(m.enemies.filter(e=>e.type==='small-slurg'&&e.active)).toHaveLength(2);
+});
+test('two bank lanterns awaken Croak; the optional Heart Piece does not',()=>{
+  const m=new MarshModel(makeMarshRoom());m.openHeart();expect(m.progress.heartTaken).toBe(true);expect(m.boss.active).toBe(false);
+  m.light(0);expect(m.boss.phase).toBe('sleeping');m.light(1);expect(m.boss.phase).toBe('rising');expect(m.gateClosed).toBe(true);
+  const position={...m.hero};advance(m,4,{up:true,attack:true});expect(m.hero).toEqual(position);expect(m.boss.phase).toBe('rising');advance(m,.7);expect(m.boss.phase).toBe('watching');
+  const b=m.boss;m.items.push({x:b.x,y:b.y,vx:0,vy:0,until:10});m.tick(.01);expect(b.phase).not.toBe('stunned');
+  b.phase='tongue';b.until=m.clock+1;b.aim={x:b.x+200,y:b.y};m.items.push({x:b.x,y:b.y,vx:0,vy:0,until:10});m.tick(.01);expect(b.phase).toBe('stunned');
+  Object.assign(m.hero,{x:b.x,y:b.y+80,facing:'up'});
+  for(let i=0;i<6;i++){m.attack();m.tick(.01);advance(m,.45);}
+  expect(m.progress.bossDefeated).toBe(true);expect(b.active).toBe(false);
+});
+test('marsh practice loads, pauses timers for its map, and exposes responsive controls',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?area=A02');
+  await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await begin(page);
+  await expect(page.locator('#chapter-title')).toHaveText('Lantern Marsh');await expect(page.locator('#game')).toHaveAttribute('data-marsh','true');
+  const shield=(await state(page)).item==='shield';await page.keyboard.down('q');await expect(page.locator('#game')).toHaveAttribute('data-shield',String(shield));await page.keyboard.up('q');await expect(page.locator('#game')).toHaveAttribute('data-shield','false');
+  await page.keyboard.press('Shift');await expect(page.locator('#game')).toHaveAttribute('data-rolls','1');
+  await page.getByRole('button',{name:'Marsh map',exact:true}).click();await expect(page.locator('#marsh-map')).toBeVisible();
+  // Compare clear terrain cells with the supplied images, including mud alpha.
+  const terrainSamples=await page.locator('#marsh-layout').evaluate(async canvas=>{
+    const samples=[];for(const [file,rect,tile,base]of[
+      ['forest/top-down-forest-tileset.png',[128,32,16,16],[10,26],null],
+      ['marsh/wet-mud-tile.png',[72,72,112,112],[4,9],'#755e2c'],
+      ['kenney-pond/rpgTile010.png',[0,0,64,64],[11,8],null]
+    ]){
+      const image=new Image();image.src='/assets/'+file;await image.decode();
+      const sample=document.createElement('canvas');sample.width=sample.height=32;
+      const c=sample.getContext('2d');c.imageSmoothingEnabled=false;
+      if(base){c.fillStyle=base;c.fillRect(0,0,32,32);}c.drawImage(image,...rect,0,0,32,32);
+      const expected=c.getImageData(0,0,32,32).data,actual=canvas.getContext('2d').getImageData(tile[0]*32,tile[1]*32,32,32).data;
+      const differences=Array.from(expected,(value,i)=>Math.abs(value-actual[i]));
+      let maxDelta=Math.max(...differences),sampling='canvas';
+      // At 2:1 reduction, a destination centre falls exactly between source
+      // pixel centres. Both adjacent samples are valid nearest-neighbour ties.
+      // Compare complete source-derived patterns, never a relaxed colour range.
+      if(file.startsWith('kenney-pond/')){
+        const source=document.createElement('canvas');source.width=source.height=64;
+        const sc=source.getContext('2d');sc.drawImage(image,0,0);const rgba=sc.getImageData(0,0,64,64).data;
+        for(const ox of [0,1])for(const oy of [0,1]){
+          let delta=0;
+          for(let y=0;y<32;y++)for(let x=0;x<32;x++)for(let channel=0;channel<4;channel++)delta=Math.max(delta,Math.abs(rgba[((y*2+oy)*64+x*2+ox)*4+channel]-actual[(y*32+x)*4+channel]));
+          if(delta<maxDelta){maxDelta=delta;sampling=`nearest tie ${ox},${oy}`;}
+        }
+      }
+      samples.push({file,maxDelta,sampling});
+    }
+    return samples;
+  });
+  console.log('Terrain pixel samples',JSON.stringify(terrainSamples));
+  // Allow only two channel levels for cross-engine 8-bit canvas compositing.
+  for(const sample of terrainSamples)expect(sample.maxDelta,sample.file).toBeLessThanOrEqual(2);
+  await page.locator('#marsh-layout').screenshot({path:test.info().outputPath('lantern-marsh-layout.png')});
+  const seconds=await page.locator('#game').getAttribute('data-flame-seconds');await page.waitForTimeout(500);expect(await page.locator('#game').getAttribute('data-flame-seconds')).toBe(seconds);
+  await page.getByRole('button',{name:'Close marsh map'}).click();await page.keyboard.press('Space');await expect(page.locator('#game')).toHaveAttribute('data-mode','playing');await expect(page.locator('#marsh-map')).not.toBeVisible();await page.locator('#game canvas').scrollIntoViewIfNeeded();await page.screenshot({path:test.info().outputPath('lantern-marsh-play.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});const box=await page.locator('#marsh-controls').boundingBox();expect(box.width).toBeLessThanOrEqual(390);
+  expect(errors).toEqual([]);
+});
+test('marsh real-input mission restores all ten words and three lanterns',async({page})=>{
+  test.setTimeout(360000);
+  if(process.env.GAME_TEST_PROGRESS){
+    const timer=setInterval(async()=>{try{
+      const s=await state(page),enemies=JSON.parse(s.enemies||'[]');
+      console.log('Marsh progress',JSON.stringify({mode:s.mode,keys:s.keys,words:s.learned,position:[s.px,s.py],flame:s.flameSeconds,pads:s.pads,health:await page.locator('#hearts').getAttribute('aria-label'),wisp:enemies.find(e=>e.id===0),threats:enemies.filter(e=>e.active&&e.type!=='wisp').map(e=>({id:e.id,type:e.type,x:e.x,y:e.y}))}));
+    }catch{}},10000);timer.unref();page.once('close',()=>clearInterval(timer));
+    page.on('pageerror',error=>console.error('Game error',error.stack));
+  }
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await begin(page);
+  for(let i=0;i<2;i++){await finishTrial(page,i);await expect(page.locator('#game')).toHaveAttribute('data-keys',String(i+1));}
+  await expect(page.locator('#game')).toHaveAttribute('data-portal-open','false');
+  await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-lift','1.00',{timeout:8000});
+  await page.screenshot({path:test.info().outputPath('arena-gate-rising.png')});
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','playing',{timeout:8000});
+  const learned=(await state(page)).learned,earned=(await state(page)).item;
+  // Lose through real attacks, then preserve the two bank lanterns on retry.
+  await walkTo(page,{x:15,y:13},{exact:true,avoidEnemies:false,attack:false});
+  await expect.poll(async()=>(await state(page)).bossPhase,{timeout:20000,intervals:[30]}).toBe('tongue');
+  await page.screenshot({path:test.info().outputPath('frog-tongue.png')});
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','lost',{timeout:45000});
+  await page.getByRole('button',{name:'Return to chamber'}).click();
+  await expect(page.locator('#game')).toHaveAttribute('data-keys','2');await expect(page.locator('#game')).toHaveAttribute('data-learned',learned);await expect(page.locator('#game')).toHaveAttribute('data-item',earned);
+  await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','true');expect(Number((await state(page)).y)).toBeCloseTo(16,0);
+  await finishTrial(page,2);
+  await expect(page.locator('#game')).toHaveAttribute('data-final-flame-used','true');
+  await expect(page.locator('#game')).toHaveAttribute('data-learned','10');await expect(page.locator('#game')).toHaveAttribute('data-lanterns','[true,true,true]');
+  await page.screenshot({path:test.info().outputPath('lantern-marsh-island-restored.png')});
+  await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','false');
+  await expect(page.locator('#game')).toHaveAttribute('data-door-ready','true');
+  await waitForMarshPads(page,state);
+  await guardMarshExit(page,state,()=>walkTo(page,makeMarshRoom().exit,{avoidEnemies:false}));await page.keyboard.press('e');
+  await expect(page.locator('#game')).toHaveAttribute('data-mode','gate-opening');await expect(page.locator('#game')).toHaveAttribute('data-chapter','2',{timeout:8000});expect(errors).toEqual([]);
+});
+
+
+test('optional island chest heals without waking the frog and restart resets it',async({page})=>{
+  test.setTimeout(180000);await page.goto('/?area=A02');await expect(page.locator('#game')).toHaveAttribute('data-ready','true');await begin(page);
+  const room=makeMarshRoom();await walkTo(page,{x:16,y:26},{exact:true,avoidEnemies:false});await walkTo(page,room.heart,{avoidEnemies:false});
+  if((await state(page)).heartPiece!=='true')await contact(page,room.heart,async()=>(await state(page)).heartPiece==='true');
+  await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','true');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');await expect(page.locator('#game')).toHaveAttribute('data-arena-gate-closed','false');
+  await restart(page);await expect(page.locator('#game')).toHaveAttribute('data-heart-piece','false');await expect(page.locator('#game')).toHaveAttribute('data-boss-phase','sleeping');
+});
+
+test('raised arena gate survives checkpoint recovery and lowers after Croak falls',()=>{
+  const r=makeMarshRoom(),m=new MarshModel(r);for(let i=0;i<3;i++)m.light(i);
+  expect(m.events.filter(e=>e.type==='boss-awakened')).toHaveLength(1);m.light(2);expect(m.events.filter(e=>e.type==='boss-awakened')).toHaveLength(1);
+  const retry=new MarshModel(r,m.progress);expect(retry.gateClosed).toBe(true);expect(retry.hero).toMatchObject(at(r.arenaSpawn));expect(retry.solid(retry.hero.x,retry.hero.y)).toBe(false);
+  Object.assign(retry.hero,at({x:15,y:28}));advance(retry,1.2,{down:true});expect(retry.hero.y).toBeLessThan(r.barrier.y*40);
+  Object.assign(retry.hero,{x:retry.boss.x,y:retry.boss.y+80,facing:'up'});retry.boss.phase='stunned';retry.boss.until=retry.clock+4;
+  for(let i=0;i<6;i++){retry.attack();retry.tick(.01);advance(retry,.45);}
+  expect(retry.progress.bossDefeated).toBe(true);expect(retry.gateClosed).toBe(false);expect(retry.solid(620,r.barrier.y*40+20)).toBe(false);
+  const done=new MarshModel(r,retry.progress);expect(done.boss.active).toBe(false);expect(done.gateClosed).toBe(false);
+});
+
+test('frog tongue damage follows its extending and retracting tip',()=>{
+  const m=new MarshModel(makeMarshRoom());for(let i=0;i<3;i++)m.light(i);advance(m,4.7);
+  const b=m.boss;Object.assign(b,{phase:'tongue',phaseAt:m.clock,until:m.clock+.9,aim:{x:b.x+200,y:b.y},nextSlam:m.clock+20});Object.assign(m.hero,{x:b.x+100,y:b.y});m.invulnerable=0;
+  m.tick(.01);expect(bossTongue(b,m.clock).length).toBeLessThan(20);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(0);
+  advance(m,.25);expect(bossTongue(b,m.clock).length).toBeGreaterThan(150);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(1);
+  m.events=[];m.invulnerable=0;b.phaseAt=m.clock-.87;m.tick(.01);expect(bossTongue(b,m.clock).length).toBeLessThan(25);expect(m.events.filter(e=>e.type==='hurt')).toHaveLength(0);
+});
+
+test('portal requires all three lit lanterns and animates only when active',()=>{
+  for(let mask=0;mask<8;mask++){
+    const lit=[0,1,2].map(i=>!!(mask&(1<<i)));
+    expect(portalReady(lit)).toBe(mask===7);
+    expect(portalTexture(lit,0).startsWith('marsh-portal-open-')).toBe(mask===7);
+    if(mask!==7)expect(portalTexture(lit,0)).toBe(portalTexture(lit,1));
+  }
+  expect(portalReady([])).toBe(false);
+  expect(portalTexture([true,true,true],0)).not.toBe(portalTexture([true,true,true],.125));
+});
+
+test('Croak releases the final flame needed for the third lantern and portal travel',async({page})=>{
+  // Exercise the shield-only route; other reward weaknesses are covered separately.
+  await page.addInitScript(()=>{const original=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=array=>{if(array instanceof Uint32Array&&array.length===1){array[0]=0x20000000;return array;}return original(array);};});
+  // Shield-only combat can include real checkpoint recoveries on WebKit.
+  test.setTimeout(420000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/?area=A02');const game=page.locator('#game');await expect(game).toHaveAttribute('data-ready','true');
+  await begin(page);
+  for(let i=0;i<3;i++){
+    await expect(game).toHaveAttribute('data-portal-open','false');await expect(game).toHaveAttribute('data-door-ready','false');
+    await finishTrial(page,i);
+  }
+  await expect(game).toHaveAttribute('data-portal-open','true');await expect(game).toHaveAttribute('data-door-ready','true');
+  await expect(game).toHaveAttribute('data-mode','playing',{timeout:8000});
+  const frame=await game.getAttribute('data-portal-frame');await expect.poll(()=>game.getAttribute('data-portal-frame')).not.toBe(frame);
+  await expect(game).toHaveAttribute('data-boss-hp','0');await expect(game).toHaveAttribute('data-arena-gate-closed','false');
+  await expect(game).toHaveAttribute('data-final-flame-used','true');
+  await waitForMarshPads(page,state);
+  await guardMarshExit(page,state,()=>walkTo(page,makeMarshRoom().exit,{avoidEnemies:false,attack:false}));
+  if((await state(page)).mode==='playing')await page.keyboard.press('e');
+  await expect(page.locator('#gate-cutscene')).toBeVisible();await expect(page.locator('#gate-cutscene')).toHaveAttribute('data-phase','portal');
+  await expect(page.locator('#gate-title')).toHaveText('The lantern portal');
+  await expect(game).toHaveAttribute('data-boss-hp','0');
+  await page.screenshot({path:test.info().outputPath('lantern-portal-travel.png')});
+  await expect(game).toHaveAttribute('data-chapter','2',{timeout:5000});
+  await restart(page);
+  await expect(game).toHaveAttribute('data-chapter','1');await expect(game).toHaveAttribute('data-portal-open','false');await expect(game).toHaveAttribute('data-keys','0');
+  expect(errors).toEqual([]);
+});
+
+test('Croak releases one protected Gloamwisp; only its flame primes the island lantern',()=>{
+  const m=new MarshModel(makeMarshRoom());m.light(0);m.light(1);advance(m,4.7);
+  m.flameUntil=m.clock+10;m.flameSource='wisp';m.interactLantern(2);expect(m.progress.primed[2]).toBe(false);
+  Object.assign(m.hero,{x:m.boss.x,y:m.boss.y+80,facing:'up'});m.boss.phase='stunned';m.boss.until=m.clock+4;
+  for(let i=0;i<6;i++){m.attack();m.tick(.01);advance(m,.45);}
+  const w=m.enemies.find(e=>e.finalWisp);expect(w).toBeTruthy();expect(w.origin).toEqual({x:m.boss.x,y:m.boss.y+8});
+  expect(w.active).toBe(true);expect(m.clock).toBeLessThan(w.emergingUntil);m.defeat(w);expect(w.active).toBe(true);
+  m.releaseFinalWisp();expect(m.enemies.filter(e=>e.finalWisp)).toHaveLength(1);advance(m,1.5);
+  m.flameUntil=m.clock+10;m.flameSource='wisp';m.interactLantern(2);expect(m.progress.primed[2]).toBe(false);
+  Object.assign(m.hero,{x:w.x,y:w.y});m.defeat(w);m.tick(.01);expect(m.flameSource).toBe('croak');
+  m.interactLantern(2);expect(m.progress.primed[2]).toBe(true);m.light(2);expect(portalReady(m.progress.lit)).toBe(true);
+});
+
+test('final Gloamwisp and flame can be recovered after expiry or checkpoint retry',()=>{
+  const m=new MarshModel(makeMarshRoom());m.progress.lit=[true,true,false];m.progress.bossDefeated=true;m.releaseFinalWisp(false);
+  const w=m.enemies.find(e=>e.finalWisp);Object.assign(m.hero,{x:w.x,y:w.y});m.defeat(w);m.tick(.01);expect(m.flameSource).toBe('croak');advance(m,10.1);expect(m.flameSource).toBe(null);expect(w.active).toBe(true);
+  const retry=new MarshModel(makeMarshRoom(),structuredClone(m.progress));expect(retry.enemies.filter(e=>e.finalWisp)).toHaveLength(1);expect(retry.enemies.find(e=>e.finalWisp).active).toBe(true);expect(retry.gateClosed).toBe(false);
+  expect(new MarshModel(makeMarshRoom()).enemies.some(e=>e.finalWisp)).toBe(false);
+});

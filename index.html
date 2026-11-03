@@ -20,6 +20,7 @@
         </div>
         <div class="scene-caption"><span class="scene-icon">◇</span><div><p id="chapter-number" class="eyebrow">CHAMBER 1 / 5</p><h2 id="chapter-title">The Footprint Garden</h2><p id="chapter-subtitle">Every step leaves a trace.</p></div><span class="caption-direction">EAST →</span></div>
         <div class="feedback"><span>✦</span><p id="feedback" role="status" aria-live="polite">Your adventure is waiting.</p></div>
+        <div class="equipment-status"><canvas id="equipment-icon" width="32" height="32" hidden aria-hidden="true"></canvas><span id="equipment-status">Journey item: none. A gift waits beyond the first door.</span><button id="use-item" data-action="item" hidden>Use item · F</button></div>
         <div class="navigation"><span id="wayfinder" aria-label="Chest and gate directions"></span><span id="combat-state"></span></div>
         <nav class="touch" aria-label="Touch controls"><div><button data-action="up" aria-label="Move up">↑</button><button data-action="left" aria-label="Move left">←</button><button data-action="down" aria-label="Move down">↓</button><button data-action="right" aria-label="Move right">→</button></div><button data-action="interact">Interact</button><button data-action="attack">Sword</button></nav>
       </section>
@@ -31,7 +32,7 @@
     </div>
     <section class="controls" aria-label="Game controls"><div><span><kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> Hold to move</span><span>Touch objects to interact</span><span>Left-click / <kbd>Space</kbd> Sword</span><span><kbd>1–4</kbd> Answer</span><span><kbd>O</kbd> Overworld atlas</span></div><button id="restart" class="text-button">Restart adventure ↻</button></section>
     <footer><span>LEVEL 01 · DIGITAL CITIZENSHIP &amp; ONLINE REPUTATION</span><span>45 WORDS TO LIGHT THE WAY.</span></footer>
-    <p class="art-credit">A01: <a href="https://o-lobster.itch.io/adventure-pack">TOP-DOWN Adventure Pack by o_lobster</a> · <a href="/assets/topdown/CREDITS.txt">CC BY 4.0 credits</a>. Terrain: <a href="https://merchant-shade.itch.io/16x16-puny-world">Puny World by Shade</a> · <a href="/assets/puny/CREDITS.txt">CC0 · 16×16 tiles</a>. Artwork: <a href="https://game-endeavor.itch.io/mystic-woods">Mystic Woods by Game Endeavor</a> · Non-commercial use · <a href="/assets/mystic/CREDITS.txt">Asset credits</a> · <a href="/assets/scenery/CREDITS.txt">Water, mage &amp; tree credits</a> (Atari Boy, Shade, Pixel Frog). Bridge: <a href="https://opengameart.org/content/16x16-bridge-0">16x16 Bridge by Deco</a> · <a href="/assets/bridge/CREDITS.txt">CC BY 4.0 credits</a>.</p>
+    <p class="art-credit">A01: <a href="https://o-lobster.itch.io/adventure-pack">TOP-DOWN Adventure Pack by o_lobster</a> · <a href="/assets/topdown/CREDITS.txt">CC BY 4.0 credits</a>. Terrain: <a href="https://merchant-shade.itch.io/16x16-puny-world">Puny World by Shade</a> · <a href="/assets/puny/CREDITS.txt">CC0 · 16×16 tiles</a>. Artwork: <a href="https://game-endeavor.itch.io/mystic-woods">Mystic Woods by Game Endeavor</a> · Non-commercial use · <a href="/assets/mystic/CREDITS.txt">Asset credits</a> · <a href="/assets/scenery/CREDITS.txt">Water, mage &amp; tree credits</a> (Atari Boy, Shade, Pixel Frog). Bridge: <a href="https://opengameart.org/content/16x16-bridge-0">16x16 Bridge by Deco</a> · <a href="/assets/bridge/CREDITS.txt">CC BY 4.0 credits</a>. Pond: <a href="https://kenney.nl">RPG Tiles Vector by Kenney</a> · <a href="/assets/kenney-pond/License.txt">CC0</a>.</p>
   </main>
   <dialog id="puzzle" aria-labelledby="puzzle-title"><button id="close-puzzle" class="dialog-close" aria-label="Close trial">✕</button><p class="eyebrow" id="puzzle-label">RUNE TRIAL</p><h2 id="puzzle-title">The Root Seal</h2><p id="puzzle-progress" class="small"></p><p id="puzzle-prompt" class="puzzle-prompt"></p><div id="answers"></div><p id="puzzle-feedback" role="status" aria-live="polite"></p></dialog>
   <dialog id="journal" aria-labelledby="journal-title"><button id="close-journal" class="dialog-close" aria-label="Close journal">✕</button><p class="eyebrow">THE TRAVELER’S FIELD NOTES</p><h2 id="journal-title">Word journal</h2><p id="journal-count"></p><div id="journal-entries"></div></dialog>
@@ -44,12 +45,19 @@
     <p class="atlas-legend">Tan: paths &amp; cliffs · Blue: rivers &amp; lakes · Dark green: forests · White: citadel · Gold dot: traveler. The atlas shows geography; your exploration minimap keeps its fog of war.</p>
     <div class="atlas-actions"><button id="explore-overworld" class="primary">Explore overworld ↗</button><button id="return-to-quest">Return to quest</button></div>
   </dialog>
+  <dialog id="item-reward" aria-labelledby="reward-title" aria-describedby="reward-result reward-description">
+    <p class="eyebrow" id="reward-label">THE FIRST DOOR / JOURNEY ITEM</p><h2 id="reward-title">A gift for your journey</h2>
+    <div class="reward-machine" aria-label="Item slot machine"><span class="reward-pointer" aria-hidden="true">▶</span><div class="reward-reel"><canvas width="32" height="32" aria-hidden="true"></canvas><span></span></div><div class="reward-reel"><canvas width="32" height="32" aria-hidden="true"></canvas><span></span></div><div class="reward-reel"><canvas width="32" height="32" aria-hidden="true"></canvas><span></span></div><span class="reward-pointer" aria-hidden="true">◀</span></div>
+    <p id="reward-result" role="status" aria-live="polite"></p><p id="reward-description"></p><p class="small">Shield · Bow · Bomb · Stone — one random item, equal chances.</p><button id="keep-item" class="primary" disabled>Continue adventure</button>
+  </dialog>
   <dialog id="gate-cutscene" aria-labelledby="gate-title" aria-describedby="gate-status">
     <p class="eyebrow">THREE KEYS / ONE WAY FORWARD</p><h2 id="gate-title">The rune door awakens</h2>
-    <canvas id="gate-film" width="128" height="80" tabindex="-1" role="img" aria-label="Three keys unlocking a pixel door"></canvas>
+    <canvas id="gate-film" width="256" height="160" tabindex="-1" role="img" aria-label="Three keys unlocking a pixel door"></canvas>
     <p id="gate-status" role="status" aria-live="polite"></p>
     <p class="small">Your adventure continues when the door opens.</p>
     <button data-action="restart" class="text-button">Restart adventure</button>
   </dialog>
+  <div id="marsh-controls" class="marsh-controls" hidden aria-label="Lantern Marsh controls"><button data-action="roll">Roll · Shift</button><span>Shift: roll · Space: sword · F: earned item</span></div>
+  <dialog id="marsh-map" aria-labelledby="marsh-map-title"><button id="close-marsh-map" class="dialog-close" aria-label="Close marsh map">✕</button><p class="eyebrow">A02 · ROUTE PLANNING</p><h2 id="marsh-map-title">Lantern Marsh</h2><canvas id="marsh-layout" width="1024" height="1024" role="img" aria-label="Lantern Marsh layout: central pond and island, south entrance, north portal, three lanterns, and a winding lily-pad route"></canvas><p>Green: grass · Dark green: trees · Gray: stone · Blue: deep water · Brown: slowing mud · Light green: sinking pads · Amber: guardian lanterns · Violet: lantern portal. Timers are paused while you plan.</p></dialog>
   <script type="module" src="/src/adventure.js"></script>
 </body></html>

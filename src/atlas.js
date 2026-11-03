@@ -1,3 +1,6 @@
+import { portalTexture } from './portal-art.js';
+import { pondImages } from './marsh-water.js';
+import { marshPlantImages } from './marsh-scenery.js';
 import { areas, areaAt, entranceFor, makeOverworld, drawAtlas } from './overworld.js';
 const $=id=>document.getElementById(id);
 
@@ -5,6 +8,9 @@ export class Atlas {
   constructor(adventure){
     this.adventure=adventure;this.map=makeOverworld();this.selected='A07';
     this.art=Object.fromEntries(['grass','terrain','water','puny','topdown','tree1','tree2','tree3','tree4'].map(key=>[key,adventure.textures.get(key).getSourceImage()]));
+    this.art.pond=pondImages(adventure);
+    this.art.marshProps=marshPlantImages(adventure);
+    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor',portalTexture(adventure.marshProgress.lit)],['marshLantern','marsh-lantern']])this.art[key]=adventure.textures.get(texture).getSourceImage();
     $('overworld-toggle').addEventListener('click',()=>this.toggle());
     $('close-atlas').addEventListener('click',()=>this.close());
     $('atlas').addEventListener('cancel',event=>{event.preventDefault();this.close();});
@@ -26,10 +32,11 @@ export class Atlas {
     this.select(current.id);$('atlas').showModal();
   }
   select(id){
+    this.art.marshDoor=this.adventure.textures.get(portalTexture(this.adventure.marshProgress.lit,this.adventure.action?.clock||0)).getSourceImage();
     this.selected=id;const a=areas.find(a=>a.id===id),chapter=a.chapter;
     drawAtlas($('atlas-map'),this.map,{selected:id,position:this.adventure.overworldPosition,art:this.art});
     $('area-title').textContent=`${a.id} · ${a.name}`;
-    $('area-description').textContent=`${a.description} Landmark: ${a.landmark}. 16×16 scenery: ${a.style.detail}.`;
+    $('area-description').textContent=`${a.description} Landmark: ${a.landmark}. 32×32 scenery: ${a.style.detail}.`;
     $('area-status').textContent=chapter===undefined?'Exploration area · available now':this.adventure.roomComplete(chapter)?'Vocabulary chamber restored':chapter<=this.adventure.unlocked?'Vocabulary chamber available':'Vocabulary chamber locked · finish the preceding chambers';
     $('area-request').textContent=`To edit this area, tell me: “In ${a.id} (${a.name}), change … Keep the existing assets.”`;
     for(const b of $('area-buttons').children)b.setAttribute('aria-pressed',String(b.dataset.area===id));
@@ -37,7 +44,7 @@ export class Atlas {
   }
   close(){
     if(this.adventure.state.mode!=='atlas')return;
-    $('atlas').close();const a=this.adventure;a.state.mode=this.returnMode;
+    $('atlas').close();$('game').tabIndex=-1;$('game').focus({preventScroll:true});const a=this.adventure;a.state.mode=this.returnMode;
     if(a.state.mode==='playing')a.action.invulnerableUntil=Math.max(a.action.invulnerableUntil,a.action.clock+1.2);
     a.render();
     if(a.state.mode==='playing')a.action.minimap.update(a.action.clock,true);

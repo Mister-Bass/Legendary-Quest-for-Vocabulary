@@ -1,0 +1,7 @@
+32x32 tree, bush, and stump pack
+
+Supplied by the repository owner for this game on 2026-10-31.
+Selected original PNG files are preserved unchanged.
+Creator and license were not included in the supplied folder.
+No additional asset reuse license is asserted by this project.
+Used in A02 Lantern Marsh, including its map/atlas views.

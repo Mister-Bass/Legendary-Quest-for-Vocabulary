@@ -14,7 +14,8 @@ jobs:
   browser-tests:
     name: ${{ matrix.browser }} browser tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The complete quest plus the timed marsh mission now run in each browser.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -28,6 +29,8 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Terrain and overworld render preflight
+        run: npm test -- --project=${{ matrix.browser }} --workers=1 --grep "marsh practice|overworld scrolls"
       # Each runner renders only one game, keeping timing-sensitive input/combat checks reliable.
       - run: npm test -- --project=${{ matrix.browser }} --workers=1
       - name: Browser test report

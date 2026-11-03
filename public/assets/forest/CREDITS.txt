@@ -1,0 +1,9 @@
+Top-down forest tileset
+
+File: top-down-forest-tileset.png
+Supplied by the repository owner for A02 Lantern Marsh on 2026-10-31.
+Creator and license: unknown; the owner did not have this information.
+No additional redistribution license is asserted by this project.
+The original image is preserved unchanged. Grass uses the 16x16 tile at
+(128,32); border trees use the 48x64 tree at (160,48), displayed at
+native pixel scale across multiple terrain cells.

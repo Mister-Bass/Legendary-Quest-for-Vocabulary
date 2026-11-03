@@ -1,3 +1,6 @@
+import { portalTexture } from './portal-art.js';
+import { pondImages } from './marsh-water.js';
+import { marshPlantImages } from './marsh-scenery.js';
 import Phaser from 'phaser';
 import { areas, areaAt, entranceFor, makeOverworld, overworldWalkable, drawAtlas } from './overworld.js';
 import { paintOverworldTile } from './overworld-art.js';
@@ -13,13 +16,16 @@ export class OverworldScene extends Phaser.Scene {
     this.map=makeOverworld();
     const art=Object.fromEntries(['grass','terrain','water','puny','topdown'].map(key=>[key,this.textures.get(key).getSourceImage()]));
     this.art=art;
+    art.pond=pondImages(this);
+    art.marshProps=marshPlantImages(this);
+    for(const [key,texture]of[['marshMud','marsh-mud-tile'],['marshGrass','marsh-grass'],['marshTree','marsh-tree'],['marshDoor',portalTexture(this.adventure.marshProgress.lit)],['marshLantern','marsh-lantern']])art[key]=this.textures.get(texture).getSourceImage();
     // Bake static scenery into small chunks. Only trees and water need per-frame animation.
     const chunkKeys=[];
     for(let cy=0;cy<54;cy+=12)for(let cx=0;cx<72;cx+=12){
       const id=`overworld-ground-${cx}-${cy}`,w=Math.min(12,72-cx),h=Math.min(12,54-cy);
-      const texture=this.textures.createCanvas(id,w*16,h*16),c=texture.context;chunkKeys.push(id);
-      c.translate(-cx*16,-cy*16);
-      for(let y=cy;y<cy+h;y++)for(let x=cx;x<cx+w;x++)paintOverworldTile(c,this.map,x,y,16,art);
+      const texture=this.textures.createCanvas(id,w*32,h*32),c=texture.context;chunkKeys.push(id);
+      c.translate(-cx*32,-cy*32);
+      for(let y=cy;y<cy+h;y++)for(let x=cx;x<cx+w;x++)paintOverworldTile(c,this.map,x,y,32,art);
       texture.refresh();this.add.image(cx*40,cy*40,id).setOrigin(0).setDisplaySize(w*40,h*40).setDepth(-10);
     }
     this.events.once('shutdown',()=>chunkKeys.forEach(id=>this.textures.remove(id)));
@@ -28,13 +34,13 @@ export class OverworldScene extends Phaser.Scene {
       const [x,y]=k.split(',').map(Number);
       this.add.sprite(x*40+20,y*40+20,'water').setDisplaySize(40,40).setDepth(-5).setAlpha(.5).setTint(0x93b7d9).play('water-ripple');
     }
-    this.add.image(36*40+2,43*40,'bridge').setDisplaySize(272,200).setAngle(90).setDepth(-2);
+    this.add.image(36*40+2,43*40,'bridge').setDisplaySize(272,272).setAngle(90).setDepth(-2);
     this.map.trees.forEach(t=>{
       if(usesA01Tiles(this.map,t.x,t.y)){
-        this.add.image(t.x*40+20,(t.y+1)*40,'topdown','a01-tree').setOrigin(.5,1).setDisplaySize(80,120).setDepth(t.y*40+28);return;
+        this.add.image(t.x*40+20,(t.y+1)*40,'a01-tree').setOrigin(.5,1).setDisplaySize(120,120).setDepth(t.y*40+28);return;
       }
       const size=t.forest?200:134,height=t.forest?200:(t.variant<=2?256:192)*.7;
-      const sprite=this.add.sprite(t.x*40+20,t.y*40+28,`tree${t.variant}`).setOrigin(.5,t.variant<=2?.94:.88).setDisplaySize(size,height).setDepth(t.y*40+28).play(`tree${t.variant}-sway`);
+      const sprite=this.add.sprite(t.x*40+20,t.y*40+28,`tree${t.variant}`).setOrigin(.5,t.variant<=2?.94:.88).setDisplaySize(height,height).setDepth(t.y*40+28).play(`tree${t.variant}-sway`);
       if(t.forest)sprite.setTint(0x5096a0);
     });
     this.areaLabels=[];
@@ -95,6 +101,6 @@ export class OverworldScene extends Phaser.Scene {
       $('chapter-number').textContent=`OVERWORLD / ${a.id}`;$('chapter-title').textContent=a.name;$('chapter-subtitle').textContent=a.description;
       $('wayfinder').textContent=`${a.id} · ${a.name} · O: atlas · Enter a marked chamber on contact`;$('combat-state').textContent='Peaceful overworld';
     }
-    Object.assign($('game').dataset,{area:a.id,artArea:a.id,tilePixels:16,tileset:'puny-world',overworldX:this.hero.x.toFixed(1),overworldY:this.hero.y.toFixed(1),overworldCameraX:this.cameras.main.scrollX.toFixed(1),overworldExplored:this.explored.size});
+    Object.assign($('game').dataset,{area:a.id,artArea:a.id,tilePixels:32,tileset:'puny-world',overworldX:this.hero.x.toFixed(1),overworldY:this.hero.y.toFixed(1),overworldCameraX:this.cameras.main.scrollX.toFixed(1),overworldExplored:this.explored.size});
   }
 }

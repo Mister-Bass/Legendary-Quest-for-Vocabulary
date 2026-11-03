@@ -6,100 +6,13 @@ import { areas, makeOverworld, overworldWalkable, entranceFor } from '../src/ove
 import { chapterAreaIds, regionStyles, makeChamberLandscape, TILE_PIXELS } from '../src/region-art.js';
 import { gateFrame, GATE_DURATION } from '../src/gate.js';
 import { usesA01Tiles } from '../src/a01-art.js';
+import { waitForMarshPads,guardMarshExit,defeatMarshBoss } from './marsh-journey.js';
 
 test.setTimeout(360000);
-const game=page=>page.locator('#game');
-const state=page=>game(page).evaluate(el=>({...el.dataset}));
-async function start(page){
-  await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
-  await page.getByRole('button',{name:'Begin adventure'}).click();
-  await expect(game(page)).toHaveAttribute('data-mode','playing');
-}
-async function hold(page,key,ms){await page.keyboard.down(key);await page.waitForTimeout(ms);await page.keyboard.up(key);}
-async function settle(page){await expect.poll(async()=>Number((await state(page)).speed),{timeout:6000}).toBeLessThan(1);}
-async function moveAxis(page,axis,target,nearGoal=null){
-  const s=await state(page),from=Number(s[axis]),sign=Math.sign(target-from);
-  if(Math.abs(target-from)<6)return;
-  const key=axis==='px'?(sign>0?'ArrowRight':'ArrowLeft'):(sign>0?'ArrowDown':'ArrowUp');
-  await page.keyboard.down(key);
-  try {await page.waitForFunction(({axis,target,sign,nearGoal,chapter})=>{
-    const el=document.getElementById('game');return el.dataset.chapter!==chapter||el.dataset.mode!=='playing'||(Number(el.dataset[axis])-target)*sign>=-7||(nearGoal&&Math.hypot(Number(el.dataset.px)-nearGoal.x,Number(el.dataset.py)-nearGoal.y)<60);
-  },{axis,target,sign,nearGoal,chapter:s.chapter},{timeout:Math.abs(target-from)/100*1000+10000});}
-  finally {await page.keyboard.up(key);}
-  await settle(page);
-  // Contact can open a trial during the final segment, especially at lower frame rates.
-}
-async function walkTo(page,target,{exact=false,avoidEnemies=true}={}){
-  const s=await state(page),room=makeRoom(Number(s.chapter),5),origin={x:Math.floor(Number(s.px)/40),y:Math.floor(Number(s.py)/40)};
-  const objects=[room.guide,room.exit,...room.seals],chapter=s.chapter;
-  const q=[{...origin,path:[]}],seen=new Set();let path;
-  for(let i=0;i<q.length;i++){
-    const p=q[i],key=`${p.x},${p.y}`;if(seen.has(key))continue;seen.add(key);
-    if(distance(p,target)<=(exact?0:1)){path=p.path;break;}
-    for(const [dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){
-      const n={x:p.x+dx,y:p.y+dy};
-      // Leave steering room at corners: WebKit can render another frame between
-      // observing a position and releasing a key. Use open corridors for the tour;
-      // dedicated collision tests exercise the narrow terrain edges separately.
-      const atGoal=distance(n,target)<=(exact?0:1);
-      const clearance=atGoal||[-1,0,1].every(ox=>[-1,0,1].every(oy=>isWalkable(room,n.x+ox,n.y+oy)));
-      const avoidKeeper=distance(target,room.guide)===0||Math.hypot(n.x-room.guide.x,n.y-room.guide.y)>=2;
-      if(avoidKeeper&&clearance&&isWalkable(room,n.x,n.y)&&!objects.some(o=>distance(o,n)===0)&&(!avoidEnemies||!room.shades.some(e=>distance(e,n)<=8)))q.push({...n,path:[...p.path,n]});
-    }
-  }
-  if(!path)throw Error(`No path to ${JSON.stringify(target)}`);
-  // Hold keys along straight segments instead of simulating frame-sized key taps.
-  let previous=origin;
-  for(let i=0;i<path.length;){
-    const at=await state(page);
-    if(at.chapter!==chapter||at.mode!=='playing'||(!exact&&Math.hypot(Number(at.px)-(target.x*40+20),Number(at.py)-(target.y*40+20))<60))return;
-    const dx=path[i].x-previous.x,dy=path[i].y-previous.y;let end=i;
-    while(end+1<path.length&&path[end+1].x-path[end].x===dx&&path[end+1].y-path[end].y===dy)end++;
-    await moveAxis(page,dx?'px':'py',(dx?path[end].x:path[end].y)*40+20,exact?null:{x:target.x*40+20,y:target.y*40+20});
-    previous=path[end];i=end+1;
-  }
-}
-async function openTrial(page,index){
-  const s=await state(page),target=makeRoom(Number(s.chapter),5).seals[index];await walkTo(page,target);
-  if((await state(page)).mode==='opening'){await expect(game(page)).toHaveAttribute('data-mode','puzzle');return;}
-  if((await state(page)).mode==='puzzle')return;
-  await contact(page,target,()=>game(page).getAttribute('data-mode').then(mode=>mode==='opening'||mode==='puzzle'));
-  await expect(game(page)).toHaveAttribute('data-mode','puzzle');
-}
-async function contact(page,target,done){
-  let at=await state(page),dx=target.x*40+20-Number(at.px),dy=target.y*40+20-Number(at.py);
-  // Align the approach so continuous steering makes actual contact, not just proximity.
-  const horizontal=Math.abs(dx)>Math.abs(dy),minor=horizontal?dy:dx;
-  if(Math.abs(minor)>18){
-    await moveAxis(page,horizontal?'py':'px',(horizontal?target.y:target.x)*40+20);
-  }
-  // Correct any key-release latency with bounded taps before the contact run.
-  for(let i=0;i<6;i++){
-    if(await done())return;
-    const aligned=await state(page),error=(horizontal?target.y:target.x)*40+20-Number(aligned[horizontal?'py':'px']);
-    if(Math.abs(error)<=12)break;
-    const key=horizontal?(error>0?'ArrowDown':'ArrowUp'):(error>0?'ArrowRight':'ArrowLeft');
-    await page.keyboard.press(key,{delay:Math.min(120,Math.max(25,(Math.abs(error)-8)/170*1000))});await settle(page);
-  }
-  if(await done())return;
-  at=await state(page);dx=target.x*40+20-Number(at.px);dy=target.y*40+20-Number(at.py);
-  const key=Math.abs(dx)>Math.abs(dy)?dx>0?'ArrowRight':'ArrowLeft':dy>0?'ArrowDown':'ArrowUp';
-  await page.keyboard.down(key);
-  try{await expect.poll(done,{timeout:5000}).toBeTruthy();}finally{await page.keyboard.up(key);}
-}
-async function clickWorld(page,x,y,button='left'){
-  const s=await state(page),box=await page.locator('#game canvas').boundingBox(),zoom=Number(s.zoom);
-  const sx=(x-Number(s.cameraX)-400)*zoom+400,sy=(y-Number(s.cameraY)-280)*zoom+280;
-  await page.mouse.click(box.x+Math.max(5,Math.min(795,sx))/800*box.width,box.y+Math.max(5,Math.min(555,sy))/560*box.height,{button});
-}
-async function correct(page){
-  const id=Number((await state(page)).quizId),answer=id%3===2?vocabulary[id].definition:vocabulary[id].term;
-  await page.locator('#answers button').filter({has:page.getByText(answer,{exact:true})}).click();
-}
-async function finishTrial(page,index){await openTrial(page,index);while((await state(page)).mode==='puzzle')await correct(page);}
+import {completeReward,game,state,start,hold,settle,moveAxis,walkTo,openTrial,contact,clickWorld,correct,finishTrial} from './play-input.js';
 
 test('all 45 terms and expanded chamber objectives are complete and reachable',()=>{
-  expect(TILE_PIXELS).toBe(16);expect(Object.keys(regionStyles)).toEqual(areas.map(a=>a.id));
+  expect(TILE_PIXELS).toBe(32);expect(Object.keys(regionStyles)).toEqual(areas.map(a=>a.id));
   for(let chapter=0;chapter<5;chapter++){
     const room=makeRoom(chapter,5),landscape=makeChamberLandscape(room);
     expect(room.areaId).toBe(entranceFor(chapter).id);
@@ -111,7 +24,7 @@ test('all 45 terms and expanded chamber objectives are complete and reachable',(
   expect(chapterTrials(0).flat().length).toBe(chapters[0].terms.length);
   expect(WORLD.columns*WORLD.rows).toBe(1120);
   for(let i=0;i<5;i++){
-    const room=makeRoom(i,5);expect(room.trees).toHaveLength(13);for(const tree of room.trees){expect(isWalkable(room,tree.x,tree.y)).toBe(false);expect(room.water.has(`${tree.x},${tree.y}`)).toBe(false);}
+    const room=makeRoom(i,5);if(room.marsh)expect(room.trees.length).toBeGreaterThan(100);else expect(room.trees).toHaveLength(13);for(const tree of room.trees){expect(isWalkable(room,tree.x,tree.y)).toBe(false);expect(room.water.has(`${tree.x},${tree.y}`)).toBe(false);}
     const seen=new Set(),q=[room.spawn];
     for(let k=0;k<q.length;k++){
       const p=q[k],key=`${p.x},${p.y}`;if(seen.has(key))continue;seen.add(key);
@@ -128,7 +41,7 @@ test('loads the game, local assets, and attribution without errors',async({page}
   await page.goto('/');await expect(game(page)).toHaveAttribute('data-ready','true');
   await expect(page.getByRole('heading',{name:'Every word is a key.'})).toBeVisible();
   await expect(page.locator('#game canvas')).toBeVisible();await expect(page.locator('#minimap')).toBeVisible();expect(errors).toEqual([]);expect(art.size).toBe(13);
-  expect(tiles).toHaveLength(1);await expect(game(page)).toHaveAttribute('data-tile-pixels','16');
+  expect(tiles).toHaveLength(1);await expect(game(page)).toHaveAttribute('data-tile-pixels','32');
   expect(await (await page.request.get('/assets/puny/CREDITS.txt')).text()).toContain('CC0');
   await expect(page.getByRole('link',{name:'Mystic Woods by Game Endeavor'})).toBeVisible();
   expect(await (await page.request.get('/assets/mystic/CREDITS.txt')).text()).toContain('Non-commercial');
@@ -217,28 +130,40 @@ test('slime bolts pause, three distinct sword hits kill, and a nearby death burs
 });
 
 test('all 45 contact trials unlock the scrolling chambers and win; replay resets',async({page})=>{
-  test.setTimeout(480000);
+  test.setTimeout(600000);
   await start(page);
+  let earned;
   for(let chapter=0;chapter<5;chapter++){
+    if(earned){
+      await expect(game(page)).toHaveAttribute('data-item',earned);
+      if(earned==='shield'){await page.keyboard.down('q');await expect(game(page)).toHaveAttribute('data-shield','true');await page.keyboard.up('q');}
+      else{await page.keyboard.press('f');await expect.poll(async()=>JSON.parse((await state(page)).itemProjectiles).some(p=>p.kind===earned)).toBe(true);}
+    }
+    if(process.env.GAME_TEST_PROGRESS)console.log('Full quest chapter',chapter+1);
     await expect(game(page)).toHaveAttribute('data-art-area',chapterAreaIds[chapter]);
     await expect(game(page)).toHaveAttribute('data-terrain-theme',regionStyles[chapterAreaIds[chapter]].terrain);
     await page.screenshot({path:test.info().outputPath(`chamber-${chapterAreaIds[chapter]}.png`)});
     for(let trial=0;trial<3;trial++)await finishTrial(page,trial);
-    await expect(game(page)).toHaveAttribute('data-keys','3');const gate=makeRoom(chapter,5).exit;await walkTo(page,gate);
+    if(chapter===1){await defeatMarshBoss(page,{state,walkTo});await waitForMarshPads(page,state);}
+    await expect(game(page)).toHaveAttribute('data-keys','3');const gate=makeRoom(chapter,5).exit;if(chapter===1)await guardMarshExit(page,state,()=>walkTo(page,gate));else await walkTo(page,gate);
     if((await state(page)).chapter===String(chapter)&& (await state(page)).mode==='playing')await contact(page,gate,async()=>{const s=await state(page);return s.mode==='gate-opening';});
     await expect(game(page)).toHaveAttribute('data-mode','gate-opening');
     const film=page.locator('#gate-cutscene'),before=await state(page);
-    await expect(film).toBeVisible();await expect(film).toHaveAttribute('data-inserted','1');
+    await expect(film).toBeVisible();
+    if(chapter===1){await expect(film).toHaveAttribute('data-phase','portal');await expect(film).toHaveAttribute('data-inserted','3');}
+    else{await expect(film).toHaveAttribute('data-inserted','1');
     await hold(page,'d',120);await page.keyboard.press('e');await page.keyboard.press('Space');await page.keyboard.press('Escape');
     expect((await state(page)).px).toBe(before.px);expect((await state(page)).enemies).toBe(before.enemies);
     await expect(film).toHaveAttribute('data-inserted','2');
     await expect(film).toHaveAttribute('data-inserted','3');
-    await expect(film).toHaveAttribute('data-phase','unlocking');
-    const slots=await page.locator('#gate-film').evaluate(canvas=>[53,65,74].map(x=>Array.from(canvas.getContext('2d').getImageData(x,34,1,1).data).slice(0,3)));
+    await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('unlocking');
+    const slots=await page.locator('#gate-film').evaluate(canvas=>[53,65,74].map(x=>Array.from(canvas.getContext('2d').getImageData(x*2,68,1,1).data).slice(0,3)));
     expect(slots).toEqual([[242,203,112],[157,218,224],[208,195,251]]);
     if(chapter===0)await page.screenshot({path:test.info().outputPath('three-keys-inserted.png')});
-    await expect(film).toHaveAttribute('data-phase','open');
+    await expect.poll(()=>film.getAttribute('data-phase'),{timeout:5000,intervals:[20]}).toBe('open');
     if(chapter===0)await page.screenshot({path:test.info().outputPath('pixel-door-open.png')});
+    }
+    if(chapter===0){await expect(page.locator('#item-reward')).toBeVisible();await completeReward(page);earned=(await state(page)).item;}
     if(chapter<4)await expect(game(page)).toHaveAttribute('data-chapter',String(chapter+1));
   }
   await expect(game(page)).toHaveAttribute('data-mode','won');await expect(game(page)).toHaveAttribute('data-learned','45');await expect(page.locator('#score')).toHaveText('1125');
@@ -346,7 +271,7 @@ test('a slime takes three separate swings; only a death within its radius costs 
 
 test('the starting pond bridge runs north-south and crosses both ways while adjacent water stays solid',async({page})=>{
   const room=makeRoom(0,5);for(let y=15;y<=18;y++){expect(isWalkable(room,10,y)).toBe(true);expect(isWalkable(room,9,y)).toBe(false);expect(isWalkable(room,11,y)).toBe(false);}
-  expect(makeRoom(1,5).bridge.size).toBe(0);
+  expect(makeRoom(1,5).pads.length).toBeGreaterThan(8);
   await start(page);await moveAxis(page,'py',820);await moveAxis(page,'px',420);
   for(let i=0;i<6;i++){
     const error=420-Number((await state(page)).px);if(Math.abs(error)<=7)break;
@@ -419,7 +344,10 @@ test('overworld scrolls, reveals fog, blocks water, and returns to the same ques
   await expect(game(page)).toHaveAttribute('data-mode','overworld');
   await expect(game(page)).toHaveAttribute('data-area','A07');
   const initial=await state(page);
-  await hold(page,'d',2700);
+  // Reach an open shoreline column by position, independent of rendering speed.
+  await page.keyboard.down('d');
+  try{await expect.poll(async()=>Number((await state(page)).overworldX),{timeout:10000,intervals:[30]}).toBeGreaterThan(1140);}finally{await page.keyboard.up('d');}
+  await settle(page);
   await expect(game(page)).toHaveAttribute('data-area','A08');
   const moved=await state(page);
   expect(Number(moved.overworldCameraX)).toBeGreaterThan(Number(initial.overworldCameraX)+200);

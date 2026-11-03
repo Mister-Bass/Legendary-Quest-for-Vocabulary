@@ -1,0 +1,7 @@
+RPG Tiles Vector (1.0) by Kenney, https://kenney.nl
+
+License: Creative Commons Zero (CC0); original License.txt retained.
+Thirteen original PNG files supplied by the repository owner.
+Used for A02 pond water, curved banks, and island shoreline.
+Original PNGs preserved unchanged; rendered on native 16-pixel terrain cells.
+Wind streaks, ripple rings, and jumping fish are original runtime code art.

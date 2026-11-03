@@ -1,4 +1,5 @@
 import { chapterAreaIds } from './region-art.js';
+import { makeMarshRoom,marshWalkable } from './marsh-map.js';
 // Original adventure layouts. Coordinates are grid cells; art is rendered by Phaser.
 export const WORLD = { columns: 40, rows: 28, tileSize: 40, viewportWidth:800, viewportHeight:560, zoom:1.5 };
 const themes = [
@@ -10,6 +11,7 @@ const themes = [
 ];
 
 export function makeRoom(index, total) {
+  if(index===1)return makeMarshRoom(total);
   const theme = themes[index % themes.length];
   const walls = new Set();
   const water = new Set();
@@ -36,6 +38,7 @@ export function makeRoom(index, total) {
 }
 
 export function isWalkable(room, x, y) {
+  if(room.marsh)return marshWalkable(room,x,y);
   const key = `${x},${y}`;
   return x >= 0 && x < WORLD.columns && y >= 0 && y < WORLD.rows && !room.walls.has(key) && (!room.water.has(key)||room.bridge.has(key)) && !room.trees.some(p=>p.x===x&&p.y===y);
 }
