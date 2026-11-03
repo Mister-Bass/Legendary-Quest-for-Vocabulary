@@ -189,7 +189,17 @@ class Adventure extends Phaser.Scene {
     const s=this.state;
     if(this.room.marsh&&this.action.interact())return;
     if(this.near(this.room.exit)) {
-      if(this.roomKeys()<3){this.feedback(this.room.marsh?'The portal is dormant. Light all three guardian lanterns with fire and vocabulary.':'The gate is locked. Restore all three seals to earn its keys.');return;}
+      if(this.roomKeys()<3){
+        if(this.room.marsh){
+          s.mode='guide';this.action.stop();
+          $('puzzle-label').textContent='THE LANTERN PORTAL';$('puzzle-title').textContent='Three lights will open the way';
+          $('puzzle-prompt').textContent='Light all three guardian lanterns to awaken this portal. Gather Wisp Flames to kindle the northwest, northeast, and island lanterns, then complete each lantern’s vocabulary trial. Return here when all three flames are burning.';
+          $('puzzle-progress').textContent=`${this.roomKeys()} of 3 guardian lanterns lit`;
+          $('answers').replaceChildren();$('puzzle-feedback').textContent='Open the Marsh map to find the three lanterns.';
+          $('puzzle').showModal();this.render();return;
+        }
+        this.feedback('The gate is locked. Restore all three seals to earn its keys.');return;
+      }
       if(s.mode!=='playing')return;
       s.mode='gate-opening';this.action.stop();this.feedback(this.room.marsh?'The three lanterns power the portal. Stepping through…':'Three keys. Three locks. The way forward awakens.');this.render();
       this.gateCutscene.start(()=>{
