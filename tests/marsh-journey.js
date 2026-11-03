@@ -35,7 +35,9 @@ export async function kindleMarsh(page,index,{state,moveAxis,walkTo,contact}){
       const r=makeMarshRoom(),cells=[];
       for(let y=2;y<30;y++)for(let x=2;x<30;x++)if(marshWalkable(r,x,y)&&!r.water.has(`${x},${y}`)&&![r.guide,r.exit,r.heart,...r.seals].some(p=>Math.hypot(p.x-x,p.y-y)<1.1))cells.push({x,y});
       cells.sort((a,b)=>Math.hypot(a.x*40+20-enemy.x,a.y*40+20-enemy.y)-Math.hypot(b.x*40+20-enemy.x,b.y*40+20-enemy.y));
-      await go(cells[0].x,cells[0].y);await page.keyboard.down('Space');await page.waitForTimeout(250);await page.keyboard.up('Space');continue;
+      await go(cells[0].x,cells[0].y);
+      const current=await state(page),wisp=JSON.parse(current.enemies).find(e=>e.id===id);if(!wisp.active)break;
+      await aimAt(wisp,current);await page.keyboard.down('Space');await page.waitForTimeout(650);await page.keyboard.up('Space');continue;
     }
     await page.locator('#game canvas').scrollIntoViewIfNeeded();
     const camera=await state(page),box=await page.locator('#game canvas').boundingBox(),z=Number(camera.zoom);
@@ -71,10 +73,11 @@ async function kindleFinalMarsh(page,{state,walkTo,contact}){
   const game=page.locator('#game'),room=makeMarshRoom(),target=room.seals[2];
   if((await state(page)).finalFlameUsed!=='true'){
     await defeatMarshBoss(page,{state,walkTo});
+    if((await state(page)).finalFlameUsed==='true')return kindleFinalMarsh(page,{state,walkTo,contact});
     await expect(game).toHaveAttribute('data-final-wisp-released','true');
     await expect(game).toHaveAttribute('data-final-wisp-emerging','false',{timeout:4000});
     for(let attempt=0;attempt<12;attempt++){
-      const s=await state(page);if(['opening','puzzle'].includes(s.mode))break;
+      const s=await state(page);if(['opening','puzzle'].includes(s.mode))break;if(s.mode!=='playing')throw Error(`Return to the checkpoint before hunting the final wisp: ${s.mode}`);
       const w=JSON.parse(s.enemies).find(e=>e.finalWisp);expect(w).toBeTruthy();
       if(!w.active)break;
       const box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom);
@@ -83,6 +86,12 @@ async function kindleFinalMarsh(page,{state,walkTo,contact}){
         const cells=[];for(let y=13;y<=17;y++)for(let x=14;x<=17;x++)if(marshWalkable(room,x,y)&&![room.heart,...room.seals].some(p=>p.x===x&&p.y===y))cells.push({x,y});
         cells.sort((a,b)=>Math.hypot(a.x*40+20-w.x,a.y*40+20-w.y)-Math.hypot(b.x*40+20-w.x,b.y*40+20-w.y));
         await walkTo(page,cells[0],{exact:true,avoidEnemies:false,attack:true});
+        const current=await state(page),live=JSON.parse(current.enemies).find(e=>e.finalWisp);
+        if(current.mode==='playing'&&live?.active){
+          const bounds=await page.locator('#game canvas').boundingBox(),zoom=Number(current.zoom);
+          await page.mouse.move(bounds.x+((live.x-Number(current.cameraX)-400)*zoom+400)/800*bounds.width,bounds.y+((live.y-Number(current.cameraY)-280)*zoom+280)/560*bounds.height);
+          await page.keyboard.down('Space');await page.waitForTimeout(650);await page.keyboard.up('Space');
+        }
       }else await page.keyboard.press('f');await page.waitForTimeout(350);
     }
     let s=await state(page);
