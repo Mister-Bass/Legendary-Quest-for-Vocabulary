@@ -122,7 +122,11 @@ export class MarshModel{
       }else{
         if(d<190)e.hidden=false;
         if(!e.hidden&&d>22&&d<330){const hop=this.clock%1.1<.35?150:18;this.move(e,ex/Math.max(1,d)*hop*dt,ey/Math.max(1,d)*hop*dt);}
-        if(!e.hidden&&d<24)this.hurt('A Slurg landed on you. Roll or strike its small offspring.');
+        if(!e.hidden&&d<24){
+          const [fx,fy]=dirs[h.facing],front=((e.x-h.x)*fx+(e.y-h.y)*fy)/Math.max(1,dist(e,h));
+          if(shield&&front>0){if(this.clock>=(e.blockUntil||0)){e.blockUntil=this.clock+.6;this.blocks++;this.emit('message',{message:'Slurg blocked!'});}}
+          else this.hurt('A Slurg landed on you. Roll or strike its small offspring.');
+        }
       }
     }
     this.bolts=this.bolts.filter(p=>{

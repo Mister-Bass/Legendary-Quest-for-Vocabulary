@@ -47,3 +47,15 @@ for(const [i,item] of ITEM_IDS.entries())test(`${item} reel outcome enables only
     if(item!=='bomb'){await page.keyboard.press('b');expect(JSON.parse((await state(page)).itemProjectiles).every(p=>p.kind===item)).toBe(true);}
   }
 });
+
+test('earned shield blocks Slurg contact only from the front',()=>{
+  for(const facing of ['up','down']){
+    const m=new MarshModel(makeMarshRoom(),undefined,'shield');m.clock=2;m.invulnerable=0;
+    Object.assign(m.hero,{x:220,y:1060,facing});
+    m.enemies=[{type:'slurg',active:true,hidden:false,x:220,y:1040}];
+    m.tick(.01,{shield:true});
+    expect(m.events.some(e=>e.type==='hurt')).toBe(facing==='down');
+    expect(m.blocks).toBe(facing==='up'?1:0);
+    if(facing==='up'){m.tick(.01,{shield:true});expect(m.blocks).toBe(1);}
+  }
+});

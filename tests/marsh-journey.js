@@ -83,7 +83,7 @@ async function kindleFinalMarsh(page,{state,walkTo,contact}){
       const box=await page.locator('#game canvas').boundingBox(),z=Number(s.zoom);
       await page.mouse.move(box.x+((w.x-Number(s.cameraX)-400)*z+400)/800*box.width,box.y+((w.y-Number(s.cameraY)-280)*z+280)/560*box.height);
       if(s.item==='shield'){
-        const cells=[];for(let y=13;y<=17;y++)for(let x=14;x<=17;x++)if(marshWalkable(room,x,y)&&![room.heart,...room.seals].some(p=>p.x===x&&p.y===y))cells.push({x,y});
+        const cells=[];for(let y=13;y<=17;y++)for(let x=14;x<=17;x++)if(marshWalkable(room,x,y)&&Math.hypot(x-room.heart.x,y-room.heart.y)>1.3&&![room.heart,...room.seals].some(p=>p.x===x&&p.y===y))cells.push({x,y});
         cells.sort((a,b)=>Math.hypot(a.x*40+20-w.x,a.y*40+20-w.y)-Math.hypot(b.x*40+20-w.x,b.y*40+20-w.y));
         await walkTo(page,cells[0],{exact:true,avoidEnemies:false,attack:true});
         const current=await state(page),live=JSON.parse(current.enemies).find(e=>e.finalWisp);
@@ -99,7 +99,7 @@ async function kindleFinalMarsh(page,{state,walkTo,contact}){
       const drop=JSON.parse(s.flameDrops).find(d=>d.source==='croak');
       if(!drop)throw Object.assign(Error('Collect a renewed flame from Croak’s final Gloamwisp.'),{marshFlameExpired:true});
       const cells=[];
-      for(let y=Math.floor(drop.y/40)-1;y<=Math.floor(drop.y/40)+1;y++)for(let x=Math.floor(drop.x/40)-1;x<=Math.floor(drop.x/40)+1;x++)if(marshWalkable(room,x,y)&&![room.guide,room.exit,room.heart,...room.seals].some(p=>p.x===x&&p.y===y)&&Math.hypot(x*40+20-drop.x,y*40+20-drop.y)<32)cells.push({x,y});
+      for(let y=Math.floor(drop.y/40)-1;y<=Math.floor(drop.y/40)+1;y++)for(let x=Math.floor(drop.x/40)-1;x<=Math.floor(drop.x/40)+1;x++)if(marshWalkable(room,x,y)&&Math.hypot(x-room.heart.x,y-room.heart.y)>1.3&&![room.guide,room.exit,room.heart,...room.seals].some(p=>p.x===x&&p.y===y)&&Math.hypot(x*40+20-drop.x,y*40+20-drop.y)<32)cells.push({x,y});
       cells.sort((a,b)=>Math.hypot(a.x*40+20-drop.x,a.y*40+20-drop.y)-Math.hypot(b.x*40+20-drop.x,b.y*40+20-drop.y));expect(cells.length).toBeGreaterThan(0);
       await walkTo(page,cells[0],{exact:true,avoidEnemies:false,attack:false});
       if(!['opening','puzzle'].includes((await state(page)).mode))await contact(page,{x:drop.x/40-.5,y:drop.y/40-.5},async()=>{const v=await state(page);return v.flameSource==='croak'||['opening','puzzle'].includes(v.mode);});
